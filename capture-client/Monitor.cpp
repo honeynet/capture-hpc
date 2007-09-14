@@ -1,60 +1,28 @@
-/*
- *	PROJECT: Capture
- *	FILE: Monitor.cpp
- *	AUTHORS: Ramon Steenson (rsteenson@gmail.com) & Christian Seifert (christian.seifert@gmail.com)
- *
- *	Developed by Victoria University of Wellington and the New Zealand Honeynet Alliance
- *
- *	This file is part of Capture.
- *
- *	Capture is free software; you can redistribute it and/or modify
- *	it under the terms of the GNU General Public License as published by
- *	the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  Capture is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Capture; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
-#include "StdAfx.h"
 #include "Monitor.h"
 
-wstring 
-Monitor::TimeFieldToWString(TIME_FIELDS time)
+Monitor::Monitor()
 {
-	wchar_t szTime[16];
-	ZeroMemory(&szTime, sizeof(szTime));
-	wstring wtime;
-	_itow_s(time.Day,szTime,16,10);
-	wtime += szTime;
-	wtime += L"\\";
-	_itow_s(time.Month,szTime,16,10);
-	wtime += szTime;
-	wtime += L"\\";
-	_itow_s(time.Year,szTime,16,10);
-	wtime += szTime;
-	wtime += L" ";
-	_itow_s(time.Hour,szTime,16,10);
-	wtime += szTime;
-	wtime += L":";
-	_itow_s(time.Minute,szTime,16,10);
-	wtime += szTime;
-	wtime += L":";
-	_itow_s(time.Second,szTime,16,10);
-	wtime += szTime;
-	wtime += L".";
-	_itow_s(time.Milliseconds,szTime,16,10);
-	wtime += szTime;
-	return wtime;
+	hService = NULL;
+}
+
+Monitor::~Monitor()
+{
+	stdext::hash_map<wstring, std::list<Permission*>*>::iterator it;
+	for(it = permissionMap.begin(); it != permissionMap.end(); it++)
+	{
+		std::list<Permission*>::iterator lit;
+		for(lit = it->second->begin(); lit != it->second->end(); lit++)
+		{
+			delete (*lit);
+		}
+		it->second->clear();
+	}
+	permissionMap.clear();
+	unInstallKernelDriver();
 }
 
 bool
-Monitor::EventIsAllowed(std::wstring eventType, std::wstring subject, std::wstring object)
+Monitor::isEventAllowed(std::wstring eventType, std::wstring subject, std::wstring object)
 {
 	stdext::hash_map<wstring, std::list<Permission*>*>::iterator it;
 	std::transform(eventType.begin(),eventType.end(),eventType.begin(),std::towlower);
@@ -78,76 +46,35 @@ Monitor::EventIsAllowed(std::wstring eventType, std::wstring subject, std::wstri
 		}
 	}
 	if(excluded == ALLOWED)
+	{
 		return true;
-	else
-		return false;
-}
-
-wchar_t
-Monitor::GetDriveLetter(LPCTSTR lpDevicePath)
-{
-	wchar_t d = _T('A');
-	while(d <= _T('Z'))
-	{
-		wchar_t szDeviceName[3] = {d,_T(':'),_T('\0')};
-		wchar_t szTarget[512] = {0};
-		if(QueryDosDevice(szDeviceName, szTarget, 511) != 0)
-			if(_tcscmp(lpDevicePath, szTarget) == 0)
-				return d;
-		d++;
-	}
-	return NULL;
-}
-
-bool
-Monitor::GetProcessCompletePathName(DWORD pid, std::wstring *path, bool created)
-{
-	wchar_t szTemp[512];
-	bool nameFound = false;
-	stdext::hash_map<DWORD, wstring>::iterator it;
-
-	if(pid == 4)
-	{
-		// System process
-		*path = L"System";
-		return true;
-	}
-
-	it = processNameMap.find(pid);
-	if(it ==  processNameMap.end())
-	{
-		ZeroMemory(&szTemp, sizeof(szTemp));
-
-		HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION |
-                            PROCESS_VM_READ, FALSE, pid);
-
-		// Cannot use GetModuleFileName because the module list won't be
-		// updated in time ... only happens on rare occasions.
-		if(!hProc)
-			return false;
-		DWORD ret = GetProcessImageFileName(hProc, szTemp,512);
-		CloseHandle(hProc);
-		if(ret > 0)
-		{
-			// GetProcessImageFileName returns the logical path ...
-			// convert it to the DOS path c:\ ... etc
-			*path = LogicalToDOSPath(szTemp);
-			processNameMap.insert(Process_Pair(pid, *path));
-			nameFound = true;
-		}
 	} else {
-		*path = it->second;
-		if(!created)
-		{
-			processNameMap.erase(it);
-		}
-		nameFound = true;
+		return false;
 	}
-	return nameFound;
+}
+
+void
+Monitor::clearExclusionList()
+{
+	stdext::hash_map<wstring, std::list<Permission*>*>::iterator it;
+	for(it = permissionMap.begin(); it != permissionMap.end(); it++)
+	{
+		std::list<Permission*>* lp = it->second;
+		std::list<Permission*>::iterator lit;
+		for(lit = lp->begin(); lit != lp->end(); lit++)
+		{
+			Permission* p = *lit;
+			if(!p->permaneant)
+			{
+				lp->remove(p);
+				delete (p);
+			}
+		}
+	}
 }
 
 bool
-Monitor::InstallKernelDriver(std::wstring driverFullPathName, std::wstring driverName, std::wstring driverDescription)
+Monitor::installKernelDriver(wstring driverPath, wstring driverName, wstring driverDescription)
 {
 	SC_HANDLE hSCManager;
 
@@ -155,14 +82,14 @@ Monitor::InstallKernelDriver(std::wstring driverFullPathName, std::wstring drive
 
     if(hSCManager)
     {
-		printf("%ls: Kernel driver path: %ls\n", driverName.c_str(), driverFullPathName.c_str());
+		//printf("%ls: Kernel driver path: %ls\n", driverName.c_str(), driverPath.c_str());
         hService = CreateService(hSCManager, driverName.c_str(), 
 								  driverDescription.c_str(), 
                                   SERVICE_START | DELETE | SERVICE_STOP, 
                                   SERVICE_KERNEL_DRIVER,
                                   SERVICE_DEMAND_START, 
                                   SERVICE_ERROR_IGNORE, 
-								  driverFullPathName.c_str(), 
+								  driverPath.c_str(), 
                                   NULL, NULL, NULL, NULL, NULL);
 
         if(!hService)
@@ -173,38 +100,51 @@ Monitor::InstallKernelDriver(std::wstring driverFullPathName, std::wstring drive
 
         if(hService)
         {
-            StartService(hService, 0, NULL);           
+            if(StartService(hService, 0, NULL))
+			{
+				printf("Loaded kernel driver: %ls\n", driverName.c_str());
+			} else {
+				DWORD err = GetLastError();
+				if(err == ERROR_SERVICE_ALREADY_RUNNING)
+				{
+					printf("Driver already loaded: %ls\n", driverName.c_str());
+				} else {
+					printf("Error loading kernel driver: %ls - 0x%08x\n", driverName.c_str(), err);
+					CloseServiceHandle(hSCManager);
+					return false;
+				}
+			}
 		} else {
+			printf("Error loading kernel driver: %ls - 0x%08x\n", driverName.c_str(), GetLastError());
 			CloseServiceHandle(hSCManager);
 			return false;
 		}
-
         CloseServiceHandle(hSCManager);
 		return true;
     }
+	printf("Error loading kernel driver: %ls - OpenSCManager 0x%08x\n", driverName.c_str(), GetLastError());
 	return false;
 }
 
-wstring
-Monitor::LogicalToDOSPath(wchar_t *logicalPath)
+void
+Monitor::unInstallKernelDriver()
 {
-	wstring procLogicalPath = logicalPath;
-	wstring device = procLogicalPath.substr(0,procLogicalPath.find(L'\\', procLogicalPath.find(L'\\',1)+1));
-	wstring szDrive = L"0:";
-	wchar_t drive = GetDriveLetter(device.c_str());				
-	szDrive[0] = drive;
-	wstring procDosPath = procLogicalPath.substr(23);
-	szDrive.append(procDosPath);
-
-	return szDrive;
+	if(hService != NULL)
+	{
+		SERVICE_STATUS ss;
+		ControlService(hService, SERVICE_CONTROL_STOP, &ss);
+		DeleteService(hService);
+		CloseServiceHandle(hService);
+	}
+	hService = NULL;
 }
 
-bool
-Monitor::LoadExclusionList(std::wstring file)
+void
+Monitor::loadExclusionList(wstring file)
 {
 	string line;
 	int lineNumber = 0;
-		
+	DebugPrint(L"Monitor-loadExclusionList: Loading list - %ls\n", file.c_str());
 	ifstream exclusionList (file.c_str());
 	if (exclusionList.is_open())
 	{
@@ -212,10 +152,10 @@ Monitor::LoadExclusionList(std::wstring file)
 		{
 			getline (exclusionList,line);
 			lineNumber++;
-			if(line.length() > 0) {
+			if(line.length() > 0 && line.at(0) != '#') {
 				
 				try {
-					if(line.at(0) != '#')
+					if(line.at(0) == '+' || line.at(0) == '-')
 					{
 						vector<std::wstring> splitLine;
 
@@ -228,51 +168,85 @@ Monitor::LoadExclusionList(std::wstring file)
 
 						if(splitLine.size() == 4)
 						{
-							Permission* p = new Permission();
-							if(splitLine[0] == L"+")
+							if(splitLine[1] == L".*" || splitLine[1] == L".+")
 							{
-								p->allow = true;
+								printf("%ls ERROR on line %i: The action type is not supposed to be a regular expression\n", file.c_str(), lineNumber);
 							} else {
-								p->allow = false;
+								addExclusion(splitLine[0], splitLine[1], splitLine[2], splitLine[3]);
 							}
-							boost::wregex s(splitLine[2].c_str(), boost::regex::icase);
-							boost::wregex e(splitLine[3].c_str(), boost::regex::icase);
-							p->permissions.push_back(e);
-							p->subjects.push_back(s);
-							wstring tempEventType = splitLine[1];
-							std::transform(tempEventType.begin(),tempEventType.end(),tempEventType.begin(),std::towlower);
-							stdext::hash_map<wstring, std::list<Permission*>*>::iterator it;
-							it = permissionMap.find(tempEventType);
-		
-							if(it == permissionMap.end())
-							{
-								std::list<Permission*>*l = new list<Permission*>();
-								l->push_back(p);
-								permissionMap.insert(Permission_Pair(tempEventType, l));
-							} else {
-								std::list<Permission*>* lp = it->second;
-								lp->push_back(p);
-							}
+						} else {
+							printf("%ls token ERROR on line %i\n", file.c_str(), lineNumber);
 						}
+					} else {
+						printf("%ls ERROR no exclusion type (+,-) on line %i\n", file.c_str(), lineNumber);
 					}
-				} catch(boost::regex_error r)
-				{
-					printf("%ls -- error on line %i\n", file.c_str(), lineNumber);
+				} catch(boost::regex_error r) {				
+					printf("%ls ERROR on line %i\n", file.c_str(), lineNumber);
+					printf("\t%s\n", r.what());
 				}
 			}
 		}
 	} else {
 		printf("Could not open file: %ls\n", file.c_str());
-		return false;
 	}
-	return true;
 }
 
 void
-Monitor::UnInstallKernelDriver()
+Monitor::prepareStringForExclusion(wstring* s)
 {
-	SERVICE_STATUS ss;
-	ControlService(hService, SERVICE_CONTROL_STOP, &ss);
-    DeleteService(hService);
-    CloseServiceHandle(hService);	
+	wstring from = L"\\";
+	wstring to = L"\\\\";
+	size_t offset = 0;
+	while((offset = s->find(from, offset)) != wstring::npos)
+	{
+		s->replace(offset, 
+			from.size(), 
+			to);
+		offset += to.length();
+	}
+	from = L".";
+	to = L"\\.";
+	offset = 0;
+	while((offset = s->find(from, offset)) != wstring::npos)
+	{
+		s->replace(offset, 
+			from.size(), 
+			to);
+		offset += to.length();
+	}
+}
+
+void
+Monitor::addExclusion(wstring excluded, wstring action, wstring subject, wstring object , bool permaneant)
+{
+	//printf("Adding exclusion\n");
+	try {
+		Permission* p = new Permission();
+		if(excluded == L"yes" || excluded == L"+")
+		{
+			p->allow = true;
+		} else if(excluded == L"no" || excluded == L"-"){
+			p->allow = false;
+		}
+		p->permaneant = permaneant;
+		boost::wregex subjectRegex(subject.c_str(), boost::wregex::icase);
+		boost::wregex objectRegex(object.c_str(), boost::wregex::icase);
+		p->objects.push_back(objectRegex);
+		p->subjects.push_back(subjectRegex);
+		std::transform(action.begin(),action.end(),action.begin(),std::towlower);
+		stdext::hash_map<wstring, std::list<Permission*>*>::iterator it;
+		it = permissionMap.find(action);
+
+		if(it == permissionMap.end())
+		{
+			std::list<Permission*>*l = new list<Permission*>();
+			l->push_back(p);
+			permissionMap.insert(Permission_Pair(action, l));
+		} else {
+			std::list<Permission*>* lp = it->second;
+			lp->push_back(p);
+		}
+	} catch(boost::regex_error r) {
+		throw r;
+	}
 }

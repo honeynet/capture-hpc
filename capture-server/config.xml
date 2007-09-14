@@ -1,0 +1,20 @@
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:noNamespaceSchemaLocation="config.xsd">
+	<global collect-modified-files="false" 
+			client-default-visit-time="10"
+			capture-network-packets="false"
+			send-exclusion-lists="false"
+	/>
+	
+	<exclusion-list monitor="file" file="FileMonitor.exl" />
+	<exclusion-list monitor="process" file="ProcessMonitor.exl" />
+	<exclusion-list monitor="registry" file="RegistryMonitor.exl" />
+	
+	<virtual-machine-server type="vmware-server" address="192.168.1.10" port="902" 
+		username="User" password="Password">
+		<virtual-machine vm-path="C:\Virtual Machines\winxpsp2\winxpsp2.vmx" 
+						 client-path="C:\Program Files\capture\CaptureClient.exe" 
+						 username="Administrator" 
+						 password="password"/>
+	</virtual-machine-server>
+</config>

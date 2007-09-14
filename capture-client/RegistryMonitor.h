@@ -22,15 +22,13 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
-#include "stdafx.h"
-#include <windows.h>
+#include "CaptureGlobal.h"
 #include <winioctl.h>
+#include <boost/signal.hpp>
+#include <boost/bind.hpp>
 #include "Thread.h"
-#include "Userenv.h"
 #include "Monitor.h"
 
-
-#include <PSAPI.h>
 typedef enum _REG_NOTIFY_CLASS {
     RegNtDeleteKey,
     RegNtPreDeleteKey = RegNtDeleteKey,
@@ -92,6 +90,8 @@ typedef enum _REG_NOTIFY_CLASS {
     RegNtCallbackContextCleanup,
     MaxRegNtNotifyClass 
 } REG_NOTIFY_CLASS;
+
+/*
 typedef struct _REGISTRY_EVENT
 {
 	int type;
@@ -99,6 +99,22 @@ typedef struct _REGISTRY_EVENT
 	WCHAR name[1024];
 	UINT processID;
 } REGISTRY_EVENT, *PREGISTRY_EVENT;
+*/
+
+typedef struct  _REGISTRY_EVENT {
+	REG_NOTIFY_CLASS eventType;
+	TIME_FIELDS time;	
+	DWORD processId;
+	ULONG dataType;
+	ULONG dataLengthB;
+	ULONG registryPathLengthB;
+	/* Contains path and optionally data */
+	UCHAR registryData[];
+} REGISTRY_EVENT, * PREGISTRY_EVENT;
+
+#define REGISTRY_EVENTS_BUFFER_SIZE 5*65536
+#define REGISTRY_DEFAULT_WAIT_TIME 65
+#define REGISTRY_BUFFER_FULL_WAIT_TIME 5
 
 struct UNICODE_STRING
 {
@@ -112,76 +128,61 @@ typedef struct __PUBLIC_OBJECT_TYPE_INFORMATION {
     ULONG Reserved [22];    // reserved for internal use
 } PUBLIC_OBJECT_TYPE_INFORMATION, *PPUBLIC_OBJECT_TYPE_INFORMATION;
 
-typedef pair <wstring, wstring> Object_Pair;
-
+#define IOCTL_GET_REGISTRY_EVENTS      CTL_CODE(FILE_DEVICE_UNKNOWN, 0x803, METHOD_NEITHER,FILE_READ_DATA | FILE_WRITE_DATA)
 #define NTSTATUS ULONG
 #define STATUS_INFO_LENGTH_MISMATCH ((NTSTATUS)0xC0000004L)
 
-class RegistryListener
-{
-public:
-	virtual void OnRegistryEvent(wstring eventType, wstring time, wstring processFullPath, wstring registryPath) = 0;
-};
 
-
-#define IOCTL_EXAMPLE_SAMPLE_NEITHER_IO      CTL_CODE(FILE_DEVICE_UNKNOWN, 0x803, METHOD_NEITHER,FILE_READ_DATA | FILE_WRITE_DATA)
-
+typedef pair <wstring, wstring> ObjectPair;
 
 /*
 	Class: RegistryMonitor
    
-	NOT FINISHED YET
+	Manages the CaptureRegistryMonitor kernel driver. It runs in a thread which continuasly
+	requests registry events from the kernel driver. When events are received the events
+	are checked for exclusion and passed onto all objects which are attached to the
+	onRegistryEvent slot. When the buffer if full of events the monitor will wait a less
+	time before requesting more events. This is to reduce the amount of queued registry
+	events in kernel space. As much as 10,000 events in a second can occur, and if they
+	are all queued up they are going to use up a lot of nonpaged kernel memory ... which
+	is bad.
+
+	The registry kernel driver has been somewhat redesigned to stop this from happening. If
+	it doesn't receive a userspace buffer in a certain amount of time the queued events
+	are deleted and the kernel memory is freed.
 */
-class RegistryMonitor : public IRunnable, public Monitor
+class RegistryMonitor : public Runnable, public Monitor
 {
 public:
-	RegistryMonitor();
-	~RegistryMonitor(void);
-	
-	/*
-		Function: Start
+	typedef boost::signal<void (wstring, wstring, wstring, wstring)> signal_registryEvent;
+public:
+	RegistryMonitor(void);
+	virtual ~RegistryMonitor(void);
 
-		Creates a new thread <filemonThread> that monitors the <commPort> for incoming data
-	*/
-	void Start();
-	/*
-		Function: Stop
+	void start();
+	void stop();
+	void run();
 
-		Stops the thread stored in <filemonThread>
-	*/
-	void Stop();
-	/*
-		Function: Run
+	bool isMonitorRunning() { return monitorRunning; }
+	bool isDriverInstalled() { return driverInstalled; }
 
-		Runnable thread which monitors the <commPort> for messages, retrieves them, parses them to events and checks if
-		they are excluded before passing the event onto the listeners. If a message is passed it is considered malicious.
-	*/
-	void Run();
-	/*
-		Function: Pause
+	void onRegistryExclusionReceived(Element* pElement);
 
-		Pauses the file monitor kernel driver so it does not listen for system wide file events
-	*/
-	void Pause();
-	/*
-		Function: UnPause
-
-		Unpauses the file monitor kernel driver and starts listening for system wide file events
-	*/
-	void UnPause();
-
-	/* Event methods */
-	void AddRegistryListener(RegistryListener* rl);
-	void RemoveRegistryListener(RegistryListener* rl);
-	void NotifyListeners(wstring eventType, wstring time, wstring processFullPath, wstring eventPath);
-
+	boost::signals::connection connect_onRegistryEvent(const signal_registryEvent::slot_type& s);
 private:
-	Thread* regmonThread;
-	HANDLE hDriver;
-	bool installed;
-	REGISTRY_EVENT *rEvent;
+	wstring getRegistryEventName(int registryEventType);
+	wstring convertRegistryObjectNameToHiveName(wstring registryObjectName);
+	void initialiseObjectNameMap();
 
-	std::list<RegistryListener*> registryListeners;
-	// Map from \REGISTRY\* to HKCU, HKLM etc
-	std::list<Object_Pair> objectNameMap;
+	boost::signals::connection onRegistryExclusionReceivedConnection;
+
+	HANDLE hEvent;
+	HANDLE hDriver;
+	HANDLE hMonitorStoppedEvent;
+	BYTE* registryEventsBuffer;
+	Thread* registryMonitorThread;
+	signal_registryEvent signal_onRegistryEvent;
+	std::list<ObjectPair> objectNameMap;
+	bool driverInstalled;
+	bool monitorRunning;
 };

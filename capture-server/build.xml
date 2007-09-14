@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<project name="CaptureServer" default="release" basedir=".">
+	<!-- all stuff to get the jni wrapper compiled -->
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+
+	<condition property="os" value="unix">
+        <os family="unix"/>
+    </condition>
+    <condition property="os" value="windows">
+        <os family="windows"/>
+    </condition>
+
+	 <property environment="env"/>
+     <property name="src" value="."/>
+     <property name="build" value="build"/>
+     <property name="release" value="release"/>
+	 
+     <target name="init">
+          <mkdir dir="${build}"/>
+		  <mkdir dir="${release}"/>
+	 </target>
+
+     <target name="compile" depends="init">
+          <!-- Compile the java code -->         
+          <javac srcdir="${src}" destdir="${build}" debug="true" debuglevel="lines,vars,source"/>
+		  
+		  <!-- Compile the jni code -->
+		  <if>
+		   <equals arg1="${os}" arg2="windows" />
+		   <then>
+		   <exec executable="compile_jni_win32.bat"/>
+		   </then>
+		  <else>
+		   <exec command="sh" executable="./compile_jni_linux.sh"/>
+		  </else>
+		 </if>
+		  
+     </target>
+	 
+	 <target name="jar" depends="compile">
+        <mkdir dir="${build}/jar"/>
+        <jar destfile="${build}/jar/CaptureServer.jar" basedir="${build}">
+            <manifest>
+                <attribute name="Main-Class" value="capture.Server"/>
+            </manifest>
+        </jar>
+    </target>
+	
+	<target name="release" depends="clean,compile,jar">
+		<copy file="${build}/jar/CaptureServer.jar" todir="${release}"/>
+		<copy file="./COPYING" todir="${release}"/>
+		<copy file="./Readme.txt" todir="${release}"/>
+		<copy file="./input_urls_example.txt" todir="${release}"/>
+		<copy file="./config.xsd" todir="${release}"/>
+		<copy file="./config.xml" todir="${release}"/>
+		
+		<if>
+		   <equals arg1="${os}" arg2="windows" />
+		   <then>
+			<copy file="${env.VIX_HOME}/libeay32.dll" todir="${release}"/>
+			<copy file="${env.VIX_HOME}/ssleay32.dll" todir="${release}"/>
+			<copy file="${env.VIX_HOME}/vix.dll" todir="${release}"/>
+			<copy file="./VMwareServerExt.dll" todir="${release}"/>
+		   </then>
+		  <else>
+		    <copy file="./libVMwareServerExt.so" todir="${release}"/>
+		  </else>
+		 </if>	
+		
+		<zip destfile="./CaptureServer-Release.zip" basedir="release"/>
+	</target>
+
+	<target name="clean">
+        <delete dir="${build}"/>
+		<delete dir="${release}"/>
+		<delete>
+			<fileset dir="." includes="VMwareServerExt.???"/>
+			<fileset dir="." includes="CaptureServer-Release.zip"/>
+		</delete>
+    </target>
+</project>

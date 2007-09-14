@@ -1,395 +1,391 @@
-/*
- *	PROJECT: Capture
- *	FILE: Analyzer.cpp
- *	AUTHORS: Ramon Steenson (rsteenson@gmail.com) & Christian Seifert (christian.seifert@gmail.com)
- *
- *	Developed by Victoria University of Wellington and the New Zealand Honeynet Alliance
- *
- *	This file is part of Capture.
- *
- *	Capture is free software; you can redistribute it and/or modify
- *	it under the terms of the GNU General Public License as published by
- *	the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  Capture is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Capture; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
-#include "StdAfx.h"
 #include "Analyzer.h"
 
-Analyzer::Analyzer(int argc, CHAR* argv[])
+Analyzer::Analyzer(Visitor* v, Server* s)
 {
-	char* server = NULL;
+	processMonitor = new ProcessMonitor();
+	registryMonitor = new RegistryMonitor();
+	fileMonitor = new FileMonitor();
+	collectModifiedFiles = false;
+	captureNetworkPackets = false;
+	networkPacketDumper = NULL;
+
+
+	onOptionChangedConnection = OptionsManager::getInstance()->connect_onOptionChanged(boost::bind(&Analyzer::onOptionChanged, this, _1));
+
+
+	visitor = v;
+	visitor->onVisitEvent(boost::bind(&Analyzer::onVisitEvent, this, _1, _2, _3, _4));
 	
-	if(argc > 1)
-	{
-		server = argv[1];
-	} 
-	if(argc == 4) {
-		serverId = argv[2];
-		vmId = argv[3];
-	}
-	Common* global = new Common();
-	malicious = false;
-	connected = false;
-
-	serverConnection = new ServerConnection(global);
-
-	visitor = new Visitor(global);
-	visitor->AddVisitorListener(this);
-
-	// Listen for events from the server
-	wstring sEvent = L"connect";
-	if(!global->serverEventDelegator->Register(this, sEvent))
-	{
-		printf("Analyzer not listening for connect events from server\n");
-	}
-	sEvent = L"ping";
-	if(!global->serverEventDelegator->Register(this, sEvent))
-	{
-		printf("Analyzer not listening for ping events from server\n");
-	}
+	server = s;
 	
-	if(ObtainDriverLoadPrivilege() && ObtainDebugPrivilege())
-	{
-#ifndef LOCALTEST
-		procMon = new ProcessMonitor(visitor);
-		procMon->AddProcessListener(this);
-		procMon->Start();
-		
-		regMon = new RegistryMonitor();
-		regMon->AddRegistryListener(this);
-		regMon->Start();
-		fileMon = new FileMonitor();
-		fileMon->AddFileListener(this);
-		fileMon->Start();
-#endif
-		
-	} else {
-		printf("ERROR - Can't acquire SeLoadDriverPrivilege privilege, not loading kernel drivers\n");
-	}
-	
-	if(server != NULL)
-	{
-		connected = serverConnection->Connect(server, 7070);
-		if(connected == false)
-		{
-			printf("Could not connect to server: %ls:7070\n", server);
-		}
-	} else {
-		printf("No server address found - Outputting events to console\n");
 
-		//global->serverEventDelegator->ReceiveEvent(L"visit::opera::http://www.neowin.net::10\n");
-		//global->serverEventDelegator->ReceiveEvent(L"visit::opera::http://www.neowin.net::10\n");
-#ifndef LOCALTEST
-		procMon->UnPause();
-		fileMon->UnPause();
-		regMon->UnPause();
-#endif
-		//AdobeAcrobatReaderC *mo = new AdobeAcrobatReaderC();
-		//MicrosoftOfficeC *mo = new MicrosoftOfficeC();
-		//mo->Open(L"word");
-		//mo->Visit(L"Hello");
-		//mo->Close();
-	}
+
+	processMonitor->start();
+	registryMonitor->start();
+	fileMonitor->start();
 }
 
 Analyzer::~Analyzer(void)
 {
-#ifndef LOCALTEST
-	delete procMon;
-	delete regMon;
-	delete fileMon;
-#endif
-	delete visitor;
-	delete serverConnection;
-}
-
-void 
-Analyzer::OnProcessEvent(BOOLEAN bCreate, wstring time, wstring processParentPath, wstring processPath)
-{
-	// Process the event and create a generic event to be sent to the server
-	printf("P: %i %ls -> %ls\n", bCreate, processParentPath.c_str(), processPath.c_str());
-	malicious = true;
-	wstring send = L"event::";
-	send += time;
-	send += L"::process::";
-	if(bCreate)
+	DebugPrint(L"Analyzer: Deconstructor\n");
+	/* Do not change the order of these */
+	/* The registry monitor must be deleted first ... as when the other monitors
+	   kernel drivers are unloaded they cause a lot of registry events which, but
+	   they are unloaded before these registry events are finished inside the
+	   registry kernel driver. So ... when it comes to unloading the registry
+	   kernel driver it will crash ... I guess. I'm not too sure on this as the
+	   bug check has nothing to do with Capture instead it has something to do
+	   with the PNP manager and deleting the unreferenced device */
+	delete registryMonitor;
+	delete processMonitor;
+	delete fileMonitor;
+	if(captureNetworkPackets)
 	{
-		send += L"Created::";
-	} else {
-		send += L"Terminated::";
-	}
-	send += processParentPath;
-	send += L"::";
-	send += processPath;
-	send += L"\n";
-	serverConnection->Send(send);
-
-}
-
-void
-Analyzer::OnVisitEvent(int eventType, DWORD minorEventCode, wstring url, wstring visitor)
-{
-	
-	if(eventType == VISIT_START)
-	{
-		printf("Visiting: %ls\n", url.c_str());
-		wstring send = L"visiting::";
-		send += url;
-		send += L"\n";
-		serverConnection->Send(send);
-	} 
-	else if(eventType == VISIT_FINISH)
-	{
-		printf("Visited: %ls\n", url.c_str());
-		wstring send = L"visited::finished::";
-		send += url;
-		send += L"::";
-		if(malicious)
-			send += L"1\n";
-		else
-			send += L"0\n";
-		serverConnection->Send(send);
-		malicious = false;
-	} 
-	else if(eventType == VISIT_NETWORK_ERROR)
-	{
-		printf("Visited: NETWORK ERROR: %i %ls\n", minorEventCode,url.c_str());
-		wstring send = L"visited::error::";
-		send += url;
-		send += L"::";
-		send += L"network error";
-		send += L"::";
-		// Error code
-		wchar_t szTemp[256];
-		if(minorEventCode >= 0x800C0000) {
-			_ltow_s(minorEventCode, szTemp, 256, 16);		
-		} else {
-			_ltow_s(minorEventCode, szTemp, 256, 10);
-		}
-		send += szTemp;
-		send += L"\n";
-		serverConnection->Send(send);
-		malicious = false;
-	} 
-	else if(eventType == VISIT_TIMEOUT_ERROR)
-	{
-		printf("Visited: TIMEOUT ERROR %ls\n", url.c_str());
-		wstring send = L"visited::error::";
-		send += url;
-		send += L"::";
-		send += L"timeout error\n";
-		serverConnection->Send(send);
-		malicious = false;
-	} else if(eventType == VISIT_PRESTART) {
-#ifndef LOCALTEST
-		procMon->UnPause();
-		fileMon->UnPause();
-		regMon->UnPause();
-#endif
-	} else if(eventType == VISIT_POSTFINISH) {
-#ifndef LOCALTEST
-		procMon->Pause();
-		fileMon->Pause();
-		regMon->Pause();
-#endif
-	} else if(eventType == VISIT_PROCESS_ERROR) {
-		malicious = true;
-		wstring send;
-		printf("P: 0 Process terminated adbruptly during visitation -> %ls\n", visitor.c_str());
-		SYSTEMTIME systemTime;
-		GetLocalTime(&systemTime);
-
-		wstring time = LocalTimeToWString(systemTime);
-		send = L"event::";
-		send += time;
-		send += L"::process::Terminated Adbruptly::Capture";
-		send += L"::";
-		send += visitor;
-		send += L"\n";
-		serverConnection->Send(send);
+		delete networkPacketDumper;
 	}
 }
 
-void 
-Analyzer::OnRegistryEvent(wstring eventType, wstring time, wstring processFullPath, wstring registryPath)
-{
-	malicious = true;
-	printf("R: %ls %ls -> %ls\n", eventType.c_str(), processFullPath.c_str(), registryPath.c_str());
-	wstring send = L"event::";
-	send += time;
-	send += L"::registry::";
-	send += eventType;
-	send += L"::";
-	send += processFullPath;
-	send += L"::";
-	send += registryPath;
-	send += L"\n";
-
-	serverConnection->Send(send);
-}
-void 
-Analyzer::OnFileEvent(wstring eventType, wstring time, wstring processFullPath, wstring filePath)
-{
-	malicious = true;
-	printf("F: %ls %ls -> %ls\n", eventType.c_str(), processFullPath.c_str(), filePath.c_str());
-	wstring send = L"event::";
-	send += time;
-	send += L"::file::";
-	send += eventType;
-	send += L"::";
-	send += processFullPath;
-	send += L"::";
-	send += filePath;
-	send += L"\n";
-	serverConnection->Send(send);
-}
-
 void
-Analyzer::OnReceiveEvent(vector<wstring> e)
+Analyzer::onOptionChanged(wstring option)
 {
-	if(e[0] == L"connect")
-	{
-		if(serverId != NULL && vmId != NULL)
+	wstring value = OptionsManager::getInstance()->getOption(option); 
+	if(option == L"capture-network-packets") {
+		if(value == L"true")
 		{
-			size_t convertedChars = 0;
-			size_t origsize = strlen(serverId) + 1;
-			const size_t newsize = 100;
-				
-			wchar_t wServerId[newsize];
-			wchar_t wVmId[newsize];
-			mbstowcs_s(&convertedChars, wServerId, origsize, serverId, _TRUNCATE);
-			mbstowcs_s(&convertedChars, wVmId, origsize, vmId, _TRUNCATE);
-			wstring send = L"connect::";
-			send += wServerId;
-			send += L"::";
-			send += wVmId;
-			send += L"\n";
-			printf("Sending connect: %ls\n", send.c_str());
-			serverConnection->Send(send);
-			stdext::hash_map<wstring, Client *>::iterator it;
-			for (it=visitor->GetVisitorClients()->begin(); it!= visitor->GetVisitorClients()->end(); it++)
+			if(captureNetworkPackets == false)
 			{
-				Client* c = it->second;
-				if(c->clientProductName != L"") {
-					send = L"client::";
-					send += c->name;
-					send += L"::";
-					send += c->clientProductName;
-					send += L"::";
-					send += c->path;
-					send += L"::";
-					send += c->clientVersion;
-					send += L"\n";
-					//printf("Sending client: %ls\n", send.c_str());
-					serverConnection->Send(send);
-				}
+				printf("Creating network dumper\n");
+				if(networkPacketDumper == NULL)
+					networkPacketDumper = new NetworkPacketDumper();
+				captureNetworkPackets = true;
+			}
+		} else {
+			if(captureNetworkPackets == true)
+			{
+				captureNetworkPackets = false;
+				//if(networkPacketDumper != NULL)
+				//delete networkPacketDumper;			
 			}
 		}
-	} else if(e[0] == L"ping") {
-		printf("got ping\n");
-		wstring send = L"pong::client\n";
-		serverConnection->Send(send);
+	} else if(option == L"collect-modified-files") {
+		if(value == L"true")
+		{
+			collectModifiedFiles = true;
+		} else {
+			collectModifiedFiles = false;
+		}
+		fileMonitor->setMonitorModifiedFiles(collectModifiedFiles);
+	} else if(option == L"send-exclusion-lists") {
+		if(value == L"true")
+		{
+			processMonitor->clearExclusionList();
+			registryMonitor->clearExclusionList();
+			fileMonitor->clearExclusionList();
+		}
 	}
 }
 
-bool
-Analyzer::ObtainDriverLoadPrivilege()
+void
+Analyzer::start()
 {
-	HANDLE hToken;
-	if(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,&hToken))
+	/* Create the log directory */
+	wchar_t* log_directory = new wchar_t[1024];
+	GetFullPathName(L"logs", 1024, log_directory, NULL);
+	CreateDirectory(log_directory,NULL);
+	delete [] log_directory;
+	malicious = false;
+	DebugPrint(L"Analyzer: Start");
+	if(captureNetworkPackets)
 	{
-		TOKEN_PRIVILEGES tp;
-		LUID luid;
-		LPCTSTR lpszPrivilege = L"SeLoadDriverPrivilege";
-
-		if ( !LookupPrivilegeValue( 
-				NULL,            // lookup privilege on local system
-				lpszPrivilege,   // privilege to lookup 
-				&luid ) )        // receives LUID of privilege
-		{
-			printf("LookupPrivilegeValue error: %u\n", GetLastError() ); 
-			return false; 
-		}
-
-		tp.PrivilegeCount = 1;
-		tp.Privileges[0].Luid = luid;
-		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-
-		// Enable the privilege or disable all privileges.
-		if ( !AdjustTokenPrivileges(
-			hToken, 
-			FALSE, 
-			&tp, 
-			sizeof(TOKEN_PRIVILEGES), 
-			(PTOKEN_PRIVILEGES) NULL, 
-			(PDWORD) NULL) )
-		{ 
-		  printf("AdjustTokenPrivileges error: %u\n", GetLastError() );
-		  return false; 
-		} 
-
-		if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
-		{	
-			printf("The token does not have the specified privilege. \n");
-			return false;
-		} 
+		networkPacketDumper->start();
 	}
-	CloseHandle(hToken);
-	return true;
-
+	onProcessEventConnection = processMonitor->connect_onProcessEvent(boost::bind(&Analyzer::onProcessEvent, this, _1, _2, _3, _4, _5, _6));
+	onRegistryEventConnection = registryMonitor->connect_onRegistryEvent(boost::bind(&Analyzer::onRegistryEvent, this, _1, _2, _3, _4));
+	onFileEventConnection = fileMonitor->connect_onFileEvent(boost::bind(&Analyzer::onFileEvent, this, _1, _2, _3, _4));
+	DebugPrint(L"Analyzer: Registered with callbacks");
+	if(collectModifiedFiles)
+	{
+		fileMonitor->setMonitorModifiedFiles(true);
+	}
 }
 
-bool
-Analyzer::ObtainDebugPrivilege()
+void
+Analyzer::stop()
 {
-	HANDLE hToken;
-	if(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,&hToken))
-	{
-		TOKEN_PRIVILEGES tp;
-		LUID luid;
-		LPCTSTR lpszPrivilege = L"SeDebugPrivilege";
+	DebugPrint(L"Analyzer: Stop");
+	onProcessEventConnection.disconnect();
+	onRegistryEventConnection.disconnect();
+	onFileEventConnection.disconnect();
 
-		if ( !LookupPrivilegeValue( 
-				NULL,            // lookup privilege on local system
-				lpszPrivilege,   // privilege to lookup 
-				&luid ) )        // receives LUID of privilege
+	if(captureNetworkPackets)
+	{
+		networkPacketDumper->stop();
+	}
+
+	if(collectModifiedFiles || captureNetworkPackets)
+	{
+		SYSTEMTIME st;
+		GetLocalTime(&st);
+		if(collectModifiedFiles) 
 		{
-			printf("LookupPrivilegeValue error: %u\n", GetLastError() ); 
-			return false; 
+			fileMonitor->setMonitorModifiedFiles(false);
+			fileMonitor->copyCreatedFiles();
 		}
 
-		tp.PrivilegeCount = 1;
-		tp.Privileges[0].Luid = luid;
-		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+		wchar_t* szLogFileName = new wchar_t[1024];
 
-		// Enable the privilege or disable all privileges.
-		if ( !AdjustTokenPrivileges(
-			hToken, 
-			FALSE, 
-			&tp, 
-			sizeof(TOKEN_PRIVILEGES), 
-			(PTOKEN_PRIVILEGES) NULL, 
-			(PDWORD) NULL) )
-		{ 
-		  printf("AdjustTokenPrivileges error: %u\n", GetLastError() );
-		  return false; 
-		} 
+		wstring log = L"capture_";
+		log += boost::lexical_cast<wstring>(st.wDay);
+		log += boost::lexical_cast<wstring>(st.wMonth);
+		log += boost::lexical_cast<wstring>(st.wYear);
+		log += L"_";
+		log += boost::lexical_cast<wstring>(st.wHour);
+		log += boost::lexical_cast<wstring>(st.wMinute);
+		log += L".zip";
+		GetFullPathName(log.c_str(), 1024, szLogFileName, NULL);
 
-		if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
-		{	
-			printf("The token does not have the specified privilege. \n");
-			return false;
-		} 
+		bool compressed = compressLogDirectory(szLogFileName);
+
+		if(malicious)
+		{
+			if(server->isConnected() && compressed)
+			{				
+				FileUploader* uploader = new FileUploader(server);
+				uploader->sendFile(szLogFileName);
+				delete uploader;
+				DeleteFile(szLogFileName);
+			}
+		}
+
+		delete [] szLogFileName;
 	}
-	CloseHandle(hToken);
-	return true;
+	/* Delete the log directory */
+	wchar_t* szFullPath = new wchar_t[1024];
+	GetFullPathName(L"logs", 1024, szFullPath, NULL);
+	SHFILEOPSTRUCT deleteLogDirectory;
+	deleteLogDirectory.hwnd = NULL;
+	deleteLogDirectory.pTo = NULL;
+	deleteLogDirectory.lpszProgressTitle = NULL;
+	deleteLogDirectory.wFunc = FO_DELETE;
+	deleteLogDirectory.pFrom = szFullPath;
+	deleteLogDirectory.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
+	SHFileOperation(&deleteLogDirectory);
+	delete [] szFullPath;
+}
+
+wstring
+Analyzer::errorCodeToString(DWORD errorCode)
+{
+	wchar_t szTemp[16];
+	swprintf_s(szTemp, 16, L"%08x", errorCode);
+	wstring error = szTemp;
+	return error;
+}
+
+
+bool
+Analyzer::compressLogDirectory(wstring logFileName)
+{
+	BOOL created = FALSE;
+	STARTUPINFO siStartupInfo;
+	wchar_t szTempPath[1024];
+	PROCESS_INFORMATION piProcessInfo;
+
+	DeleteFile(logFileName.c_str());
+
+	memset(&siStartupInfo, 0, sizeof(siStartupInfo));
+	memset(&piProcessInfo, 0, sizeof(piProcessInfo));
+	ZeroMemory(&szTempPath, sizeof(szTempPath));
+
+	siStartupInfo.cb = sizeof(siStartupInfo);
+
+	_tcscat_s(szTempPath, 1024, L"\"");
+	_tcscat_s(szTempPath, 1024, L"7za.exe");
+	_tcscat_s(szTempPath, 1024, L"\" a -tzip -y \"");
+	_tcscat_s(szTempPath, 1024, logFileName.c_str());
+	_tcscat_s(szTempPath, 1024, L"\" logs");
+	LPTSTR szCmdline=_tcsdup(szTempPath);
+	created = CreateProcess(NULL,szCmdline, 0, 0, FALSE,
+		CREATE_DEFAULT_ERROR_MODE, 0, 0, &siStartupInfo,
+		&piProcessInfo);
+
+	DWORD err = WaitForSingleObject( piProcessInfo.hProcess, INFINITE );
+
+	//DebugPrint(L"Analyzer: compressLogDirectory - WaitForSingleObject = 0x%08x, CreateProcess=%i", err, created);
+	if(!created)
+	{
+		printf("Analyzer: Cannot open 7za.exe process - 0x%08x\n", GetLastError());
+		printf("Log directory not compressed ... \n");
+		return false;
+	} else {
+		return true;
+	}
+}
+
+void
+Analyzer::sendVisitEvent(wstring* type, wstring* time, 
+						 wstring* url, wstring* classification, wstring* application,
+						 wstring* majorErrorCode, wstring* minorErrorCode)
+{
+	Attribute att;
+	queue<Attribute> vAttributes;
+	att.name = L"type";
+	att.value = *type;
+	vAttributes.push(att);
+	att.name = L"time";
+	att.value = *time;
+	vAttributes.push(att);
+	att.name = L"url";
+	att.value = CaptureGlobal::urlEncode(*url);
+	vAttributes.push(att);
+	att.name = L"application";
+	att.value = *application;
+	vAttributes.push(att);
+	att.name = L"malicious";
+	att.value = *classification;
+	vAttributes.push(att);
+	att.name = L"major-error-code";
+	att.value = *majorErrorCode;
+	vAttributes.push(att);
+	att.name = L"minor-error-code";
+	att.value = *minorErrorCode;
+	vAttributes.push(att);
+
+	server->sendXML(L"visit-event", &vAttributes);
+}
+
+void
+Analyzer::onVisitEvent(DWORD majorErrorCode, DWORD minorErrorCode, std::wstring url, std::wstring applicationPath)
+{
+	bool send = false;
+	wstring type = L"";
+	wstring classification = L"";
+	wstring majErrorCode = L"";
+	wstring minErrorCode = L"";
+
+	if(majorErrorCode == CAPTURE_VISITATION_START) {
+		type = L"start";
+		send = true;
+	} else if(majorErrorCode == CAPTURE_VISITATION_FINISH) {
+		this->stop();
+	} else if(majorErrorCode == CAPTURE_VISITATION_NETWORK_ERROR || 
+		majorErrorCode == CAPTURE_VISITATION_TIMEOUT_ERROR ||
+		majorErrorCode == CAPTURE_VISITATION_EXCEPTION)
+	{
+		type = L"error";
+		classification = boost::lexical_cast<wstring>(malicious);
+		majErrorCode = boost::lexical_cast<wstring>(majorErrorCode);
+		minErrorCode = boost::lexical_cast<wstring>(minorErrorCode);
+		send = true;
+	} else if(majorErrorCode == CAPTURE_VISITATION_PRESTART) {
+		this->start();
+	} else if(majorErrorCode == CAPTURE_VISITATION_POSTFINISH) {	
+		type = L"finish";
+		classification = boost::lexical_cast<wstring>(malicious);
+		send = true;
+	} else if(majorErrorCode == CAPTURE_VISITATION_PROCESS_ERROR) {
+		malicious = true;
+		type = L"error";
+		classification = boost::lexical_cast<wstring>(malicious);
+		majErrorCode = boost::lexical_cast<wstring>(majorErrorCode);
+		minErrorCode = boost::lexical_cast<wstring>(minorErrorCode);
+		send = true;
+	}
+
+	if(send)
+	{
+		SYSTEMTIME st;
+
+		GetLocalTime(&st);             // gets current time
+		wstring time = L"";
+		time += boost::lexical_cast<wstring>(st.wDay);
+		time += L"/";
+		time += boost::lexical_cast<wstring>(st.wMonth);
+		time += L"/";
+		time += boost::lexical_cast<wstring>(st.wYear);
+		time += L" ";
+		time += boost::lexical_cast<wstring>(st.wHour);
+		time += L":";
+		time += boost::lexical_cast<wstring>(st.wMinute);
+		time += L":";
+		time += boost::lexical_cast<wstring>(st.wSecond);
+		time += L".";
+		time += boost::lexical_cast<wstring>(st.wMilliseconds);
+		printf("%ls: %ls %ls %ls %ls\n", type.c_str(), url.c_str(), applicationPath.c_str(), majErrorCode.c_str(), minErrorCode.c_str());
+		sendVisitEvent(&type, &time, &url, &classification, &applicationPath, &majErrorCode, &minErrorCode);
+	}
+}
+
+void
+Analyzer::sendSystemEvent(wstring* type, wstring* time, 
+					wstring* process, wstring* action, 
+					wstring* object)
+{
+	Attribute att;
+	queue<Attribute> vAttributes;
+	att.name = L"time";
+	att.value = *time;
+	vAttributes.push(att);
+	att.name = L"type";
+	att.value = *type;
+	vAttributes.push(att);
+	att.name = L"process";
+	att.value = *process;
+	vAttributes.push(att);
+	att.name = L"action";
+	att.value = *action;
+	vAttributes.push(att);
+	att.name = L"object";
+	att.value = *object;
+	vAttributes.push(att);
+	if(OptionsManager::getInstance()->getOption(L"log-system-events-file") == L"")
+	{
+		// Output the event to stdout
+		printf("%ls: %ls %ls -> %ls\n", type->c_str(), action->c_str(), process->c_str(), object->c_str());
+	} else {
+		// Send the event to the logger
+		Logger::getInstance()->writeSystemEventToLog(type, time, process, action, object);
+	}
+	server->sendXML(L"system-event", &vAttributes);
+}
+
+void
+Analyzer::onProcessEvent(BOOLEAN created, wstring time, 
+						 DWORD parentProcessId, wstring parentProcess, 
+						 DWORD processId, wstring process)
+{
+	malicious = true;
+	wstring processEvent = L"process";
+	wstring processType = L"";
+	if(created == TRUE)
+	{
+		processType = L"created";
+	} else {
+		processType = L"terminated";
+	}
+	sendSystemEvent(&processEvent, &time, 
+					&parentProcess, &processType, 
+					&process);
+}
+
+void 
+Analyzer::onRegistryEvent(wstring registryEventType, wstring time, 
+						  wstring processPath, wstring registryEventPath)
+{
+	malicious = true;
+	wstring registryEvent = L"registry";
+	sendSystemEvent(&registryEvent, &time, 
+					&processPath, &registryEventType, 
+					&registryEventPath);
+}
+
+void
+Analyzer::onFileEvent(wstring fileEventType, wstring time, 
+						 wstring processPath, wstring fileEventPath)
+{
+	malicious = true;
+	wstring fileEvent = L"file";
+	sendSystemEvent(&fileEvent, &time, 
+					&processPath, &fileEventType, 
+					&fileEventPath);
 }

@@ -1,0 +1,5 @@
+#[+,-]	[Process Created (no dots)]	[Parent Process]	[Process Path]
+###################################################
+### Mozilla Firefox 1.5				###
+###################################################
++	firefox.exe	.*	C:\\Program Files\\Mozilla Firefox\\firefox.exe

@@ -1,0 +1,15 @@
+#[+,-]	[Registry Event]	[Process Name]	[Registry Path]
+###################################################
+### Mozilla Firefox 1.5				###
+###################################################
++	OpenKey	.*	.*
++	CreateKey	.*	.*
++	CloseKey	.*	.*
++	EnumerateKey	.*	.*
++	EnumerateValueKey	.*	.*
++	QueryValueKey	.*	.*
++	QueryKey	.*	.*
++	SetValueKey	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2\\.+
++	SetValueKey	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
++	DeleteValueKey	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2\\.+
++	DeleteValueKey	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+

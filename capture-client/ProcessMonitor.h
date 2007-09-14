@@ -22,35 +22,24 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
-#include <windows.h>
-#include <winioctl.h>
-#include "Thread.h"
-#include "Visitor.h"
-#include "VisitorListener.h"
+#include "CaptureGlobal.h"
+#include <boost/signal.hpp>
+#include <boost/bind.hpp>
 #include "Monitor.h"
-#include "RegistryMonitor.h"
-#include <PSAPI.h>
+#include "Thread.h"
 
-/*
-   Constants: Kernel Driver IOCTL Codes
 
-   IOCTL_CAPTURE_GET_PROCINFO - Passes a userspace buffer to the process monitor kernel driver and returns with that buffer containing process events
-*/
 #define IOCTL_CAPTURE_GET_PROCINFO	CTL_CODE(0x00000022, 0x0802, METHOD_NEITHER, FILE_READ_DATA | FILE_WRITE_DATA)
 #define IOCTL_CAPTURE_PROC_LIST    CTL_CODE(0x00000022, 0x0807, METHOD_NEITHER, FILE_READ_DATA | FILE_WRITE_DATA)
-/*
-	Struct: ProcessInfo
 
-	Process structure from kernel driver
-*/
 typedef struct _ProcessInfo
 {
 	TIME_FIELDS time;
-	DWORD ParentId;
-	WCHAR parentProcPath[1024];
-	DWORD ProcessId;
-	WCHAR procPath[1024];
-	BOOLEAN bCreate;
+    DWORD  ParentId;
+    DWORD  ProcessId;
+    BOOLEAN bCreate;
+	UINT processPathLength;
+	WCHAR processPath[1024];
 } ProcessInfo;
 
 typedef struct _PROCESS_TUPLE
@@ -60,111 +49,45 @@ typedef struct _PROCESS_TUPLE
 } PROCESS_TUPLE, * PPROCESS_TUPLE;
 
 /*
-	Class: ProcessListener
-
-	Interface for object to implement so that they can be notified of process events
-*/
-class ProcessListener
-{
-public:
-	virtual void OnProcessEvent(BOOLEAN bCreate, wstring time, wstring processParentPath, wstring processPath) = 0;
-};
-
-/*
 	Class: ProcessMonitor
+
+	Manages the CaptureProcessMonitor kernel driver. It waits for a kernel event to
+	be singalled which tells it that a process event has occured. This is retrieved
+	from kernel space and parsed into a process event which is passed onto the
+	<ProcessManager> and then checked for exclusion and passed onto all objects which
+	are attached to the onProcessEvent slot
 
 	Implements: <IRunnable>, <VisitorListener>, <Monitor>
 */
-class ProcessMonitor : public IRunnable, VisitorListener, Monitor
+class ProcessMonitor : public Runnable, public Monitor
 {
 public:
-	ProcessMonitor(Visitor *v);
+	typedef boost::signal<void (BOOLEAN, wstring, DWORD, wstring, DWORD, wstring)> signal_processEvent;
+public:
 	ProcessMonitor(void);
-	~ProcessMonitor(void);
+	virtual ~ProcessMonitor(void);
 
-	/*
-		Function: Start
+	void start();
+	void stop();
+	void run();
 
-		Creates a new thread <procmonThread>
-	*/
-	void Start();
-	/*
-		Function: Stop
+	bool isMonitorRunning() { return monitorRunning; }
+	bool isDriverInstalled() { return driverInstalled; }
 
-		Stops the thread stored in <procmonThread>
-	*/
-	void Stop();
-	/*
-		Function: Run
+	void onProcessExclusionReceived(Element* pElement);
 
-		Runnable thread which waits for <hEvent> to be signalled. This means that a process event has been stored in the
-		kernel driver and is ready to be retrieved. It retrieves it, parses it, checks if it is exluded and notifies any
-		listeners of the process event.
-	*/
-	void Run();
-	/*
-		Function: Pause
-
-		Pauses the process monitor kernel driver so it does not listen for system wide process events
-	*/
-	void Pause();
-	/*
-		Function: UnPause
-
-		Unpauses the process monitor kernel driver and starts listening for system wide process events
-	*/
-	void UnPause();
-
-	/* Event methods */
-	void AddProcessListener(ProcessListener* pl);
-	void RemoveProcessListener(ProcessListener* pl);
-	void NotifyListeners(BOOLEAN bCreate, wstring time, wstring processParentPath, wstring processPath);
-
-	/* VisitorListener Interface */
-	void OnVisitEvent(int eventType, DWORD minorEventCode, wstring url, wstring visitor);	
+	boost::signals::connection connect_onProcessEvent(const signal_processEvent::slot_type& s);
 private:
-	/*
-		Function: CheckIfExcluded
 
-		[Private] Checks if the current process is excluded
-	*/
-	bool CheckIfExcluded(wstring processPath)
-	{
-		if(processPath == currentVisitingClient)
-			return true;
-		return false;
-	}
-
-	/*
-		Function: GetProcessCompletePathName
-
-		[Private] Gets the complete path name of a process from its id
-	*/
-	bool GetProcessCompletePathName(DWORD pid, wstring* path, bool created);
-
-	/*
-		Variable: procmonThread
-	*/
-	Thread* procmonThread;
-	/*
-		Variable: hDriver
-	*/
-	HANDLE hDriver;
-	/*
-		Variable: hEvent
-	*/
-	HANDLE hEvent;
-	/*
-		Variable: processListeners
-	*/
-	std::list<ProcessListener*> processListeners;
-	/*
-		Variable: currentVisitingClient
-	*/
-	wstring currentVisitingClient;
-	/*
-		Variable: installed
-	*/
-	bool installed;
+	void initialiseKernelDriverProcessMap();
 	
+	HANDLE hEvent;
+	HANDLE hDriver;
+	HANDLE hMonitorStoppedEvent;
+	Thread* processMonitorThread;
+	signal_processEvent signalProcessEvent;
+	bool driverInstalled;
+	bool monitorRunning;
+	boost::signals::connection processManagerConnection;
+	boost::signals::connection onProcessExclusionReceivedConnection;
 };

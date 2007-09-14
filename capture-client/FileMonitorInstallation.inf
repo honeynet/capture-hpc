@@ -10,7 +10,7 @@ Signature   = "$Windows NT$"
 Class       = "ActivityMonitor"                         ;This is determined by the work this filter driver does
 ClassGuid   = {b86dff51-a31e-4bac-b3cf-e8cfe75c9fc2}    ;This value is determined by the Class
 Provider    = %Msft%
-DriverVer   = 10/09/2001,1.0.0.0
+DriverVer   = 10/09/2007,1.0.0.0
 
 
 [DestinationDirs]
@@ -34,6 +34,7 @@ AddService          = %ServiceName%,,Capture.Service
 
 [DefaultUninstall]
 DelFiles   = Capture.DriverFiles
+DelReg = Capture.DelRegistry
 
 [DefaultUninstall.Services]
 DelService = %ServiceName%,0x200      ;Ensure service is stopped before deleting
@@ -61,10 +62,9 @@ AddReg           = Capture.AddRegistry
 HKR,"Instances","DefaultInstance",0x00000000,%DefaultInstance%
 HKR,"Instances\"%Instance1.Name%,"Altitude",0x00000000,%Instance1.Altitude%
 HKR,"Instances\"%Instance1.Name%,"Flags",0x00010001,%Instance1.Flags%
-HKR,"Instances\"%Instance2.Name%,"Altitude",0x00000000,%Instance2.Altitude%
-HKR,"Instances\"%Instance2.Name%,"Flags",0x00010001,%Instance2.Flags%
-HKR,"Instances\"%Instance3.Name%,"Altitude",0x00000000,%Instance3.Altitude%
-HKR,"Instances\"%Instance3.Name%,"Flags",0x00010001,%Instance3.Flags%
+
+[Capture.DelRegistry]
+HKLM,"System\CurrentControlSet\Services\CaptureFileMonitor"
 
 ;
 ; Copy Files
@@ -86,13 +86,6 @@ UserAppName             = "Capture"
 
 ;Instances specific information.
 DefaultInstance         = "Capture - Top Instance"
-Instance1.Name          = "Capture - Middle Instance"
-Instance1.Altitude      = "370000"
+Instance1.Name          = "Capture - Top Instance"
+Instance1.Altitude      = "385000"
 Instance1.Flags         = 0x0          ; Suppress automatic attachments
-Instance2.Name          = "Catpture - Bottom Instance"
-Instance2.Altitude      = "361000"
-Instance2.Flags         = 0x0          ; Suppress automatic attachments
-Instance3.Name          = "Capture - Top Instance"
-Instance3.Altitude      = "385000"
-Instance3.Flags         = 0x0          ; Suppress automatic attachments
-

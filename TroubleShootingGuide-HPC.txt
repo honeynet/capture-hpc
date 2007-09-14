@@ -1,0 +1,35 @@
+Capture-HPC
+Troubleshooting Guide
+1.	Starting the Capture Server, I get an error message.
+Below, we have specific troubleshooting guidelines for specific error messages. However, the error you might be getting might not be listed there. Here a few general guidelines that help you troubleshoot:
+* read the error message. It usually gives you a starting point on what might be wrong.
+* make sure your config file, account settings, firewall settings are correct. Most problems point to incorrect settings, permissions, and/or connectivity.
+* ensure that you are using supported software. Capture has been tested with very specific software and software versions (e.g. VMware Server 1.0.3). If you use some other software and versions, it might not work. Try a supported configuration first. See the readme.txt file for supported configurations.
+* read this troubleshooting guide. There might be a solution to your problem described in the guide.
+* check the Capture-HPC mailing list. If there is problem with the Capture software, most likely someone else has encountered it as well and has asked for assistance on the mailing list. If you don’t find anything, post to the mailing list for help.
+* if you tried everything, check for a known bug at https://bugs.honeynet.org. If none are listed that describes your problem, file a new bug. Ensure that you describe the configuration of your system, attach log files and describe it so it can be reproduced.  If we cannot reproduce it, we cannot fix it :(
+
+2.	Piping URLs into the Capture Server doesn’t seem to work.
+Piping URLs via command line redirection is no longer supported. However, by specifying the list of URLs via the ‘-f’ parameter will provide identical 
+
+3.	Starting the Capture Server, I get the error: VIX_E_VMSERVER_NOT_FOUND
+Check the IP address and port of your virtual-machine-server setting in config.xml. If it is correct, ensure that you are able to connect to it from the machine you are running the Capture-Server on via the VMware console. If this does not work, your firewall is likely not configured correctly.
+
+4.	Starting the Capture Server, I get the error: VIX_E_HOST_USER_PERMISSIONS
+Check the username/password of your virtual-machine-server setting in config.xml. If it is correct, ensure that you are able to connect to it from the machine you are running the Capture-Server on via the VMware console. If this does not work, your username/password is incorrect.
+
+5.	Starting the Capture Server, I get the error:  VIX_E_GUEST_USER_PERMISSIONS
+Check the username/password of your virtual machine and that user has administrator rights and is able to start the CaptureClient.exe.
+
+6.	Starting the Capture Server, I get the error: ERROR - Unable to start … and VIX_E_FILE_NOT_FOUND
+This error indicates that the application specified in the client-path (the Capture Client application) wasn’t found. Check the path and retry.
+
+7.	Starting the Capture Server, I get the error: VIX_E_FILE_NOT_FOUND
+Check the path to your virtual machine vmx file and that the permissions are set correctly. You could open the virtual machine via the console to verify.
+
+8.	Starting the Capture Server, I get the error: java.net.URISyntaxException
+This error indicates that the URL you are trying to visit is not of valid URI syntax. Check the URL that causes the issue and ensure that the URI is URL encoded.
+
+9.	All/ many URLs are classified as malicious although they are not. 
+The way Capture determines whether a URL is malicious is done via the detecting unauthorized state changes on the system. Because many state changes occur naturally on a system (log files are written, etc), Capture uses exclusion lists to ignore those sorts of state changes. Once a state change occurs that is not excluded, the URL is classified as malicious.
+The reason why a benign URL is classified as malicious lies in the exclusion list and the system you are using. The exclusion list that is provided with the Capture distribution is based on a clean English Windows XP SP2 installation. If you use a slightly different patch level, different language, have additional software (e.g. flash) installed, Capture might not exclude state changes that now occur naturally on the system you are using. The solution is to modify the exclusion lists.

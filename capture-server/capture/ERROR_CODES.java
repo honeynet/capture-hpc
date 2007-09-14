@@ -1,0 +1,25 @@
+package capture;
+
+public enum ERROR_CODES {
+	/* Visitation major events */
+	OK							(0x10000100),
+	PRESTART					(0x10000101),
+	START						(0x10000102),
+	FINISH						(0x10000103),
+	POSTFINISH					(0x10000104),
+	NETWORK_ERROR				(0x10000110),
+	PROCESS_ERROR				(0x10000111),
+	TIMEOUT_ERROR				(0x10000112),
+
+	/* Visitation minor events */
+	PE_PROCESS_TERMINATED_FORCEFULLY		(0x10005000),
+	PE_PROCESS_ALREADY_TERMINATED			(0x10005001),
+	PE_PROCESS_PATH_NOT_FOUND				(0x10005002),
+	PE_SENT_URL_TO_DISCONNECTED_CLIENT		(0x10005003),
+
+	NE_CANT_DOWNLOAD_TEMP_FILE				(0x10005000);
+		
+	public long errorCode;
+
+	ERROR_CODES(long p) { errorCode = p; }
+}

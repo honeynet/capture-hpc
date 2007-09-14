@@ -13,10 +13,12 @@
 +	SetValueKey	.*	HKCU\\Software\\Microsoft\\Windows\\ShellNoRoam.*
 +	SetValueKey	.*	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\.+
 +	SetValueKey	.*	HKLM\\SOFTWARE\\Microsoft\\Cryptography\\RNG\\Seed.*
++	SetValueKey	C:\\Program Files\\Capture\\CaptureClient.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\nm\\Parameters\\.+
 +	SetValueKey	C:\\WINDOWS\\explorer.exe	HKCU\\SessionInformation\\.+
 +	SetValueKey	C:\\WINDOWS\\explorer.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
 +	SetValueKey	C:\\WINDOWS\\explorer.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
 +	SetValueKey	C:\\WINDOWS\\explorer.exe	HKU\\.+\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
++	SetValueKey	C:\\WINDOWS\\explorer.exe	HKU\\.+\\Software\\Microsoft\\Windows\\ShellNoRoam\\BagMRU\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\winlogon.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Group Policy\\State\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	\\REGISTRY\\USER\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKU\\.+
@@ -38,12 +40,14 @@
 +	DeleteValueKey	.*	HKCU\\Software\\Microsoft\\Windows\\ShellNoRoam.*
 +	DeleteValueKey	.*	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\.+
 +	DeleteValueKey	.*	HKLM\\SOFTWARE\\Microsoft\\Cryptography\\RNG\\Seed.*
++	DeleteValueKey	C:\\Program Files\\Capture\\CaptureClient.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\nm\\Parameters\\.+
 +	DeleteValueKey	C:\\WINDOWS\\explorer.exe	HKCU\\SessionInformation\\.+
 +	DeleteValueKey	C:\\WINDOWS\\explorer.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
 +	DeleteValueKey	C:\\WINDOWS\\explorer.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
 +	DeleteValueKey	C:\\WINDOWS\\explorer.exe	HKU\\.+\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
++	DeleteValueKey	C:\\WINDOWS\\explorer.exe	HKU\\.+\\Software\\Microsoft\\Windows\\ShellNoRoam\\BagMRU\\.+
 +	DeleteValueKey	C:\\WINDOWS\\system32\\winlogon.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Group Policy\\State\\.+
-+	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	\\REGISTRY\\USER\\.+	
++	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	\\REGISTRY\\USER\\.+
 +	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKU\\.+
 +	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKCU\\Software\\Microsoft\\SystemCertificates\\Root\\.+
 +	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\SystemCertificates\\AuthRoot\\.+
@@ -63,42 +67,9 @@
 #defrag
 +	SetValueKey	C:\\WINDOWS\\system32\\dfrgntfs.exe	HKLM\\SOFTWARE\\Microsoft\\Dfrg.*
 +	DeleteValueKey	C:\\WINDOWS\\system32\\dfrgntfs.exe	HKLM\\SOFTWARE\\Microsoft\\Dfrg.*
-###################################################
-### Opera 8.0					###
-###################################################
-+	OpenKey	.*	.*
-+	CreateKey	.*	.*
-+	CloseKey	.*	.*
-+	EnumerateKey	.*	.*
-+	EnumerateValueKey	.*	.*
-+	QueryValueKey	.*	.*
-+	QueryKey	.*	.*
-+	SetValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2\\.+
-+	SetValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
-+	SetValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
-+	SetValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKLM\\SOFTWARE\\Classes\\ProcETServ\.Malloc\\MapQueue
-+	SetValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Opera Software\\.+
-+	DeleteValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2\\.+
-+	DeleteValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
-+	DeleteValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
-+	DeleteValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKLM\\SOFTWARE\\Classes\\ProcETServ\.Malloc\\MapQueue
-+	DeleteValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Opera Software\\.+
-###################################################
-### Mozilla Firefox 1.5				###
-###################################################
-+	OpenKey	.*	.*
-+	CreateKey	.*	.*
-+	CloseKey	.*	.*
-+	EnumerateKey	.*	.*
-+	EnumerateValueKey	.*	.*
-+	QueryValueKey	.*	.*
-+	QueryKey	.*	.*
-+	SetValueKey	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2\\.+
-+	SetValueKey	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
-+	DeleteValueKey	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2\\.+
-+	DeleteValueKey	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
-+	SetValueKey	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	HKLM\\SOFTWARE\\Classes\\.+\\shell\\open\\ddeexec.*
-+	DeleteValueKey	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	HKLM\\SOFTWARE\\Classes\\.+\\shell\\open\\ddeexec.*
+#windows update
++	SetValueKey	C:\\WINDOWS\\system32\\wuauclt.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\Eventlog\\Application\\ESENT\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\wuauclt.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\Eventlog\\Application\\ESENT\\.+
 ###################################################
 ### Internet Explorer 6.0 SP2			###
 ###################################################

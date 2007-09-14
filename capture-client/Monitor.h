@@ -22,15 +22,22 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
+#include "CaptureGlobal.h"
 #include <list>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <PSAPI.h>
+#include <hash_map>
+#include <winioctl.h>
+#include <tchar.h>
 #include "Permission.h"
 
 using namespace std;
+using namespace boost;
+
+
+
 /*
    Class: Monitor
 
@@ -47,83 +54,65 @@ using namespace std;
 #define IOCTL_CAPTURE_STOP    CTL_CODE(0x00000022, 0x0806, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
 
 typedef pair <wstring, std::list<Permission*>*> Permission_Pair;
-typedef pair <DWORD, wstring> Process_Pair;
-
-/*
-	Struct: FILE_EVENT
-
-	Contains the structure of the time passed from the kernel driver. Note this is
-	undocumented API usage here.
-*/
-typedef struct _TIME_FIELDS {
-	USHORT Year; 
-	USHORT Month; 
-	USHORT Day; 
-	USHORT Hour; 
-	USHORT Minute; 
-	USHORT Second; 
-	USHORT Milliseconds; 
-	USHORT Weekday;
-} TIME_FIELDS, *PTIME_FIELDS;
 
 class Monitor
-{	
+{
 public:
-	virtual void Pause() = 0;
-	virtual void UnPause() = 0;	
-public:
+	Monitor();
+	virtual ~Monitor();
+
+	virtual void start() = 0;
+	virtual void stop() = 0;
+		/*
+		Function: clearExclusionList
+
+		Clears all exclusions added through the exclusion lists. Excluded all the
+		permaneant exclusions which are created during object creation.
+	*/
+	void clearExclusionList();
+
+protected:
 	/*
-		Function: TimeFieldToWString
+		Function: convertTimeFieldToWString
 
 		Converts a <TIME_FIELDS> structure to a readible wstring
 	*/
-	wstring TimeFieldToWString(TIME_FIELDS time);
+	wstring convertTimeFieldToWString(SYSTEMTIME time);
 	/*
 		Function: EventIsAllowed
 		Checks whether an event is allowed
 	*/
-	bool EventIsAllowed(std::wstring eventType, std::wstring subject, std::wstring object);
-	
-	/*
-		Function: GetProcessCompletePathName
-		Gets the complete path of the specified process id
-	*/
-	bool GetProcessCompletePathName(DWORD pid, std::wstring *path, bool created);
-	
-	/*
-		Function: LogicalToDOSPath
-		Converts a logical path to a dos path
-	*/
-	std::wstring LogicalToDOSPath(wchar_t *logicalPath);
-	
-	/*
-		Function: LoadExclusionList
-		Loads an exclusion list from a a file and creates a permission list
-	*/
-	bool LoadExclusionList(wstring file);
-	
-	/*
-		Function: GetDriveLetter
-		Parses a string and finds the actual driver it came from like c or d
-	*/
-	wchar_t GetDriveLetter(LPCTSTR lpDevicePath);
-	
+	bool isEventAllowed(std::wstring eventType, std::wstring subject, std::wstring object);
 	/*
 		Function: InstallKernelDriver
 		Installs a kernel driver
 	*/
-	bool InstallKernelDriver(wstring driverFullPathName, wstring driverName, wstring driverDescription);
-	
+	bool installKernelDriver(wstring driverPath, wstring driverName, wstring driverDescription);
 	/*
 		Function: UnInstallKernelDriver
 		Uninstalls a kernel driver
 	*/
-	void UnInstallKernelDriver();
+	void unInstallKernelDriver();
+	/*
+		Function: LoadExclusionList
+		Loads an exclusion list from a a file and creates a permission list
+	*/
+	void loadExclusionList(wstring file);
+	/*
+		Function: prepareStringForExclusion
+
+		Helper function which parses a string for "." and adds a "\" in front of it
+	*/
+	void prepareStringForExclusion(wstring* s);
 
 	/*
-         Variable:  hService
-         A handle to an installed kernel driver
-    */
+		Function: addExclusion
+
+		Creates a permission and adds an the exclusion to the internal list
+	*/
+	void addExclusion(wstring excluded, wstring action, wstring subject, wstring object, bool permaneant = false);
+
+
 	SC_HANDLE hService;
 
 	/*
@@ -131,10 +120,4 @@ public:
          A map containing a list of permissions based on a particular event type
     */
 	stdext::hash_map<wstring, std::list<Permission*>*> permissionMap;
-
-	/*
-         Variable:  processNameMap
-         Contains a mapping between process id's and the complete path names of that process
-    */
-	stdext::hash_map<DWORD, wstring> processNameMap;
 };

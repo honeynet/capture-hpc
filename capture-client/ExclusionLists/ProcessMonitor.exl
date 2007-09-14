@@ -1,23 +1,16 @@
-#[+,-]	[Process Created (no dots)]	[Parent Process]	[Process Path]
+#[+,-]	[Process Created]	[Parent Process]	[Process Path]
 ###################################################
 ### Clean Windows XP SP 2 System		###
 ###################################################
+#Windows update (it runs even if disabled)
++	wuauclt.exe	.*	C:\\WINDOWS\\system32\\wuauclt\.exe
+#
++	savedump.exe	.*	C:\\WINDOWS\\system32\\savedump\.exe
 #Standard screensaver
 +	logon.scr	.*	C:\\WINDOWS\\system32\\logon\.scr
-#performance optimizer
-+	wmiadap.exe	.*	C:\\WINDOWS\\system32\\wbem\\wmiadap\.exe
-+	wmiprvse.exe	.*	C:\\WINDOWS\\system32\\wbem\\wmiprvse\.exe
 #defragmenter
 +	dfrgntfs.exe	.*	C:\\WINDOWS\\system32\\dfrgntfs\.exe
 +	defrag.exe	.*	C:\\WINDOWS\\system32\\defrag\.exe
-###################################################
-### Opera 8.00					###
-###################################################
-+	opera.exe	.*	C:\\Program Files\\Opera\\Opera.exe
-###################################################
-### Mozilla Firefox 1.5				###
-###################################################
-+	firefox.exe	.*	C:\\Program Files\\Mozilla Firefox\\firefox.exe
 ###################################################
 ### Microsoft Internet Explorer 6.0		###
 ###################################################

@@ -1,0 +1,31 @@
+#[+,-]	[File Access]	[Process Name]	[File Path]
+###################################################
+### Opera 8.0					###
+###################################################
+# cache, etc.
++	Write	C:\\Program Files\\Opera\\Opera\.exe	C:\\Documents and Settings\\Administrator\\Application Data\\Opera\\.+
++	Write	C:\\Program Files\\Opera\\Opera\.exe	C:\\Program Files\\Opera\\.*.dat
+# no idea why, but it does....
++	Write	C:\\Program Files\\Opera\\Opera\.exe	C:\\WINDOWS\\win.ini
+###################################################
+### Minus List - General Malicious Activity	###
+###################################################
+# Alert about executables or scripts that are written to disk
+-	Write	.*	.+\.bat
+-	Write	.*	.+\.cmd
+-	Write	.*	.+\.exe	
+-	Write	.*	.+\.inf
+-	Write	.*	.+\.lnk
+-	Write	.*	.+\.msi
+-	Write	.*	.+\.msp
+-	Write	.*	.+\.pif
+-	Write	.*	.+\.reg
+-	Write	.*	.+\.sct
+-	Write	.*	.+\.shs
+-	Write	.*	.+\.scr
+-	Write	.*	.+\.wsc
+-	Write	.*	.+\.wsf
+-	Write	.*	.+\.wsh
+#commented out for opera because \.com cache files and \.vb script files are very common
+#-	Write	.*	.+\.vb
+#-	Write	.*	.+\.com

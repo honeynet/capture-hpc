@@ -1,0 +1,63 @@
+#[+,-]	[File Access]	[Process Name]	[File Path]
+###################################################
+### Clean Windows XP SP 2 System		###
+###################################################
++	Read	.*	.*
++	Create	.*	.*
++	Open	.*	.*
++	Write	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\logs\\.+
++	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\.+\.zip
+#Prefetch
++	Write	C:\\WINDOWS\\system32\\svchost\.exe	C:\\WINDOWS\\Prefetch\\.+
++	Write	System	C:\\WINDOWS\\Prefetch\\.+
+#NTFS Metadata
++	Write	.*	c:\\\$mft
++	Write	.*	c:\\\$mftmirr
++	Write	.*	c:\\\$logfile
++	Write	.*	c:\\\$volume
++	Write	.*	c:\\\$directory
++	Write	.*	c:\\\$AttrDef
++	Write	.*	c:\\\$boot
++	Write	.*	c:\\\$bitmap
++	Write	.*	c:\\\$badclus
++	Write	.*	c:\\\$quota
++	Write	.*	c:\\\$upcase
++	Write	.*	c:\\\$ReplaceAttribute2
++	Write	.*	c:\\\$converttononresident
+#Performance
++	Write	C:\\WINDOWS\\system32\\wbem\\wmiadap\.exe	C:\\WINDOWS\\system32\\wbem\\Performance\\.+
++	Write	C:\\WINDOWS\\system32\\wbem\\wmiadap\.exe	C:\\WINDOWS\\system32\\Perf.*
++	Write	C:\\WINDOWS\\system32\\svchost\.exe	C:\\WINDOWS\\Prefetch\\.+
++	Write	System	C:\\WINDOWS\\Prefetch\\.+
+#System Log Files
++	Write	System	C:\\Documents and Settings\\.+\\.+\.LOG
++	Write	System	C:\\WINDOWS\\system32\\config\\.+\.LOG
++	Write	System	C:\\WINDOWS\\Debug\\UserMode\\userenv\.log
++	Write	System	C:\\WINDOWS\\SoftwareDistribution\\ReportingEvents\.log
++	Write	C:\\WINDOWS\\system32\\winlogon\.exe	C:\\WINDOWS\\Debug\\UserMode\\userenv\.log
++	Write	C:\\WINDOWS\\system32\\svchost\.exe	C:\\WINDOWS\\.+\.log
++	Write	C:\\WINDOWS\\system32\\lsass\.exe	C:\\WINDOWS\\system32\\config\\.+\.LOG
++	Write	C:\\WINDOWS\\system32\\lsass\.exe	C:\\WINDOWS\\system32\\config\\SAM
++	Write	C:\\WINDOWS\\system32\\wbem\\wmiprvse\.exe	C:\\WINDOWS\\system32\\wbem\\Logs\\wmiprov\.log
+#Windows update
++	Write	C:\\WINDOWS\\system32\\wuauclt\.exe	C:\\WINDOWS\\SoftwareDistribution\\DataStore\\Logs\\.+
++	Write	C:\\WINDOWS\\system32\\wuauclt\.exe	C:\\WINDOWS\\WindowsUpdate\.log
++	Write	C:\\WINDOWS\\system32\\wuauclt\.exe	C:\\WINDOWS\\SoftwareDistribution\\DataStore\\DataStore\.edb
+#System Events
++	Write	C:\\WINDOWS\\system32\\services\.exe	C:\\WINDOWS\\system32\\config\\AppEvent\.Evt
++	Write	C:\\WINDOWS\\system32\\services\.exe	C:\\WINDOWS\\system32\\config\\SysEvent\.Evt
++	Write	C:\\WINDOWS\\system32\\services\.exe	C:\\WINDOWS\\system32\\config\\SecEvent\.Evt
+#Mapping
++	Write	C:\\WINDOWS\\system32\\svchost\.exe	C:\\WINDOWS\\system32\\wbem\\.+
+#Cataloging
++	Write	C:\\WINDOWS\\system32\\svchost\.exe	C:\\WINDOWS\\system32\\CatRoot2\\.+
++	Write	C:\\WINDOWS\\system32\\svchost\.exe	C:\\WINDOWS\\system32\\CatRoot\\.+
+#System restore
++	Write	C:\\WINDOWS\\system32\\svchost\.exe	C:\\WINDOWS\\SoftwareDistribution\\WuRedir\\.+
++	Write	C:\\WINDOWS\\system32\\svchost\.exe	C:\\System Volume Information\\_restore.*
+#user data
++	Write	System	C:\\Documents and Settings\\.+\\Local Settings\\Application Data\\Microsoft\\Windows\\UsrClass\.dat
+# Alert about modifications to startup locations
+-	Write	.*	C:\\Documents and Settings\\.+\\Start Menu\\Programs\\Startup.+
+-	Write	.*	C:\\WINDOWS\\win.ini
+-	Write	.*	C:\\WINDOWS\\Tasks\\.+

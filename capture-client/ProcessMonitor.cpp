@@ -1,50 +1,30 @@
-/*
- *	PROJECT: Capture
- *	FILE: ProcessMonitor.cpp
- *	AUTHORS: Ramon Steenson (rsteenson@gmail.com) & Christian Seifert (christian.seifert@gmail.com)
- *
- *	Developed by Victoria University of Wellington and the New Zealand Honeynet Alliance
- *
- *	This file is part of Capture.
- *
- *	Capture is free software; you can redistribute it and/or modify
- *	it under the terms of the GNU General Public License as published by
- *	the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  Capture is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Capture; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
-#include "StdAfx.h"
 #include "ProcessMonitor.h"
 
-ProcessMonitor::ProcessMonitor(Visitor* v)
+ProcessMonitor::ProcessMonitor(void)
 {
 	wchar_t kernelDriverPath[1024];
 	wchar_t exListDriverPath[1024];
 
-	installed = false;
+	//processManagerConnection = connect_onProcessEvent(boost::bind(&ProcessManager::onProcessEvent, ProcessManager::getInstance(), _1, _2, _3, _4, _5, _6));
+	hMonitorStoppedEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+	driverInstalled = false;
+	monitorRunning = false;
 	hEvent = INVALID_HANDLE_VALUE;
-	v->AddVisitorListener(this);
+	//v->AddVisitorListener(this);
 	
 	// Load exclusion list
-	GetCurrentDirectory(1024, exListDriverPath);
-	wcscat_s(exListDriverPath, 1024, L"\\ProcessMonitor.exl");
-	Monitor::LoadExclusionList(exListDriverPath);
+	GetFullPathName(L"ProcessMonitor.exl", 1024, exListDriverPath, NULL);
+	Monitor::loadExclusionList(exListDriverPath);
+
+	onProcessExclusionReceivedConnection = EventController::getInstance()->connect_onServerEvent(L"process-exclusion", boost::bind(&ProcessMonitor::onProcessExclusionReceived, this, _1));
 
 	// Load process monitor kernel driver
-	GetCurrentDirectory(1024, kernelDriverPath);
-	wcscat_s(kernelDriverPath, 1024, L"\\CaptureProcessMonitor.sys");
-	if(Monitor::InstallKernelDriver(kernelDriverPath, L"CaptureProcessMonitor", L"Capture Process Monitor"))
+	GetFullPathName(L"CaptureProcessMonitor.sys", 1024, kernelDriverPath, NULL);
+	if(Monitor::installKernelDriver(kernelDriverPath, L"CaptureProcessMonitor", L"Capture Process Monitor"))
 	{	
 		hDriver = CreateFile(
-					L"\\\\.\\Global\\CaptureProcessMonitor",
+					L"\\\\.\\CaptureProcessMonitor",
 					GENERIC_READ | GENERIC_WRITE, 
 					FILE_SHARE_READ | FILE_SHARE_WRITE,
 					0,                     // Default security
@@ -52,185 +32,114 @@ ProcessMonitor::ProcessMonitor(Visitor* v)
 					FILE_FLAG_OVERLAPPED,  // Perform asynchronous I/O
 					0);                    // No template
 		if(INVALID_HANDLE_VALUE == hDriver) {
-			printf("ProcessMonitor: ERROR - CreateFile Failed: %x\n", GetLastError());
+			printf("ProcessMonitor: ERROR - CreateFile Failed: %08x\n", GetLastError());
 		} else {
-			installed = true;
-		}
-	}
-
-	if(installed)
-	{
-		DWORD aProcesses[1024], cbNeeded, cProcesses;
-		unsigned int i;
-
-		if ( !EnumProcesses( aProcesses, sizeof(aProcesses), &cbNeeded ) )
-			return;
-
-		// Calculate how many process identifiers were returned.
-
-		cProcesses = cbNeeded / sizeof(DWORD);
-
-		// Print the name and process identifier for each process.
-		//PROCESS_TUPLE pTuple[cProcesses];
-		for ( i = 0; i < cProcesses; i++ ) 
-		{
-			if( aProcesses[i] != 0 ) {
-				//PrintProcessNameAndID( aProcesses[i] );
-				TCHAR szProcessName[MAX_PATH] = TEXT("<unknown>");
-
-				// Get a handle to the process.
-
-				HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION |
-                                   PROCESS_VM_READ,
-                                   FALSE, aProcesses[i] );
-
-				// Get the process name.
-				PROCESS_TUPLE pTuple;
-				//char *szMsg = (char*)malloc(msg.length());
-				//PPROCESS_TUPLE pTuple = (PPROCESS_TUPLE)malloc(sizeof(PROCESS_TUPLE));
-				ZeroMemory(&pTuple, sizeof(PROCESS_TUPLE));
-				//pTuple.name = L"<unknown>";
-				pTuple.processID = aProcesses[i];
-				if (NULL != hProcess )
-				{
-					HMODULE hMod;
-					DWORD cbNeeded;
-
-					if ( EnumProcessModules( hProcess, &hMod, sizeof(hMod), 
-							&cbNeeded) )
-					{
-						GetProcessImageFileName(hProcess, pTuple.name, sizeof(pTuple.name)/sizeof(TCHAR));
-						DWORD dwReturn;
-		
-						DeviceIoControl(hDriver,
-							IOCTL_CAPTURE_PROC_LIST, 
-							&pTuple, 
-							sizeof(PROCESS_TUPLE), 
-							0, 
-							0, 
-							&dwReturn, 
-							NULL);
-					}
-				}
-
-			
-				CloseHandle( hProcess );
-			}
-		}
-	}
-}
-
-ProcessMonitor::ProcessMonitor()
-{
-	wchar_t kernelDriverPath[1024];
-
-	GetCurrentDirectory(1024, kernelDriverPath);
-	wcscat_s(kernelDriverPath, 1024, L"\\CaptureProcessMonitor.sys");
-	if(Monitor::InstallKernelDriver(kernelDriverPath, L"CaptureProcessMonitor", L"Capture Process Monitor"))
-	{	
-		hDriver = CreateFile(
-					L"\\\\.\\Global\\CaptureProcessMonitor",
-					GENERIC_READ | GENERIC_WRITE, 
-					FILE_SHARE_READ | FILE_SHARE_WRITE,
-					0,                     // Default security
-					OPEN_EXISTING,
-					FILE_FLAG_OVERLAPPED,  // Perform asynchronous I/O
-					0);                    // No template
-		if(INVALID_HANDLE_VALUE == hDriver) {
-			printf("ProcessMonitor: ERROR - CreateFile Failed: %i\n", GetLastError());
-		} else {
-			installed = true;
+			initialiseKernelDriverProcessMap();
+			driverInstalled = true;
 		}
 	}
 }
 
 ProcessMonitor::~ProcessMonitor(void)
 {
-	if(hEvent != INVALID_HANDLE_VALUE)
+	processManagerConnection.disconnect();
+	stop();
+	if(driverInstalled)
+	{
+		driverInstalled = false;
+		CloseHandle(hDriver);	
+	}
+	CloseHandle(hMonitorStoppedEvent);
+}
+
+boost::signals::connection 
+ProcessMonitor::connect_onProcessEvent(const signal_processEvent::slot_type& s)
+{ 
+	return signalProcessEvent.connect(s); 
+}
+
+void
+ProcessMonitor::onProcessExclusionReceived(Element* pElement)
+{
+	wstring excluded = L"";
+	wstring parentProcessPath = L"";
+	wstring processPath = L"";
+
+	vector<Attribute>::iterator it;
+	for(it = pElement->attributes.begin(); it != pElement->attributes.end(); it++)
+	{
+		if(it->name == L"subject") {
+			parentProcessPath = it->value;
+		} else if(it->name == L"object") {
+			processPath = it->value;
+		} else if(it->name == L"excluded") {
+			excluded = it->value;
+		}
+	}
+	Monitor::addExclusion(excluded, L"process", parentProcessPath, processPath);
+}
+
+void
+ProcessMonitor::initialiseKernelDriverProcessMap()
+{
+	stdext::hash_map<DWORD, wstring> processMap;
+
+	processMap = ProcessManager::getInstance()->getProcessMap();
+	stdext::hash_map<DWORD, wstring>::iterator it;
+	for(it = processMap.begin(); it != processMap.end(); it++)
+	{
+		DWORD dwReturn;
+		PROCESS_TUPLE pTuple;
+		ZeroMemory(&pTuple, sizeof(PROCESS_TUPLE));
+		pTuple.processID = it->first;
+		memcpy(pTuple.name, it->second.c_str(), it->second.length()*sizeof(wchar_t));
+		DeviceIoControl(hDriver,
+			IOCTL_CAPTURE_PROC_LIST, 
+			&pTuple, 
+			sizeof(PROCESS_TUPLE), 
+			0, 
+			0, 
+			&dwReturn, 
+			NULL);
+	}
+}
+
+void
+ProcessMonitor::start()
+{
+	if(!isMonitorRunning() && isDriverInstalled())
+	{
+		hEvent = OpenEvent(SYNCHRONIZE, FALSE, L"Global\\CaptureProcDrvProcessEvent");
+		processMonitorThread = new Thread(this);
+		processMonitorThread->start("ProcessMonitor");
+	}
+}
+
+void
+ProcessMonitor::stop()
+{
+	if(isMonitorRunning() && isDriverInstalled())
+	{
+		monitorRunning = false;
+		WaitForSingleObject(hMonitorStoppedEvent, 1000);
 		CloseHandle(hEvent);
-	if(hDriver != INVALID_HANDLE_VALUE)
-		CloseHandle(hDriver);
-	Monitor::UnInstallKernelDriver();
-}
-
-void
-ProcessMonitor::Start()
-{
-	if(!installed)
-	{
-		printf("ProcessMonitor: ERROR - Kernel driver was not loaded properly\n");
-		return;
+		processMonitorThread->stop();
+		delete processMonitorThread;
 	}
-    				
-	hEvent = OpenEvent(SYNCHRONIZE, FALSE, L"Global\\CaptureProcDrvProcessEvent");
-
-	if(!hEvent)
-	{
-		printf("ProcessMonitor: ERROR - OpenEvent Failed: %x\n", GetLastError());
-		return;
-	}
-
-	
-	procmonThread = new Thread(this);
-	procmonThread->Start();
 }
 
 void
-ProcessMonitor::Stop()
-{
-	procmonThread->Stop();
-//	regmon->Stop();
-//	UnInstallKernelDriver();	
-}
-
-void 
-ProcessMonitor::Pause()
-{
-	BOOL       bReturnCode = FALSE;
-	DWORD      dwBytesReturned = 0;
-
-	bReturnCode = DeviceIoControl(
-		hDriver,
-		IOCTL_CAPTURE_STOP,
-		0, 
-		0,
-		0, 
-		0,
-		&dwBytesReturned,
-		NULL
-		);
-}
-
-void 
-ProcessMonitor::UnPause()
-{
-	BOOL       bReturnCode = FALSE;
-	DWORD      dwBytesReturned = 0;
-
-	bReturnCode = DeviceIoControl(
-		hDriver,
-		IOCTL_CAPTURE_START,
-		0, 
-		0,
-		0, 
-		0,
-		&dwBytesReturned,
-		NULL
-		);
-}
-
-void
-ProcessMonitor::Run()
+ProcessMonitor::run()
 {
 	ProcessInfo tempP;
 	ZeroMemory(&tempP, sizeof(tempP));
-
-	while(true)
+	monitorRunning = true;
+	DWORD      dwBytesReturned = 0;
+	while(isMonitorRunning())
 	{
 		WaitForSingleObject(hEvent, INFINITE);
-
 		BOOL       bReturnCode = FALSE;
-		DWORD      dwBytesReturned = 0;
+		
 		ProcessInfo p;
 
 		bReturnCode = DeviceIoControl(
@@ -249,75 +158,37 @@ ProcessMonitor::Run()
 				p.ParentId != tempP.ParentId ||
 				p.ProcessId != tempP.ProcessId)
 			{		
-				wstring processPath = LogicalToDOSPath(p.procPath);
+				wstring processPath;
 				wstring processModuleName;
-				wstring parentProcessPath = LogicalToDOSPath(p.parentProcPath);
+				wstring parentProcessPath;
 				wstring parentProcessModuleName;
+				wchar_t szTempTime[256];
+				convertTimefieldsToString(p.time, szTempTime, 256);
+				wstring time = szTempTime;
+
+				ProcessManager::getInstance()->onProcessEvent(p.bCreate, time, p.ParentId, 
+					p.ProcessId, p.processPath);
 
 				// Get process name and path
-				//if(Monitor::GetProcessCompletePathName((DWORD)p.ProcessId, &processPath, p.bCreate))
-				//{
-					processModuleName = processPath.substr(processPath.find_last_of(L"\\")+1);
-				//}
-
-				// Get parent process name and path
-				//if(Monitor::GetProcessCompletePathName((DWORD)p.ParentId, &parentProcessPath, true))
-				//{
-					parentProcessModuleName = parentProcessPath.substr(parentProcessPath.find_last_of(L"\\")+1);
-				//}
+				processModuleName = ProcessManager::getInstance()->getProcessModuleName(p.ProcessId);
+				processPath = ProcessManager::getInstance()->getProcessPath(p.ProcessId);
 				
-				//printf("PP: %ls -> %ls\n", LogicalToDOSPath(p.parentProcPath).c_str(), p.procPath);
-				if(!CheckIfExcluded(processPath)) 
-				{
-					if(!Monitor::EventIsAllowed(processModuleName,parentProcessModuleName,processPath))
+				// Get parent process name and path
+				parentProcessModuleName = ProcessManager::getInstance()->getProcessModuleName(p.ParentId);
+				parentProcessPath = ProcessManager::getInstance()->getProcessPath(p.ParentId);
+				//if(!checkIfExcluded(processPath)) 
+				//{
+					if(!Monitor::isEventAllowed(processModuleName,parentProcessModuleName,processPath))
 					{
-						wstring time = Monitor::TimeFieldToWString(p.time);
-
-						NotifyListeners(p.bCreate, time, parentProcessPath, processPath);
-					} else {
-						//printf("excluded: %ls\n", processPath.c_str());
+						
+						DebugPrint(L"Capture-ProcessMonitor: %i %i:%ls -> %i:%ls\n", p.bCreate, p.ParentId, parentProcessPath.c_str(), p.ProcessId, processPath.c_str()); 
+						signalProcessEvent(p.bCreate, time, p.ParentId, parentProcessPath, p.ProcessId, processPath);
 					}
-				}		
+				//}		
 				tempP = p;
-			}
-			
+			}		
 		}
+		//Sleep(1000);
 	}
-}
-
-
-
-void
-ProcessMonitor::NotifyListeners(BOOLEAN bCreate, wstring time, wstring processParentPath, wstring processPath)
-{
-	std::list<ProcessListener*>::iterator lit;
-
-	// Inform all registered listeners of event
-	for (lit=processListeners.begin(); lit!= processListeners.end(); lit++)
-	{
-		(*lit)->OnProcessEvent(bCreate, time, processParentPath, processPath);
-	}
-}
-
-void 
-ProcessMonitor::AddProcessListener(ProcessListener* pl)
-{
-	processListeners.push_back(pl);
-}
-
-void
-ProcessMonitor::RemoveProcessListener(ProcessListener* pl)
-{
-	processListeners.remove(pl);
-}
-
-void
-ProcessMonitor::OnVisitEvent(int eventType, DWORD minorEventCode, wstring url, wstring visitor)
-{
-	if(eventType == VISIT_START)
-	{
-		currentVisitingClient = visitor;
-	} else {
-		currentVisitingClient = L"";
-	}
+	SetEvent(hMonitorStoppedEvent);
 }

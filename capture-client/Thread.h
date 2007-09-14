@@ -30,13 +30,23 @@
 	for creating a thread (threadProc) and creates an OO way to initialise, start, and stop a thread.
 */
 /*
-	Interface: IRunnable
+	Interface: Runnable
 
 	Workaround to create an OO-style thread
 */
-struct IRunnable {
-  virtual void Run() = 0;
+struct Runnable {
+  virtual void run() = 0;
 };
+
+typedef struct tagTHREADNAME_INFO
+{
+   DWORD dwType; // must be 0x1000
+   LPCSTR szName; // pointer to name (in user addr space)
+   DWORD dwThreadID; // thread ID (-1=caller thread)
+   DWORD dwFlags; // reserved for future use, must be zero
+} THREADNAME_INFO;
+
+
 
 class Thread {
 public:
@@ -45,7 +55,7 @@ public:
 
 		Creates a thread object and stores the object which implements the IRunnable interface in <_threadObj>
 	*/
-	Thread(IRunnable *ptr) {
+	Thread(Runnable *ptr) {
 		_threadObj = ptr;
 	}
 
@@ -54,10 +64,26 @@ public:
 
 		Starts a thread
 	*/
-	DWORD Start() {
+	DWORD start(char* name) {
 		DWORD threadID;
 		hThread = CreateThread(0, 0, threadProc, _threadObj, 0, &threadID);
+		setThreadName( threadID, name);
 		return threadID;
+	}
+
+	/* Give a thread a name. Thanks Microsoft. */ 
+	void setThreadName( DWORD dwThreadID, LPCSTR szThreadName)
+	{
+		THREADNAME_INFO info;
+		info.dwType = 0x1000;
+		info.szName = "hello";
+		info.dwThreadID = dwThreadID;
+		info.dwFlags = 0;
+
+		__try {
+			RaiseException( 0x406D1388, 0, sizeof(info)/sizeof(DWORD), (DWORD*)&info );
+		} __except(EXCEPTION_CONTINUE_EXECUTION) {
+		}
 	}
 
 	/*
@@ -65,7 +91,7 @@ public:
 
 		Stops the running thread that was created
 	*/
-	BOOL Stop() {
+	BOOL stop() {
 		if(hThread != NULL)
 			return TerminateThread(hThread, 0);
 		return FALSE;
@@ -84,7 +110,7 @@ protected:
 
 		Pointer to an object which implements the IRunnable interface
 	*/
-	IRunnable *_threadObj;
+	Runnable *_threadObj;
 
 	/*
 		Function: threadProc
@@ -92,7 +118,7 @@ protected:
 		Static c-function which can be used in the CreateThread function in windows.h
 	*/
 	static unsigned long __stdcall threadProc(void* ptr) {
-		((IRunnable*)ptr)->Run();
+		((Runnable*)ptr)->run();
 		return 0;
 	}   
 };

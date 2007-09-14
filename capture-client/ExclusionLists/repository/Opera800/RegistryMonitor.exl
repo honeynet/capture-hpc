@@ -1,0 +1,21 @@
+#[+,-]	[Registry Event]	[Process Name]	[Registry Path]
+###################################################
+### Opera 8.0					###
+###################################################
++	OpenKey	.*	.*
++	CreateKey	.*	.*
++	CloseKey	.*	.*
++	EnumerateKey	.*	.*
++	EnumerateValueKey	.*	.*
++	QueryValueKey	.*	.*
++	QueryKey	.*	.*
++	SetValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2\\.+
++	SetValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
++	SetValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
++	SetValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKLM\\SOFTWARE\\Classes\\ProcETServ\.Malloc\\MapQueue
++	SetValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Opera Software\\.+
++	DeleteValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2\\.+
++	DeleteValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
++	DeleteValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
++	DeleteValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKLM\\SOFTWARE\\Classes\\ProcETServ\.Malloc\\MapQueue
++	DeleteValueKey	C:\\Program Files\\Opera\\Opera\.exe	HKCU\\Software\\Opera Software\\.+

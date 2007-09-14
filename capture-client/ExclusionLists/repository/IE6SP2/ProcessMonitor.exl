@@ -1,0 +1,9 @@
+#[+,-]	[Process Created]	[Parent Process]	[Process Path]
+###################################################
+### Microsoft Internet Explorer 6.0		###
+###################################################
++	iexplore.exe	.*	C:\\Program Files\\Internet Explorer\\iexplore.exe
+#agent server is an activeX control that starts upon displaying multimedia content
++	agentsvr.exe	.*	C:\\WINDOWS\\msagent\\agentsvr.exe
+#messenger activeX
++	msmsgs.exe	.*	C:\\Program Files\\Messenger\\msmsgs.exe

@@ -1,0 +1,96 @@
+#[+,-]	[Registry Event]	[Process Name]	[Registry Path]
+###################################################
+### Microsoft Windows XP SP2			###
+###################################################
++	OpenKey	.*	.*
++	CreateKey	.*	.*
++	CloseKey	.*	.*
++	EnumerateKey	.*	.*
++	EnumerateValueKey	.*	.*
++	QueryValueKey	.*	.*
++	QueryKey	.*	.*
++	SetValueKey	.*	HKU\\.+\\SessionInformation\\ProgramCount
++	SetValueKey	.*	HKCU\\Software\\Microsoft\\Windows\\ShellNoRoam.*
++	SetValueKey	.*	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\.+
++	SetValueKey	.*	HKLM\\SOFTWARE\\Microsoft\\Cryptography\\RNG\\Seed.*
++	SetValueKey	C:\\Program Files\\Capture\\CaptureClient.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\nm\\Parameters\\.+
++	SetValueKey	C:\\WINDOWS\\explorer.exe	HKCU\\SessionInformation\\.+
++	SetValueKey	C:\\WINDOWS\\explorer.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
++	SetValueKey	C:\\WINDOWS\\explorer.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
++	SetValueKey	C:\\WINDOWS\\explorer.exe	HKU\\.+\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
++	SetValueKey	C:\\WINDOWS\\explorer.exe	HKU\\.+\\Software\\Microsoft\\Windows\\ShellNoRoam\\BagMRU\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\winlogon.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Group Policy\\State\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	\\REGISTRY\\USER\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKU\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKCU\\Software\\Microsoft\\SystemCertificates\\Root\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\SystemCertificates\\AuthRoot\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\PCHealth\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SYSTEM\\ControlSet001\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\services.exe	HKLM\\SYSTEM\\ControlSet001\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\lsass.exe	HKLM\\SECURITY\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\lsass.exe	HKCU\\Software\\Microsoft\\Protected Storage System Provider\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\wbem\\wmiadap.exe	HKLM\\SOFTWARE\\Microsoft\\WBEM\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\wbem\\wmiadap.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\WmiApRpl\\Performance\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\wbem\\wmiadap.exe	HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\wbem\\wmiprvse.exe	HKLM\\SOFTWARE\\Microsoft\\WBEM\\WDM\\.+
++	DeleteValueKey	.*	HKU\\.+\\SessionInformation\\ProgramCount
++	DeleteValueKey	.*	HKCU\\Software\\Microsoft\\Windows\\ShellNoRoam.*
++	DeleteValueKey	.*	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\.+
++	DeleteValueKey	.*	HKLM\\SOFTWARE\\Microsoft\\Cryptography\\RNG\\Seed.*
++	DeleteValueKey	C:\\Program Files\\Capture\\CaptureClient.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\nm\\Parameters\\.+
++	DeleteValueKey	C:\\WINDOWS\\explorer.exe	HKCU\\SessionInformation\\.+
++	DeleteValueKey	C:\\WINDOWS\\explorer.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
++	DeleteValueKey	C:\\WINDOWS\\explorer.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
++	DeleteValueKey	C:\\WINDOWS\\explorer.exe	HKU\\.+\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
++	DeleteValueKey	C:\\WINDOWS\\explorer.exe	HKU\\.+\\Software\\Microsoft\\Windows\\ShellNoRoam\\BagMRU\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\winlogon.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Group Policy\\State\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	\\REGISTRY\\USER\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKU\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKCU\\Software\\Microsoft\\SystemCertificates\\Root\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\SystemCertificates\\AuthRoot\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\PCHealth\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKCU\\Software\\Microsoft\\SystemCertificates\\Root\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SYSTEM\\ControlSet001\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\services.exe	HKLM\\SYSTEM\\ControlSet001\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\lsass.exe	HKLM\\SECURITY\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\lsass.exe	HKCU\\Software\\Microsoft\\Protected Storage System Provider\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\wbem\\wmiadap.exe	HKLM\\SOFTWARE\\Microsoft\\WBEM\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\wbem\\wmiadap.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\WmiApRpl\\Performance\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\wbem\\wmiadap.exe	HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\wbem\\wmiprvse.exe	HKLM\\SOFTWARE\\Microsoft\\WBEM\\WDM\\.+
+#defrag
++	SetValueKey	C:\\WINDOWS\\system32\\dfrgntfs.exe	HKLM\\SOFTWARE\\Microsoft\\Dfrg.*
++	DeleteValueKey	C:\\WINDOWS\\system32\\dfrgntfs.exe	HKLM\\SOFTWARE\\Microsoft\\Dfrg.*
+#windows update
++	SetValueKey	C:\\WINDOWS\\system32\\wuauclt.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\Eventlog\\Application\\ESENT\\.+
++	DeleteValueKey	C:\\WINDOWS\\system32\\wuauclt.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\Eventlog\\Application\\ESENT\\.+
+###################################################
+### Minus List - General Malicious Activity	###
+###################################################
+#Any modification to start/bootup sequence
+-	SetValueKey	.*	HLKM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run.*
+-	DeleteValueKey	.*	HLKM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run.*
+-	SetValueKey	.*	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run.*
+-	DeleteValueKey	.*	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run.*
+-	SetValueKey	.*	HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows\\Run.*
+-	DeleteValueKey	.*	HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows\\Run.*
+-	SetValueKey	.*	HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows\\Load.*
+-	DeleteValueKey	.*	HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows\\Load.*
+-	SetValueKey	.*	HLKM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\Userinit.*
+-	DeleteValueKey	.*	HLKM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\Userinit.*
+-	SetValueKey	.*	HLKM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\Shell.*
+-	DeleteValueKey	.*	HLKM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\Shell.*
+-	SetValueKey	.*	HLKM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\\Run.*
+-	DeleteValueKey	.*	HLKM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\\Run.*
+-	SetValueKey	.*	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\\Run.*
+-	DeleteValueKey	.*	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\\Run.*
+-	SetValueKey	.*	HLKM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\BootExecute.*
+-	DeleteValueKey	.*	HLKM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\BootExecute.*
+-	SetValueKey	.*	HLKM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ShellServiceObjectDelayLoad\\.*
+-	DeleteValueKey	.*	HLKM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ShellServiceObjectDelayLoad\\.*

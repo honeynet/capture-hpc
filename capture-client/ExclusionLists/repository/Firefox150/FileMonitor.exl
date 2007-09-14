@@ -1,0 +1,37 @@
+#[+,-]	[File Access]	[Process Name]	[File Path]
+###################################################
+### Mozilla Firefox 1.5				###
+###################################################
+# components
++	Write	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	C:\\Program Files\\Mozilla Firefox\\components\\.+\.dat\.tmp
++	Delete	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	C:\\Program Files\\Mozilla Firefox\\components\\.+\.dat\.tmp
+# user data
++	Write	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	C:\\Documents and Settings\\.*\\Application Data\\Mozilla\\Firefox\\Profiles\\.+
++	Write	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	C:\\Documents and Settings\\.*\\Application Data\\Mozilla\\Firefox\\profiles\.ini
++	Delete	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	C:\\Documents and Settings\\.*\\Application Data\\Mozilla\\Firefox\\Profiles\\.+
++	Delete	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	C:\\Documents and Settings\\.*\\Application Data\\Mozilla\\Firefox\\profiles\.ini
+# plugins
++	Write	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	C:\\Documents and Settings\\.*\\Application Data\\Mozilla\\Firefox\\pluginreg\.dat
++	Delete	C:\\Program Files\\Mozilla Firefox\\firefox\.exe	C:\\Documents and Settings\\.*\\Application Data\\Mozilla\\Firefox\\pluginreg\.dat
+###################################################
+### Minus List - General Malicious Activity	###
+###################################################
+# Alert about executables or scripts that are written to disk
+-	Write	.*	.+\.bat
+-	Write	.*	.+\.cmd
+-	Write	.*	.+\.exe	
+-	Write	.*	.+\.inf
+-	Write	.*	.+\.lnk
+-	Write	.*	.+\.msi
+-	Write	.*	.+\.msp
+-	Write	.*	.+\.pif
+-	Write	.*	.+\.reg
+-	Write	.*	.+\.sct
+-	Write	.*	.+\.shs
+-	Write	.*	.+\.scr
+-	Write	.*	.+\.wsc
+-	Write	.*	.+\.wsf
+-	Write	.*	.+\.wsh
+#commented out for firefox because \.com cache files and \.vb script files are very common
+#-	Write	.*	.+\.vb
+#-	Write	.*	.+\.com

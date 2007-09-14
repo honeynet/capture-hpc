@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="config">
+    	<xs:complexType>
+    		<xs:sequence>
+    			<xs:element ref="global" minOccurs="1" maxOccurs="1"></xs:element>
+    			<xs:element ref="exclusion-list" minOccurs="0" maxOccurs="unbounded"></xs:element>
+    			<xs:element ref="virtual-machine-server" minOccurs="0" maxOccurs="unbounded"></xs:element>		
+    		</xs:sequence>
+    	</xs:complexType>
+    </xs:element>
+
+    <xs:element name="virtual-machine">
+    	<xs:complexType>
+    		<xs:attribute name="vm-path" type="xs:string" use="required"></xs:attribute>
+    		<xs:attribute name="client-path" type="xs:string" use="required"></xs:attribute>
+    		<xs:attribute name="username" type="xs:string" use="required"></xs:attribute>
+    		<xs:attribute name="password" type="xs:string" use="required"></xs:attribute>
+    	</xs:complexType>
+    </xs:element>
+
+    <xs:element name="exclusion-list">
+    	<xs:complexType>
+    		<xs:attribute name="monitor" type="xs:string" use="required"></xs:attribute>
+    		<xs:attribute name="file" type="xs:string" use="required"></xs:attribute>
+    	</xs:complexType>
+    </xs:element>
+
+    <xs:element name="virtual-machine-server">
+    	<xs:complexType>
+    		<xs:sequence>
+    			<xs:element ref="virtual-machine" maxOccurs="unbounded"
+    				minOccurs="1">
+    			</xs:element>
+    		</xs:sequence>
+    		<xs:attribute name="type" type="xs:string" use="required"></xs:attribute>
+    		<xs:attribute name="address" type="xs:string" use="required"></xs:attribute>
+    		<xs:attribute name="port" type="xs:string" use="required"></xs:attribute>
+    		<xs:anyAttribute processContents="lax"></xs:anyAttribute>
+    	</xs:complexType>
+    </xs:element>
+
+    <xs:element name="global">
+    	<xs:complexType>
+    		<xs:attribute name="collect-modified-files" type="xs:boolean" use="required"></xs:attribute>
+    		<xs:attribute name="client-default-visit-time" type="xs:integer" use="required"></xs:attribute>
+    		<xs:attribute name="capture-network-packets" type="xs:boolean" use="required"></xs:attribute>
+    		<xs:attribute name="send-exclusion-lists" type="xs:boolean" use="required"></xs:attribute>
+    	</xs:complexType>
+    </xs:element>
+</xs:schema>

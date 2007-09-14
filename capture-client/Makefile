@@ -4,73 +4,129 @@
 ##
 
 
-## Change these paths to the correct paths on your system
-BOOSTINC = C:\Boost\include\boost-1_33_1
-BOOSTLIB = C:\Boost\lib
-PLATFORMSDKINC = C:\Program Files\Microsoft Platform SDK\Include
-PLATFORMSDKLIB = C:\Program Files\Microsoft Platform SDK\Lib
-WDKINC = C:\WinDDK\6000\inc\api
-WDKLIB = C:\WinDDK\6000\lib\wxp\i386
+INSTALL_DIR = $(MAKEDIR)\install
+!CMDSWITCHES +s
+!CMDSWITCHES +i
 
-BIND = $(MAKEDIR)\bin
+all: 
+	echo "CaptureClient make script."
+	echo "There are several targets defined in this make script:"
+	echo "   - clean       - will clean out all files not belonging to the source. This is a"
+	echo "                   good target to run if one would like to build the solution from"
+	echo "                   scratch."
+	echo "   - release-hpc - will build the capture-hpc solution from scratch. The resulting"
+	echo "                   files will be located in the install directory."
+	echo "   - release-bat - will build the capture-bat solution from scratch. The resulting"
+	echo "                   files will be located in the install directory."
+	
+release-hpc: clean \
+			 prepare \
+			 build \
+			 copy-hpc \
 
+release-bat: clean \
+			 prepare \
+			 build \
+			 copy-bat \
 
-INCLUDE = $(INCLUDE);$(BOOSTINC);$(PLATFORMSDKINC);$(WDKINC)
-LIB = $(LIB);$(BOOSTLIB);$(PLATFORMSDKLIB);$(WDKLIB)
+prepare :
+	if not exist $(INSTALL_DIR) mkdir $(INSTALL_DIR)
+	if not exist $(INSTALL_DIR)\plugins mkdir $(INSTALL_DIR)\plugins
 
-all: dirs \
-	KernelDriver \
-	Capture \
+build : 
+	@vcbuild CaptureClient.sln /u
 
-dirs:
-	if not exist $(BIND) mkdir $(BIND)
-
-KernelDriver :
-
-
-Capture :
-	@vcbuild Capture.vcproj Release /u
-	cd "$(MAKEDIR)"
-	cd "Clients"
-	@vcbuild Client_InternetExplorer.vcproj Release /u
-	@vcbuild Client_MicrosoftOffice.vcproj Release /u
-	@vcbuild Client_OpenOffice.vcproj Release /u
-	cd "$(MAKEDIR)"
-	cd "KernelDriver"
-	@$(MAKE) /NOLOGO /$(MAKEFLAGS)
-	cd "$(MAKEDIR)"
-
-install :
-	cd "$(MAKEDIR)\KernelDriver"
-	@$(MAKE) /NOLOGO /$(MAKEFLAGS) install
-	cd "$(MAKEDIR)"
-	copy "Readme.txt" $(BIND)
-	copy "COPYING" $(BIND)
-	copy "Capture.bat" $(BIND)
-	cd "release"
-	copy "Capture.exe" $(BIND)
-	cd "$(MAKEDIR)"
-	cd "ExclusionLists"
-	copy *.exl $(BIND)
-	cd "$(MAKEDIR)"
-	copy *.inf $(BIND)
-	cd "$(MAKEDIR)"
-	cd "Config"
-	copy *.conf $(BIND)
-	cd "$(MAKEDIR)"
-	cd "ext_lib"
-	copy *.* $(BIND)
-	cd "$(MAKEDIR)"
-	cd "Clients"
-	cd "release"
-	if not exist "$(BIND)\plugins" mkdir "$(BIND)\plugins"
-	copy *.dll "$(BIND)\plugins\"
-	cd "$(MAKEDIR)"
-
+copy-bat :
+	rmdir $(MAKEDIR)\install\plugins
+	copy $(MAKEDIR)\Readme-BAT.txt $(INSTALL_DIR)\Readme.txt
+	copy $(MAKEDIR)\COPYING $(INSTALL_DIR)
+	copy $(MAKEDIR)\7za.exe $(INSTALL_DIR)
+	copy $(MAKEDIR)\ExclusionLists\*exl $(INSTALL_DIR)
+	copy $(MAKEDIR)\Release\CaptureClient.exe $(INSTALL_DIR)\CaptureBAT.exe
+	copy $(MAKEDIR)\FileMonitorInstallation.inf $(INSTALL_DIR)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\i386\*.sys $(INSTALL_DIR)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\i386\*.sys $(INSTALL_DIR)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\i386\*.sys $(INSTALL_DIR)
+	copy $(MAKEDIR)\SetupScript\CaptureBAT-Setup.nsi $(INSTALL_DIR)
+	cd $(INSTALL_DIR)
+	makensis.exe CaptureBAT-Setup.nsi
+	cd ..
+	move $(INSTALL_DIR)\CaptureBAT-Setup.exe $(MAKEDIR)
+		
+copy-hpc :
+	copy $(MAKEDIR)\Readme-HPC.txt $(INSTALL_DIR)\Readme.txt
+	copy $(MAKEDIR)\COPYING $(INSTALL_DIR)
+	copy $(MAKEDIR)\7za.exe $(INSTALL_DIR)
+	copy $(MAKEDIR)\ApplicationConfig\Applications.conf $(INSTALL_DIR)
+	copy $(MAKEDIR)\ExclusionLists\*exl $(INSTALL_DIR)
+	copy $(MAKEDIR)\Release\CaptureClient.exe $(INSTALL_DIR)
+	copy $(MAKEDIR)\Release\plugins\Application_*.dll $(INSTALL_DIR)\plugins
+	copy $(MAKEDIR)\FileMonitorInstallation.inf $(INSTALL_DIR)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\i386\*.sys $(INSTALL_DIR)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\i386\*.sys $(INSTALL_DIR)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\i386\*.sys $(INSTALL_DIR)
+	copy $(MAKEDIR)\SetupScript\CaptureClient-Setup.nsi $(INSTALL_DIR)
+	cd $(INSTALL_DIR)
+	makensis.exe CaptureClient-Setup.nsi
+	cd ..
+	move $(INSTALL_DIR)\CaptureClient-Setup.exe $(MAKEDIR)
+	
 
 clean:
-	cd "$(MAKEDIR)\KernelDriver"
-	@$(MAKE) /NOLOGO /$(MAKEFLAGS) clean
-	cd "$(MAKEDIR)"
-	@vcbuild Capture.vcproj /c Release
-	-del /Q /S $(BIND) 2>nul
+	del $(MAKEDIR)\CaptureClient-Setup.exe
+	del $(MAKEDIR)\ApplicationPlugins\InternetExplorer\Release /f /s /q
+	rmdir $(MAKEDIR)\ApplicationPlugins\InternetExplorer\Release /s /q
+	del $(MAKEDIR)\ApplicationPlugins\InternetExplorer\Debug /f /s /q
+	rmdir $(MAKEDIR)\ApplicationPlugins\InternetExplorer\Debug /s /q
+	del $(MAKEDIR)\install\plugins /f /s /q
+	rmdir $(MAKEDIR)\install\plugins /s /q
+	del $(MAKEDIR)\install\logs /f /s /q
+	rmdir $(MAKEDIR)\install\logs /s /q
+	del $(MAKEDIR)\install /f /s /q
+	rmdir $(MAKEDIR)\install /s /q
+	del $(MAKEDIR)\Debug\log /f /s /q
+	rmdir $(MAKEDIR)\Debug\log /s /q
+	del $(MAKEDIR)\Debug\logs /f /s /q
+	rmdir $(MAKEDIR)\Debug\logs /s /q
+	del $(MAKEDIR)\Debug /f /s /q
+	rmdir $(MAKEDIR)\Debug /s /q
+	del $(MAKEDIR)\Release /f /s /q
+	rmdir $(MAKEDIR)\Release /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\Release /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\Release /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\Debug /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\Debug /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\*log /f /s /q
+
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\objchk_wxp_x86\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\objchk_wxp_x86\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\objfre_wxp_x86\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\objfre_wxp_x86\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\objchk_wxp_x86 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\objchk_wxp_x86 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\objfre_wxp_x86 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\objfre_wxp_x86 /s /q
+
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\objchk_wxp_x86\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\objchk_wxp_x86\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\objfre_wxp_x86\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\objfre_wxp_x86\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\objchk_wxp_x86 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\objchk_wxp_x86 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\objfre_wxp_x86 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\objfre_wxp_x86 /s /q
+
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\objchk_wxp_x86\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\objchk_wxp_x86\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\objfre_wxp_x86\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\objfre_wxp_x86\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\objchk_wxp_x86 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\objchk_wxp_x86 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\objfre_wxp_x86 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\objfre_wxp_x86 /s /q

@@ -1,259 +1,434 @@
-/*
- *	PROJECT: Capture
- *	FILE: FileMonitor.cpp
- *	AUTHORS: Ramon Steenson (rsteenson@gmail.com) & Christian Seifert (christian.seifert@gmail.com)
- *
- *	Developed by Victoria University of Wellington and the New Zealand Honeynet Alliance
- *
- *	This file is part of Capture.
- *
- *	Capture is free software; you can redistribute it and/or modify
- *	it under the terms of the GNU General Public License as published by
- *	the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  Capture is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Capture; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
 #include "FileMonitor.h"
 
-FileMonitor::FileMonitor()
+FileMonitor::FileMonitor(void)
 {
 	HRESULT hResult;
-	installed = false;
-	int tryTurn = 0;
-	filemonThread = NULL;
-	commPort = INVALID_HANDLE_VALUE;
+	monitorRunning = false;
+	driverInstalled = false;
+	int turn = 0;
+	communicationPort = INVALID_HANDLE_VALUE;
+	monitorModifiedFiles = false;
 
+	hMonitorStoppedEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	
+	FilterUnload(L"CaptureFileMonitor");
 	hResult = FilterLoad(L"CaptureFileMonitor");
-	while((tryTurn < 5) && IS_ERROR( hResult ))
+	// Keep trying to load the filter - On some VM's this can take a few seconds
+	while((turn < 5) && IS_ERROR( hResult ))
 	{
-		tryTurn++;
-		printf("FileMonitor: WARNING - Filter driver not loaded (error: %x) waiting 3 seconds to try again ... (try %i of 5)\n", hResult, tryTurn);
+		turn++;
+		printf("FileMonitor: WARNING - Filter driver not loaded (error: %x) waiting 3 seconds to try again ... (try %i of 5)\n", hResult, turn);
 		Sleep(3000);
 		hResult = FilterLoad(L"CaptureFileMonitor");
-		if (!IS_ERROR( hResult )) {
-			printf("FileMonitor: Filter successfully loaded\n");
-		}
 	}
-
+	
 	if (!IS_ERROR( hResult )) {
-
+		
 		hResult = FilterConnectCommunicationPort( CAPTURE_FILEMON_PORT_NAME,
 												0,
-												 NULL,
-												 0,
 												NULL,
-												&commPort );
+												0,
+												NULL,
+												&communicationPort );
 		if (IS_ERROR( hResult )) {
 
 			printf( "FileMonitor: ERROR - Could not connect to filter: 0x%08x\n", hResult );
 		} else {
-			installed = true;
+			printf("Loaded filter driver: CaptureFileMonitor\n");
+			driverInstalled = true;
+			//this.setMonitorModifiedFiles(false);
 		}
+		
 		wchar_t exListDriverPath[1024];
-		GetCurrentDirectory(1024, exListDriverPath);
-		wcscat_s(exListDriverPath, 1024, L"\\FileMonitor.exl");
-		Monitor::LoadExclusionList(exListDriverPath);
+		GetFullPathName(L"FileMonitor.exl", 1024, exListDriverPath, NULL);
+		Monitor::loadExclusionList(exListDriverPath);
 
-		UCHAR buffer[1024];
-		PFILTER_VOLUME_BASIC_INFORMATION volumeBuffer = (PFILTER_VOLUME_BASIC_INFORMATION)buffer;
-		HANDLE volumeIterator = INVALID_HANDLE_VALUE;
-		ULONG volumeBytesReturned;
-		WCHAR driveLetter[15];
+		/* Create a log directory exclusion which allows all writes in
+		   Captures log directory */
+		wchar_t logDirectory[1024];
+		GetFullPathName(L"logs", 1024, logDirectory, NULL);
+		wstring captureLogDirectory = logDirectory;
+		Monitor::prepareStringForExclusion(&captureLogDirectory);
+		captureLogDirectory += L"\\\\.*";
 
-		hResult = FilterVolumeFindFirst( FilterVolumeBasicInformation,
-											 volumeBuffer,
-											 sizeof(buffer)-sizeof(WCHAR),   //save space to null terminate name
-											 &volumeBytesReturned,
-											 &volumeIterator );
-		if (volumeIterator != INVALID_HANDLE_VALUE) {
-			do {
-				assert((FIELD_OFFSET(FILTER_VOLUME_BASIC_INFORMATION,FilterVolumeName) + volumeBuffer->FilterVolumeNameLength) <= (sizeof(buffer)-sizeof(WCHAR)));
-				__analysis_assume((FIELD_OFFSET(FILTER_VOLUME_BASIC_INFORMATION,FilterVolumeName) + volumeBuffer->FilterVolumeNameLength) <= (sizeof(buffer)-sizeof(WCHAR)));
-				volumeBuffer->FilterVolumeName[volumeBuffer->FilterVolumeNameLength/sizeof( WCHAR )] = UNICODE_NULL;
-					
-				if(SUCCEEDED( FilterGetDosName(volumeBuffer->FilterVolumeName,
-					driveLetter,
-					sizeof(driveLetter)/sizeof(WCHAR) )
-					))
-				{
-					wstring dLetter = driveLetter;
-					dosNameMap.insert(Dos_Pair(volumeBuffer->FilterVolumeName, dLetter));
-				}
-			} while (SUCCEEDED( hResult = FilterVolumeFindNext( volumeIterator,
-																FilterVolumeBasicInformation,
-																volumeBuffer,
-																sizeof(buffer)-sizeof(WCHAR),    //save space to null terminate name
-																&volumeBytesReturned ) ));
+		wstring captureExecutablePath = ProcessManager::getInstance()->getProcessPath(GetCurrentProcessId());
+		Monitor::prepareStringForExclusion(&captureExecutablePath);
+		
+		/* Exclude file events in the log directory */
+		/* NOTE we exclude all processes because files are copied/delete/openend
+		   etc in the context of the calling process not Capture */
+		Monitor::addExclusion(L"+", L"write", L".*", captureLogDirectory, true);
+		Monitor::addExclusion(L"+", L"create", L".*", captureLogDirectory, true);
+		Monitor::addExclusion(L"+", L"delete", L".*", captureLogDirectory, true);
+		Monitor::addExclusion(L"+", L"open", L".*", captureLogDirectory, true);
+		//Monitor::addExclusion(L"+", L"open", L".*", logDirectory, true);
+		Monitor::addExclusion(L"+", L"read", L".*", captureLogDirectory, true);
+
+		/* Exclude Captures temp directory */
+		wchar_t tempDirectory[1024];
+		GetFullPathName(L"temp", 1024, tempDirectory, NULL);
+		wstring captureTempDirectory = tempDirectory;
+		Monitor::prepareStringForExclusion(&captureTempDirectory);
+		captureTempDirectory += L"\\\\.*";
+
+		//wstring captureExecutablePath = ProcessManager::getInstance()->getProcessPath(GetCurrentProcessId());
+		//Monitor::prepareStringForExclusion(&captureExecutablePath);
+		
+		/* Exclude file events in the log directory */
+		/* NOTE we exclude all processes because files are copied/delete/openend
+		   etc in the context of the calling process not Capture */
+		Monitor::addExclusion(L"+", L"write", L".*", captureTempDirectory, true);
+		Monitor::addExclusion(L"+", L"create", L".*", captureTempDirectory, true);
+		Monitor::addExclusion(L"+", L"delete", L".*", captureTempDirectory, true);
+		Monitor::addExclusion(L"+", L"open", L".*", captureTempDirectory, true);
+		Monitor::addExclusion(L"+", L"read", L".*", captureTempDirectory, true);
+		
+		if(OptionsManager::getInstance()->getOption(L"log-system-events-file") != L"")
+		{
+			wstring loggerFile = Logger::getInstance()->getLogFullPath();
+			Monitor::prepareStringForExclusion(&loggerFile);
+			Monitor::addExclusion(L"+", L"create", captureExecutablePath, loggerFile, true);
+			Monitor::addExclusion(L"+", L"write", captureExecutablePath, loggerFile, true);
 		}
+		onFileExclusionReceivedConnection = EventController::getInstance()->connect_onServerEvent(L"file-exclusion", boost::bind(&FileMonitor::onFileExclusionReceived, this, _1));
 
-		if (INVALID_HANDLE_VALUE != volumeIterator) {
-			FilterVolumeFindClose( volumeIterator );
-		}
+		initialiseDosNameMap();
 	}
+}
+
+void
+FileMonitor::setMonitorModifiedFiles(bool monitor)
+{
+	FILEMONITOR_MESSAGE command;
+	FILEMONITOR_SETUP setupFileMonitor;
+	HRESULT hResult;
+	DWORD bytesReturned;
+
+	monitorModifiedFiles = monitor;
+
+	if(monitor == true)
+	{
+		wchar_t* modified_files_directory = new wchar_t[1024];
+		GetFullPathName(L"logs\\modified_files", 1024, modified_files_directory, NULL);
+		CreateDirectory(modified_files_directory,NULL);
+		setupFileMonitor.bCollectDeletedFiles = TRUE;
+		delete [] modified_files_directory;
+	} else {
+		setupFileMonitor.bCollectDeletedFiles = FALSE;
+	}
+	GetFullPathName(L"logs\\deleted_files", 1024, setupFileMonitor.wszLogDirectory, NULL);
+	CreateDirectory(setupFileMonitor.wszLogDirectory,NULL);
+	setupFileMonitor.nLogDirectorySize = (UINT)wcslen(setupFileMonitor.wszLogDirectory)*sizeof(wchar_t);
+	
+	DebugPrint(L"Deleted file directory: %i -> %ls\n", setupFileMonitor.nLogDirectorySize, setupFileMonitor.wszLogDirectory);
+
+	command.Command = SetupMonitor;	
+
+	hResult = FilterSendMessage( communicationPort,
+							 &command,
+							 sizeof( FILEMONITOR_COMMAND ),
+							 &setupFileMonitor,
+							 sizeof(FILEMONITOR_SETUP),
+							 &bytesReturned );
 }
 
 FileMonitor::~FileMonitor(void)
 {
-	FilterUnload(L"CaptureFileMonitor");
-	if(filemonThread != NULL)
-		filemonThread->Stop();
-	if(commPort != INVALID_HANDLE_VALUE)
-		CloseHandle(commPort);
-	
-}
-
-void 
-FileMonitor::Start()
-{
-	if(!installed)
+	stop();
+	if(isDriverInstalled())
 	{
-		printf("FileMonitor: ERROR - filter driver was not loaded properly\n");
-		return;
+		driverInstalled = false;
+		CloseHandle(communicationPort);
+		FilterUnload(L"CaptureFileMonitor");
 	}
-	filemonThread = new Thread(this);
-	filemonThread->Start();
+	CloseHandle(hMonitorStoppedEvent);
 }
 
 void 
-FileMonitor::Stop()
+FileMonitor::initialiseDosNameMap()
 {
-	filemonThread->Stop();
+	UCHAR buffer[1024];
+	PFILTER_VOLUME_BASIC_INFORMATION volumeBuffer = (PFILTER_VOLUME_BASIC_INFORMATION)buffer;
+	HANDLE volumeIterator = INVALID_HANDLE_VALUE;
+	ULONG volumeBytesReturned;
+	WCHAR driveLetter[15];
+
+	HRESULT hResult = FilterVolumeFindFirst( FilterVolumeBasicInformation,
+										 volumeBuffer,
+										 sizeof(buffer)-sizeof(WCHAR),   //save space to null terminate name
+										 &volumeBytesReturned,
+										 &volumeIterator );
+	if (volumeIterator != INVALID_HANDLE_VALUE) {
+		do {
+			assert((FIELD_OFFSET(FILTER_VOLUME_BASIC_INFORMATION,FilterVolumeName) + volumeBuffer->FilterVolumeNameLength) <= (sizeof(buffer)-sizeof(WCHAR)));
+			__analysis_assume((FIELD_OFFSET(FILTER_VOLUME_BASIC_INFORMATION,FilterVolumeName) + volumeBuffer->FilterVolumeNameLength) <= (sizeof(buffer)-sizeof(WCHAR)));
+			volumeBuffer->FilterVolumeName[volumeBuffer->FilterVolumeNameLength/sizeof( WCHAR )] = UNICODE_NULL;
+				
+			if(SUCCEEDED( FilterGetDosName(volumeBuffer->FilterVolumeName,
+				driveLetter,
+				sizeof(driveLetter)/sizeof(WCHAR) )
+				))
+			{
+				wstring dLetter = driveLetter;
+				dosNameMap.insert(DosPair(volumeBuffer->FilterVolumeName, dLetter));
+			}
+		} while (SUCCEEDED( hResult = FilterVolumeFindNext( volumeIterator,
+															FilterVolumeBasicInformation,
+															volumeBuffer,
+															sizeof(buffer)-sizeof(WCHAR),    //save space to null terminate name
+															&volumeBytesReturned ) ));
+	}
+
+	if (INVALID_HANDLE_VALUE != volumeIterator) {
+		FilterVolumeFindClose( volumeIterator );
+	}
 }
 
-void 
-FileMonitor::Pause()
+boost::signals::connection 
+FileMonitor::connect_onFileEvent(const signal_fileEvent::slot_type& s)
+{ 
+	return signal_onFileEvent.connect(s); 
+}
+
+bool
+FileMonitor::isDirectory(wstring filePath)
 {
-	FILEMONITOR_MESSAGE command;
-	command.Command = FStop;
+	DWORD code = GetFileAttributes(filePath.c_str());
+	if (code==INVALID_FILE_ATTRIBUTES)
+		return false;
+	if ((code&FILE_ATTRIBUTE_DIRECTORY)==FILE_ATTRIBUTE_DIRECTORY) 
+		return true;
+	return false;
+}
+
+void
+FileMonitor::onFileExclusionReceived(Element* pElement)
+{
+	wstring excluded = L"";
+	wstring fileEventType = L"";
+	wstring processPath = L"";
+	wstring filePath = L"";
+
+	vector<Attribute>::iterator it;
+	for(it = pElement->attributes.begin(); it != pElement->attributes.end(); it++)
+	{
+		if(it->name == L"action") {
+			fileEventType = it->value;
+		} else if(it->name == L"object") {
+			filePath = it->value;
+		} else if(it->name == L"subject") {
+			processPath = it->value;
+		} else if(it->name == L"excluded") {
+			excluded = it->value;
+		}
+	}
+	Monitor::addExclusion(excluded, fileEventType, processPath, filePath);
+}
+
+void
+FileMonitor::start()
+{
+	if(!isMonitorRunning() && isDriverInstalled())
+	{
+		fileEvents = (BYTE*)malloc(FILE_EVENTS_BUFFER_SIZE);
+		fileMonitorThread = new Thread(this);
+		fileMonitorThread->start("FileMonitor");
+	}
+}
+
+void
+FileMonitor::stop()
+{	
+	if(isMonitorRunning() && isDriverInstalled())
+	{
+		monitorRunning = false;
+		WaitForSingleObject(hMonitorStoppedEvent, 1000);
+		fileMonitorThread->stop();
+		delete fileMonitorThread;
+		free(fileEvents);
+	}	
+}
+
+bool
+FileMonitor::getFileEventName(PFILE_EVENT pFileEvent, wstring *fileEventName)
+{
+	bool found = true;
+	*fileEventName = L"UNKNOWN";
+	if(pFileEvent->majorFileEventType == IRP_MJ_CREATE) {
+		/* Defined at http://msdn2.microsoft.com/en-us/library/ms804358.aspx */
+		//if(!FlagOn(pFileEvent->flags, FO_STREAM_FILE) && pFileEvent->flags > 0)
+		//{
+			if( pFileEvent->information == FILE_CREATED || 
+				pFileEvent->information == FILE_OVERWRITTEN ||
+				pFileEvent->information == FILE_SUPERSEDED ) {
+				*fileEventName = L"Create";
+			} else if(pFileEvent->information == FILE_OPENED) {
+				*fileEventName = L"Open";
+			} else {
+				found = false;
+			}
+		//} else {
+		//	found = false;
+		//}
+			/* Ignore stream accesses */
+			wstring eventPath = pFileEvent->filePath;
+			if(eventPath.find(L":", 0) != wstring::npos)
+			{
+				found = false;
+			}
+	} else if(pFileEvent->majorFileEventType == IRP_MJ_READ) {
+		*fileEventName = L"Read";
+	} else if(pFileEvent->majorFileEventType == IRP_MJ_WRITE) {
+		*fileEventName = L"Write";
+	} else if(pFileEvent->majorFileEventType == IRP_MJ_DELETE) {
+		*fileEventName = L"Delete";
+	//} else if(pFileEvent->majorFileEventType == IRP_MJ_CLOSE) {
+	//	*fileEventName = L"Close";
+	} else {
+		found = false;
+	}
+	return found;
+}
+
+wstring 
+FileMonitor::convertFileObjectNameToDosName(wstring fileObjectName)
+{
+	stdext::hash_map<wstring, wstring>::iterator it;
+	for(it = dosNameMap.begin(); it != dosNameMap.end(); it++)
+	{
+		size_t position = fileObjectName.rfind(it->first,0);
+		if(position != wstring::npos)
+		{
+			fileObjectName.replace(position, it->first.length(), it->second, 0, it->second.length());
+			break;
+		}
+	}
+	//transform(fileObjectName.begin(), fileObjectName.end(), fileObjectName.begin(), tolower);
+	return fileObjectName;
+}
+
+void
+FileMonitor::createFilePathAndCopy(wstring* logPath, wstring* filePath)
+{
+	printf("Copying file: %ls\n", filePath->c_str());
+	wstring drive = filePath->substr(0,filePath->find_first_of(L":"));
+	wstring fileName = filePath->substr(filePath->find_last_of(L"\\")+1);
+	wstring intermediateDirectory = *logPath;
+	intermediateDirectory += drive;
+	intermediateDirectory += L"\\";
+	intermediateDirectory += filePath->substr(filePath->find_first_of(L"\\")+1,filePath->find_last_of(L"\\")-filePath->find_first_of(L"\\")-1);
+	SHCreateDirectoryEx(NULL,
+							intermediateDirectory.c_str(),
+							NULL
+							);
+	wstring filePathAndName = intermediateDirectory;
+	filePathAndName += L"\\";
+	filePathAndName += fileName;
+	if(!CopyFile(
+		filePath->c_str(),
+		filePathAndName.c_str(),
+		FALSE
+		))
+	{
+		printf("\t... failed: 0x%08x\n", GetLastError());
+	} else {
+		printf("\t... done\n");
+	}
+}
+
+void
+FileMonitor::copyCreatedFiles()
+{
+	stdext::hash_set<wstring>::iterator it;
+	wchar_t currentDirectory[1024];
+	GetFullPathName(L"logs\\modified_files\\", 1024, currentDirectory, NULL);
+	wstring logPath = currentDirectory;
+	DebugPrint(L"Modified file directory: %ls\n", logPath.c_str());
+	for(it = modifiedFiles.begin(); it != modifiedFiles.end(); it++)
+	{
+		wstring filePath = *it;
+		createFilePathAndCopy(&logPath, &filePath );
+	}
+	modifiedFiles.clear();
+}
+
+void
+FileMonitor::run()
+{
 	HRESULT hResult;
 	DWORD bytesReturned = 0;
-	hResult = FilterSendMessage( commPort,
-                                 &command,
-                                 sizeof( FILEMONITOR_COMMAND ),
-                                 0,
-                                 0,
-                                 &bytesReturned );
-}
-
-void 
-FileMonitor::UnPause()
-{
-	FILEMONITOR_MESSAGE command;
-	command.Command = FStart;
-	HRESULT hResult;
-	DWORD bytesReturned = 0;
-
-	hResult = FilterSendMessage( commPort,
-                                 &command,
-                                 sizeof( FILEMONITOR_COMMAND ),
-                                 0,
-                                 0,
-                                 &bytesReturned );
-}
-
-void 
-FileMonitor::Run()
-{
-	HRESULT hResult;
-	FILE_EVENT fEvent[250];
-	DWORD bytesReturned = 0;
-	wchar_t szTemp[256];
-	while(true)
+	monitorRunning = true;
+	while(isMonitorRunning())
 	{
 		FILEMONITOR_MESSAGE command;
 		command.Command = GetFileEvents;
 
-		ZeroMemory(&fEvent, sizeof(FILE_EVENT)*250);
+		ZeroMemory(fileEvents, FILE_EVENTS_BUFFER_SIZE);
 
-		hResult = FilterSendMessage( commPort,
+		hResult = FilterSendMessage( communicationPort,
                                      &command,
                                      sizeof( FILEMONITOR_COMMAND ),
-                                     fEvent,
-                                     sizeof(FILE_EVENT)*250,
+                                     fileEvents,
+                                     FILE_EVENTS_BUFFER_SIZE,
                                      &bytesReturned );
-		for(unsigned int i = 0; i < (bytesReturned/sizeof(FILE_EVENT)); i++)
+		if(bytesReturned >= sizeof(FILE_EVENT))
 		{
-			wstring eventName;
-			switch(fEvent[i].type)
-			{
-			case FilePreRead:
-				eventName = L"Read";
-				break;
-			case FilePreWrite:
-				eventName = L"Write";
-				break;
-			default:
-				break;
-			}
-			
-			ZeroMemory(&szTemp, sizeof(szTemp));
-			wstring processModuleName;
-			wstring processPath;
-			// Get process name and path
-			if(Monitor::GetProcessCompletePathName(fEvent[i].processID, &processPath, true))
-			{
-				processModuleName = processPath.substr(processPath.find_last_of(L"\\")+1);
-			}
-			
-			//WCHAR driveLetter[15];
-			//wstring filePath = fEvent[i].name;
-			//FilterGetDosName(filePath.c_str(),driveLetter,sizeof(driveLetter)/sizeof(WCHAR)); 
+			UINT offset = 0;
+			do {
+				PFILE_EVENT e = (PFILE_EVENT)(fileEvents + offset);
 
-			wstring filePath = fEvent[i].name;
-			stdext::hash_map<wstring, wstring>::iterator it;
-			for(it = dosNameMap.begin(); it != dosNameMap.end(); it++)
-			{
-				size_t position = filePath.rfind(it->first,0);
-				if(position != wstring::npos)
+				wstring fileEventName;
+				wstring fileEventPath;
+				wstring processModuleName;
+				wstring processPath;
+
+				if(getFileEventName(e, &fileEventName))
 				{
-					filePath.replace(position, it->first.length(), it->second, 0, it->second.length());
-				}
-			}
-			//printf("Got: %ls\n", filePath.c_str());
+					processPath = ProcessManager::getInstance()->getProcessPath(e->processId);
+					processModuleName = ProcessManager::getInstance()->getProcessModuleName(e->processId);
+					
+					fileEventPath = e->filePath;
+					fileEventPath = convertFileObjectNameToDosName(fileEventPath);
+
+					if((fileEventPath != L"UNKNOWN"))
+					{
+						if(!Monitor::isEventAllowed(fileEventName, processPath, fileEventPath))
+						{
+							if(monitorModifiedFiles)
+							{
 		
-			//wstring procModuleName = szTemp;
-			//CloseHandle(hProc);
-			if(!Monitor::EventIsAllowed(eventName,processPath,filePath))
-			{
-				//wstring eventPath = fEvent[i].name;
+								if(!isDirectory(fileEventPath))
+								{
+									if(e->majorFileEventType == IRP_MJ_CREATE || 
+										e->majorFileEventType == IRP_MJ_WRITE )
+									{	
+										modifiedFiles.insert(fileEventPath);
+									} else if(e->majorFileEventType == IRP_MJ_DELETE) 
+									{
+										modifiedFiles.erase(fileEventPath);
+									}	
+								}
+							}
+
+							wchar_t szTempTime[256];
+							convertTimefieldsToString(e->time, szTempTime, 256);
+							wstring time = szTempTime;
+
+							signal_onFileEvent(fileEventName, time, processPath, fileEventPath);
+						}
+					}
+				}
 				
-				wstring time = Monitor::TimeFieldToWString(fEvent[i].time);
-
-				NotifyListeners(eventName, time, processPath, filePath);
-			}
+				offset += sizeof(FILE_EVENT) + e->filePathLength;
+			} while(offset < bytesReturned);	
 		}
-		Sleep(500);
+		
+		if(bytesReturned == FILE_EVENTS_BUFFER_SIZE)
+		{
+			Sleep(FILE_EVENT_BUFFER_FULL_WAIT_TIME);
+		} else {
+			Sleep(FILE_EVENT_WAIT_TIME);
+		}
 	}
-}
-
-void
-FileMonitor::NotifyListeners(wstring eventType, wstring time, wstring processFullPath, wstring eventPath)
-{
-	std::list<FileListener*>::iterator lit;
-
-	// Inform all registered listeners of event
-	for (lit=fileListeners.begin(); lit!= fileListeners.end(); lit++)
-	{
-		(*lit)->OnFileEvent(eventType, time, processFullPath, eventPath);
-	}
-}
-
-void 
-FileMonitor::AddFileListener(FileListener* pl)
-{
-	fileListeners.push_back(pl);
-}
-
-void
-FileMonitor::RemoveFileListener(FileListener* pl)
-{
-	fileListeners.remove(pl);
+	SetEvent(hMonitorStoppedEvent);
 }

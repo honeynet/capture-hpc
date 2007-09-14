@@ -22,21 +22,18 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
-#include "stdafx.h"
-#include <windows.h>
+#include "CaptureGlobal.h"
 #include <winioctl.h>
+#include <boost/signal.hpp>
+#include <boost/bind.hpp>
+#include <hash_set>
+#include <shlobj.h>
 #include "Thread.h"
 #include "Monitor.h"
-#include "Psapi.h"
 #include "MiniFilter.h"
 
-typedef pair <wstring, wstring> Dos_Pair;
+typedef pair <wstring, wstring> DosPair;
 
-/*
-   Constants: File Monitor Communication Port Name
-
-   CAPTURE_FILEMON_PORT_NAME - Contains the device path to the communications port that the file monitor kernel driver creates
-*/
 #define CAPTURE_FILEMON_PORT_NAME	L"\\CaptureFileMonitorPort"
 
 /*
@@ -45,20 +42,20 @@ typedef pair <wstring, wstring> Dos_Pair;
 	Commands that are sent through <commPort> to the kernel driver
 
 	GetFileEvents - Retrieve a buffer that contains a list of <FILE_EVENT>'s
-	FStart - Start monitoring for file events
-	FStop - Stop monitoring for file events
+	SetupMonitor - Send the monitor setup to the kernel driver. Log directory etc
 */
 typedef enum _FILEMONITOR_COMMAND {
 
     GetFileEvents,
-	FStart,
-	FStop
+	SetupMonitor
 
 } FILEMONITOR_COMMAND;
 
 /*
 	Enum: FILE_NOTIFY_CLASS
 
+	DEPRECIATED - Not used anymore
+	
 	Enum containing the types of events that the kernel driver is monitoring
 
 	FilePreRead - File read event type
@@ -66,7 +63,10 @@ typedef enum _FILEMONITOR_COMMAND {
 */
 typedef enum _FILE_NOTIFY_CLASS {
     FilePreRead,
-    FilePreWrite
+    FilePreWrite,
+	FilePreClose,
+	FilePreDelete,
+	FilePreCreate
 } FILE_NOTIFY_CLASS;
 
 /*
@@ -80,6 +80,12 @@ typedef struct _FILEMONITOR_MESSAGE {
     FILEMONITOR_COMMAND Command;
 } FILEMONITOR_MESSAGE, *PFILEMONITOR_MESSAGE;
 
+typedef struct _FILEMONITOR_SETUP {
+	BOOLEAN bCollectDeletedFiles;
+	UINT nLogDirectorySize;
+	WCHAR wszLogDirectory[1024];
+} FILEMONITOR_SETUP, *PFILEMONITOR_SETUP;
+
 /*
 	Struct: FILE_EVENT
 
@@ -91,129 +97,121 @@ typedef struct _FILEMONITOR_MESSAGE {
 	processID - The process id that caused the file event
 */
 typedef struct  _FILE_EVENT {
-	FILE_NOTIFY_CLASS type;
+	UCHAR majorFileEventType;
+	UCHAR minorFileEventType;
+	ULONG status;
+	ULONG information;
+	ULONG flags;
 	TIME_FIELDS time;
-	WCHAR name[1024];
-	DWORD processID;
+	DWORD processId;
+	UINT filePathLength;
+	WCHAR filePath[];
 } FILE_EVENT, *PFILE_EVENT;
+#define FlagOn(_F,_SF)        ((_F) & (_SF))
+/* File event status */
+#define FILE_SUPERSEDED                 0x00000000
+#define FILE_OPENED                     0x00000001
+#define FILE_CREATED                    0x00000002
+#define FILE_OVERWRITTEN                0x00000003
+#define FILE_EXISTS                     0x00000004
+#define FILE_DOES_NOT_EXIST             0x00000005
 
-/*
-	Class: FileListener
-	
-	Interface for objects to implement so that they can be notified when file events are received
-*/
-class FileListener
-{
-public:
-	/*
-		Function: OnFileEvent
-	*/
-	virtual void OnFileEvent(wstring eventType, wstring time, wstring processFullPath, wstring filePath) = 0;
-};
+/* File event flags */
+#define FO_FILE_OPEN                    0x00000001
+#define FO_SYNCHRONOUS_IO               0x00000002
+#define FO_ALERTABLE_IO                 0x00000004
+#define FO_NO_INTERMEDIATE_BUFFERING    0x00000008
+#define FO_WRITE_THROUGH                0x00000010
+#define FO_SEQUENTIAL_ONLY              0x00000020
+#define FO_CACHE_SUPPORTED              0x00000040
+#define FO_NAMED_PIPE                   0x00000080
+#define FO_STREAM_FILE                  0x00000100
+#define FO_MAILSLOT                     0x00000200
+#define FO_GENERATE_AUDIT_ON_CLOSE      0x00000400
+#define FO_QUEUE_IRP_TO_THREAD          FO_GENERATE_AUDIT_ON_CLOSE
+#define FO_DIRECT_DEVICE_OPEN           0x00000800
+#define FO_FILE_MODIFIED                0x00001000
+#define FO_FILE_SIZE_CHANGED            0x00002000
+#define FO_CLEANUP_COMPLETE             0x00004000
+#define FO_TEMPORARY_FILE               0x00008000
+#define FO_DELETE_ON_CLOSE              0x00010000
+#define FO_OPENED_CASE_SENSITIVE        0x00020000
+#define FO_HANDLE_CREATED               0x00040000
+#define FO_FILE_FAST_IO_READ            0x00080000
+#define FO_RANDOM_ACCESS                0x00100000
+#define FO_FILE_OPEN_CANCELLED          0x00200000
+#define FO_VOLUME_OPEN                  0x00400000
+#define FO_REMOTE_ORIGIN                0x01000000
+#define FO_SKIP_COMPLETION_PORT         0x02000000
+#define FO_SKIP_SET_EVENT               0x04000000
+#define FO_SKIP_SET_FAST_IO             0x08000000
+
+/* Max Buffer size to allocate */
+#define FILE_EVENTS_BUFFER_SIZE 5*65536
+/* Normal wait time to request events from the kernel driver */
+#define FILE_EVENT_WAIT_TIME 50
+/* If the buffer was semi full then we wait a lesser time to get the new events */
+#define FILE_EVENT_BUFFER_FULL_WAIT_TIME 5
 
 /*
 	Class: FileMonitor
 
-	File monitor class that communicated with the minifilter driver using the <commPort>. Every 100ms the <Run> thread
-	checks <commPort> and passes a userspace buffer to the kernel driver which copies <FILE_EVENT>'s into it which is
-	then returned to userspace where they are excluded and reported to the objects which registered to be notified when
-	file events occur.
+	The file monitor is responsible for interacting with the CaptureFileMonitor
+	minifilter driver (CaptureFileMonitor.c). This is responsible for communicating
+	with the driver which passes a user-space allocated buffer into kernel-space 
+	which the driver will then fill with file events. It also keeps track of which
+	files have been modified so that when required it can copy those files into
+	a temporary directory. When a event is received the monitor checks to see if
+	it is excluded. If it is not excluded it is malicious and the onFileEvent slot
+	is signalled with the event information.
 
-	Implements: <IRunnable>, <Monitor>
+	The FileMonitor listens for "file-exclusion" events from the <EventController>
+	so that the server or any external object can add/remove exclusions from the
+	monitors lists.
+
+	Implements: Runnable - So that events can be received in the background
+				Monitor - Has access to exclusion lists and loading kernel drivers
 */
-class FileMonitor : public IRunnable, public Monitor
+class FileMonitor : public Runnable, public Monitor
 {
+	public:
+	typedef boost::signal<void (wstring, wstring, wstring, wstring)> signal_fileEvent;
 public:
-	FileMonitor();
-	~FileMonitor(void);
-	
-	/*
-		Function: Start
+	FileMonitor(void);
+	virtual ~FileMonitor(void);
 
-		Creates a new thread <filemonThread> that monitors the <commPort> for incoming data
-	*/
-	void Start();
-	/*
-		Function: Stop
+	void start();
+	void stop();
+	void run();
 
-		Stops the thread stored in <filemonThread>
-	*/
-	void Stop();
-	/*
-		Function: Run
+	inline bool isMonitorRunning() { return monitorRunning; }
+	inline bool isDriverInstalled() { return driverInstalled; }
 
-		Runnable thread which monitors the <commPort> for messages, retrieves them, parses them to events and checks if
-		they are excluded before passing the event onto the listeners. If a message is passed it is considered malicious.
-	*/
-	void Run();
-	/*
-		Function: Pause
+	void copyCreatedFiles();
+	void setMonitorModifiedFiles(bool monitor);
 
-		Pauses the file monitor kernel driver so it does not listen for system wide file events
-	*/
-	void Pause();
-	/*
-		Function: UnPause
+	void onFileExclusionReceived(Element* pElement);
 
-		Unpauses the file monitor kernel driver and starts listening for system wide file events
-	*/
-	void UnPause();
-
-	/*
-		Function: AddFileListener
-
-		Add an object that implements the <FileListener> interface so that it can be notified of file events
-	*/
-	void AddFileListener(FileListener* rl);
-	/*
-		Function: RemoveFileListener
-
-		Remove an object that is listening for file events
-	*/
-	void RemoveFileListener(FileListener* rl);
-	/*
-		Function: NotifyListeners
-
-		Notify all objects that are listening of a file event
-	*/
-	void NotifyListeners(wstring eventType, wstring time, wstring processFullPath, wstring eventPath);
+	boost::signals::connection connect_onFileEvent(const signal_fileEvent::slot_type& s);
 
 private:
-	/*
-		Variable: filemonThread
+	bool getFileEventName(PFILE_EVENT pFileEvent, wstring* fileEventName);
+	wstring convertFileObjectNameToDosName(wstring fileObjectName);
+	void initialiseDosNameMap();
+	bool isDirectory(wstring filePath);
+	void createFilePathAndCopy(wstring* logPath, wstring* filePath);
 
-		<FileMonitor> implements <IRunnable> so that it can monitor for file events in a thread. This contains a pointer
-		to the thread class that holds this.
-	*/
-	Thread* filemonThread;
-	/*
-		Variable: hDriver
-
-		A handle to the file monitor kernel driver so that a user space process can interact with it
-	*/
+	BYTE* fileEvents;
+	Thread* fileMonitorThread;
 	HANDLE hDriver;
-	/*
-		Variable: commPort
-
-		Communications port that minifilter drivers use to communicate to and from userspace and kernelspace
-	*/
-	HANDLE commPort;
-	/*
-		Variable: installed
-
-		Boolean that tells whether or not the kernel driver is successfully loaded
-	*/
-	bool installed;
-	/*
-		Variable: fileListeners
-
-		Linked list containing a list of objects that are listening for file events
-	*/
-	std::list<FileListener*> fileListeners;
-	/*
-		Variable: dosNameMap
-
-		Maps a logical string \DEVICE\* to its DOS drive such as c, or d drive ... etc
-	*/
+	HANDLE communicationPort;
+	HANDLE hMonitorStoppedEvent;
+	signal_fileEvent signal_onFileEvent;
 	stdext::hash_map<wstring, wstring> dosNameMap;
+	stdext::hash_set<wstring> modifiedFiles;
+	bool monitorRunning;
+	bool driverInstalled;
+	bool monitorModifiedFiles;
+
+	boost::signals::connection onFileExclusionReceivedConnection;
 };

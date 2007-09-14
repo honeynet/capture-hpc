@@ -1,0 +1,58 @@
+#[+,-]	[File Access]	[Process Name]	[File Path]
+###################################################
+### Internet Explorer 6.0 SP2			###
+###################################################
+#somehow VMwareService & System accesses the same files when IE is browsing.
++	Write	C:\\Program Files\\VMware\\VMware Tools\\VMwareService\.exe	.*
++	Write	System	.*
+# IE Temporary Files/Internet Cache. 
++	Write	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\WINDOWS\\Temp\\.+
++	Write	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Local Settings\\Temporary Internet Files\\Content\.IE5\\.+
++	Write	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Local Settings\\Temp\\.+tmp
++	Delete	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\WINDOWS\\Temp\\.+
++	Delete	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Local Settings\\Temporary Internet Files\\Content\.IE5\\.+
++	Delete	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Local Settings\\Temp\\.+tmp
+# History
++	Write	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Local Settings\\History\\History.IE5\\.+
++	Delete	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Local Settings\\History\\History.IE5\\.+
+# IE Cookies
++	Write	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Cookies\\.+
++	Write	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Cookies\\index.dat
++	Delete	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Cookies\\.+
++	Delete	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Cookies\\index.dat
+# User data
++	Write	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Application Data\\Microsoft\\CryptnetUrlCache
++	Write	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\UserData\\.+
++	Delete	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Application Data\\Microsoft\\CryptnetUrlCache
++	Delete	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\UserData\\.+
+# Plug ins (like Flash player)
++	Write	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Application Data\\.+
++	Delete	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\Application Data\\.+
+# DRM related stuff
++	Write	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\DRM\\.+
++	Delete	C:\\Program Files\\Internet Explorer\\iexplore\.exe	C:\\Documents and Settings\\.+\\DRM\\.+
+# msg activeX
++	Write	C:\\Program Files\\Messenger\\msmsgs\.exe	C:\\Documents and Settings\\.+\\NTUSER.DAT.LOG
++	Delete	C:\\Program Files\\Messenger\\msmsgs\.exe	C:\\Documents and Settings\\.+\\NTUSER.DAT.LOG
+###################################################
+### Minus List - General Malicious Activity	###
+###################################################
+# Alert about executables or scripts that are written to disk
+-	Write	.*	.+\.bat
+-	Write	.*	.+\.cmd
+-	Write	.*	.+\.exe
+-	Write	.*	.+\.inf
+-	Write	.*	.+\.lnk
+-	Write	.*	.+\.msi
+-	Write	.*	.+\.msp
+-	Write	.*	.+\.pif
+-	Write	.*	.+\.reg
+-	Write	.*	.+\.sct
+-	Write	.*	.+\.shs
+-	Write	.*	.+\.scr
+-	Write	.*	.+\.wsc
+-	Write	.*	.+\.wsf
+-	Write	.*	.+\.wsh
+#commented out for IE because \.com cache files and \.vb script files are very common
+#-	Write	.*	.+\.vb
+#-	Write	.*	.+\.com

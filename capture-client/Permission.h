@@ -22,19 +22,16 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
+#include "CaptureGlobal.h"
 #include <list>
 #include <string>
-#include <iostream>
-#include <fstream>
-#include <vector>
 #include <boost\regex.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/find_iterator.hpp>
 #include <boost/algorithm/string/finder.hpp> 
 #include <boost/tokenizer.hpp> 
-#include <PSAPI.h>
 
-using namespace boost;
+using namespace std;
 
 typedef enum _PERMISSION_CLASSIFICATION {
     NO_MATCH,
@@ -44,6 +41,12 @@ typedef enum _PERMISSION_CLASSIFICATION {
 
 /*
 	Class: Permission
+
+	TODO should really be called an exclusion.
+
+	Contains a subject such as a process, and and object which the subject is interacting
+	with such as a file. If the 2 regex matches and the permission is allowed then the
+	event is excluded.
 */
 class Permission
 {
@@ -61,10 +64,18 @@ public:
 	/*
 		Variable: permissions
 	*/
-	std::list<boost::wregex> permissions;
+	std::list<boost::wregex> objects;
 
 	/*
 		Variable: allow
 	*/
 	bool allow;
+
+	/*
+		Variable: permaneant
+		
+		Whether or not this exclusion is permaneant or not. Can only be set
+		by objects which create their own exclusions.
+	*/
+	bool permaneant;
 };

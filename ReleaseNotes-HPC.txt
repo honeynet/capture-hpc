@@ -1,0 +1,39 @@
+Release Notes
+-------------
+
+Version 2.0
+-----------
+Changes
+-------
++ support for any client application that is http protocol aware (for example, Microsoft Excel)
++ ability to automatically collect downloaded malware
++ ability to automatically collect network traffic on the client
++ ability to push exclusion lists from the Capture Server to the Capture Client
++ improved control of Internet Explorer: obtain html error codes; specify visitation delay AFTER page has been retrieved; retry visitation of URLs in case of time outs or network errors
++ support for plug-in architecture, that allows to create fine grained control of clients (for example, as provided for Internet Explorer), but also allows for integration of client applications that require complex interactions to retrieve content from the web (e.g. Safari is such an application. It doesn’t allow retrieval of web content by passing the URL as a parameter)
++ enhancement to file monitor to monitor file deletions
++ communication between Capture Client and Server has been converted to XML. This allows one to easily write custom Capture Servers that utilize the existing Capture Client.
++ added installer/uninstaller for the Capture Client
++ improved reporting
++ improved stability
++ improved performance
++ numerous bug fixes
+
+
+Known Issues
+------------
+564	File Monitor does not work on Windows XP without a service pack
+580	process monitor exclusion list & report redundant and inconsistent
+592	server crashes when dealing with multiple vmware servers
+613	Make file needs documentation about a quirk
+615	Registry monitoring can't handle a key named \
+655	no help available in command line mode on server
+656	send exclusion list via command line not functioning
+657	url remove command not functioning
+660	time stamp in visit xml doesnt make sense
+663	vmware instance is reset when 404 error encountered
+666	malicious activity on the client in an error condition does not lead to malicious classification
+673	url visitation ends in error without a reason
+676 Empty password on the user of the guest vm in the config.xml causes the capture server to crash (Windows only).
+681	Error found When uninsall the CaptureClient
+682 Unable to open pdf document
