@@ -29,7 +29,6 @@
 #include <hash_map>
 #include "Thread.h"
 #include "Monitor.h"
-#include "NetworkAdapter.h"
 
 using namespace std;
 

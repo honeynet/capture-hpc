@@ -26,12 +26,7 @@
 #include <list>
 #include <string>
 #include <boost\regex.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/find_iterator.hpp>
-#include <boost/algorithm/string/finder.hpp> 
-#include <boost/tokenizer.hpp> 
 
-using namespace std;
 
 typedef enum _PERMISSION_CLASSIFICATION {
     NO_MATCH,
@@ -54,7 +49,7 @@ public:
 	/*
 		Function: Check
 	*/
-	PERMISSION_CLASSIFICATION Check(wstring subject, wstring object);
+	PERMISSION_CLASSIFICATION Check(std::wstring subject, std::wstring object);
 
 	/*
 		Variable: subjects

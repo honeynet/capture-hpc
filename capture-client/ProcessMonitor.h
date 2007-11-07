@@ -24,30 +24,9 @@
 #pragma once
 #include "CaptureGlobal.h"
 #include <boost/signal.hpp>
-#include <boost/bind.hpp>
 #include "Monitor.h"
 #include "Thread.h"
-
-
-#define IOCTL_CAPTURE_GET_PROCINFO	CTL_CODE(0x00000022, 0x0802, METHOD_NEITHER, FILE_READ_DATA | FILE_WRITE_DATA)
-#define IOCTL_CAPTURE_PROC_LIST    CTL_CODE(0x00000022, 0x0807, METHOD_NEITHER, FILE_READ_DATA | FILE_WRITE_DATA)
-
-typedef struct _ProcessInfo
-{
-	TIME_FIELDS time;
-    DWORD  ParentId;
-    DWORD  ProcessId;
-    BOOLEAN bCreate;
-	UINT processPathLength;
-	WCHAR processPath[1024];
-} ProcessInfo;
-
-typedef struct _PROCESS_TUPLE
-{
-	DWORD processID;
-	WCHAR name[1024];
-} PROCESS_TUPLE, * PPROCESS_TUPLE;
-
+#include "Element.h"
 /*
 	Class: ProcessMonitor
 
@@ -62,7 +41,7 @@ typedef struct _PROCESS_TUPLE
 class ProcessMonitor : public Runnable, public Monitor
 {
 public:
-	typedef boost::signal<void (BOOLEAN, wstring, DWORD, wstring, DWORD, wstring)> signal_processEvent;
+	typedef boost::signal<void (BOOLEAN, const std::wstring&, DWORD, const std::wstring&, DWORD, const std::wstring&)> signal_processEvent;
 public:
 	ProcessMonitor(void);
 	virtual ~ProcessMonitor(void);
@@ -71,10 +50,10 @@ public:
 	void stop();
 	void run();
 
-	bool isMonitorRunning() { return monitorRunning; }
-	bool isDriverInstalled() { return driverInstalled; }
+	inline bool isMonitorRunning() { return monitorRunning; }
+	inline bool isDriverInstalled() { return driverInstalled; }
 
-	void onProcessExclusionReceived(Element* pElement);
+	void onProcessExclusionReceived(const Element& pElement);
 
 	boost::signals::connection connect_onProcessEvent(const signal_processEvent::slot_type& s);
 private:

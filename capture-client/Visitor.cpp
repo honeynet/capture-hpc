@@ -1,33 +1,46 @@
 #include "Visitor.h"
+#include "Url.h"
+#include "Thread.h"
+#include "ApplicationPlugin.h"
+#include "EventController.h"
+#include "VisitEvent.h"
 #include <exception>
+#include <iostream>
+#include <fstream>
+#include <boost/bind.hpp>
+#include <boost\regex.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/find_iterator.hpp>
+#include <boost/algorithm/string/finder.hpp> 
+#include <boost/lexical_cast.hpp>
+#include <boost/tokenizer.hpp>
+#include <boost/bind.hpp>
 
+//<string::iterator>
 
 Visitor::Visitor(void)
 {
+	DebugPrint(L"Visitor Created\n");
 	visiting = false;
 
 	hQueueNotEmpty = CreateEvent(NULL, FALSE, FALSE, NULL);
-	onServerVisitEventConnection=EventController::getInstance()->connect_onServerEvent(L"visit", boost::bind(&Visitor::onServerEvent, this, _1));
+
+	onServerEventConnection = EventController::getInstance()->connect_onServerEvent(L"visit-event", boost::bind(&Visitor::onServerEvent, this, _1));
+	//EventController::getInstance()->attach(L"url-group", this);
 
 	loadClientPlugins();
 
 	visitorThread = new Thread(this);
 	visitorThread->start("Visitor");
-	//this->
 }
 
 Visitor::~Visitor(void)
 {
-	onServerVisitEventConnection.disconnect();
 	CloseHandle(hQueueNotEmpty);
 	unloadClientPlugins();
-	// TODO free items in toVisit queue
-}
 
-boost::signals::connection 
-Visitor::onVisitEvent(const signal_visitEvent::slot_type& s)
-{ 
-	return signalVisitEvent.connect(s); 
+	DebugPrint(L"Visitor Destroyed\n");
+	// TODO free items in toVisit queue
 }
 
 void
@@ -36,40 +49,41 @@ Visitor::run()
 	while(true)
 	{
 		WaitForSingleObject(hQueueNotEmpty, INFINITE);
-		VisitPair visit = toVisit.front();
+		VisitEvent* visitEvent = toVisit.front();
 		toVisit.pop();
-		DWORD minorErrorCode = 0;
-		DWORD majorErrorCode = 0;
 		visiting = true;
 
-		ApplicationPlugin* applicationPlugin = visit.first;
-		Url* url = visit.second;
+		ApplicationPlugin* applicationPlugin = getApplicationPlugin(visitEvent->getProgram());
 
-		signalVisitEvent(CAPTURE_VISITATION_PRESTART, SUCCESS, url->getUrl(), url->getApplicationName());
-
-		signalVisitEvent(CAPTURE_VISITATION_START, SUCCESS, url->getUrl(), url->getApplicationName());
-
-		printf("Visiting: %ls -> %ls\n", url->getApplicationName().c_str(), url->getUrl().c_str());
-		
-		/* Pass the actual visitation process to an application plugin */
-		// Catch all exceptions thrown by a plugin. If one occurs signal
-		// an exception visit event
-		try
+		_ASSERT(applicationPlugin != NULL);
+		if(applicationPlugin)
 		{
-			majorErrorCode = applicationPlugin->visitUrl(url, &minorErrorCode);
-		} catch (...)
-		{
-			majorErrorCode = CAPTURE_VISITATION_EXCEPTION;
+			notify(CAPTURE_VISITATION_PRESTART, *visitEvent);
+
+			notify(CAPTURE_VISITATION_START, *visitEvent);
+
+			// Send the group of urls to the appropiate application plugin
+			try
+			{
+				applicationPlugin->visitGroup(visitEvent);
+			} 
+			catch (...)
+			{
+				notify(CAPTURE_VISITATION_EXCEPTION, *visitEvent);
+			}
+
+			// If there are errors report it else finish visitation
+			if(visitEvent->isError())
+			{
+				notify(visitEvent->getErrorCode(), *visitEvent);
+			} else {
+				notify(CAPTURE_VISITATION_FINISH, *visitEvent);
+			}
+
+			notify(CAPTURE_VISITATION_POSTFINISH, *visitEvent);
 		}
-		if(majorErrorCode != CAPTURE_VISITATION_OK)
-		{
-			signalVisitEvent(majorErrorCode, minorErrorCode, url->getUrl(), url->getApplicationName());
-		} else {
-			signalVisitEvent(CAPTURE_VISITATION_FINISH, SUCCESS, url->getUrl(), url->getApplicationName());
-		}	
-		
-		signalVisitEvent(CAPTURE_VISITATION_POSTFINISH, SUCCESS, url->getUrl(), url->getApplicationName());
 
+		delete visitEvent;
 		visiting = false;
 	}
 }
@@ -90,7 +104,7 @@ Visitor::loadClientPlugins()
 		typedef void (*AppPlugin)(void*);
 		do
 		{
-			wstring pluginDir = L"plugins\\";
+			std::wstring pluginDir = L"plugins\\";
 			pluginDir += FindFileData.cFileName;			
 			HMODULE hPlugin = LoadLibrary(pluginDir.c_str());
 
@@ -107,7 +121,7 @@ Visitor::loadClientPlugins()
 					wchar_t** supportedApplications = applicationPlugin->getSupportedApplicationNames();
 					for(int i = 0; supportedApplications[i] != NULL; i++)
 					{
-						stdext::hash_map<wstring, ApplicationPlugin*>::iterator it;
+						stdext::hash_map<std::wstring, ApplicationPlugin*>::iterator it;
 						it = applicationMap.find(supportedApplications[i]);
 						/* Check he application isn't already being handled by a plugin */
 						if(it != applicationMap.end())
@@ -135,6 +149,18 @@ Visitor::loadClientPlugins()
 		FindClose(hFind);
 	}
 	
+}
+
+ApplicationPlugin*
+Visitor::getApplicationPlugin(const std::wstring& applicationName)
+{
+	stdext::hash_map<std::wstring, ApplicationPlugin*>::iterator it;
+	it = applicationMap.find(applicationName);
+	if(it != applicationMap.end())
+	{
+		return it->second;
+	}
+	return NULL;
 }
 
 ApplicationPlugin*
@@ -180,38 +206,59 @@ Visitor::unloadClientPlugins()
 	}
 }
 
-void
-Visitor::onServerEvent(Element* pElement)
+Url*
+Visitor::createUrl(const std::vector<Attribute>& attributes)
 {
-	wstring applicationName = L"iexplore";
-	wstring url = L"";
-	int time = 30;
-	vector<Attribute>::iterator it;
-	for(it = pElement->attributes.begin(); it != pElement->attributes.end(); it++)
+	std::wstring url;
+	std::wstring program;
+	int time = 0;
+	for each(Attribute attribute in attributes)
 	{
-		if(it->name == L"url") {
-			url = it->value;
-		} else if(it->name == L"program") {
-			applicationName = it->value;
-		} else if(it->name == L"time") {
-			time = boost::lexical_cast<int>(it->value);
+		if(attribute.getName() == L"url") {
+			url = attribute.getValue();
+		} else if(attribute.getName() == L"program") {
+			program = attribute.getValue();
+		} else if(attribute.getName() == L"time") {
+			time = boost::lexical_cast<int>(attribute.getValue());
 		}
 	}
-	if(url != L"")
-	{
-		url = CaptureGlobal::urlDecode(url);
-		stdext::hash_map<wstring, ApplicationPlugin*>::iterator vit;
-		vit = applicationMap.find(applicationName);
-		if(vit != applicationMap.end())
+	return new Url(Url::decode(url), program, time);
+}
+
+void
+Visitor::onServerEvent(const Element& element)
+{
+	VisitEvent* visitEvent = new VisitEvent();
+
+	if(element.getName() == L"visit-event") {
+		// A url event with multiple urls to visit
+		std::wstring identifier = element.getAttributeValue(L"identifier");
+		std::wstring program = element.getAttributeValue(L"program");
+		int visitTime = boost::lexical_cast<int>(element.getAttributeValue(L"time"));
+		
+		visitEvent->setIdentifier(identifier);
+		visitEvent->setProgram(program);
+
+		for each(Element* e in element.getChildElements())
 		{
-			ApplicationPlugin* applicationPlugin = vit->second;
-			Url* visiturl = new Url(url, applicationName, time);
-			toVisit.push(VisitPair(applicationPlugin, visiturl));
-			SetEvent(hQueueNotEmpty);
-		} else {
-			printf("Visitor-onServerEvent: ERROR could not find client %ls path, url not queued for visitation\n", applicationName.c_str());
-		}
+			if(e->getName() == L"item")
+			{
+				Url* url = createUrl(e->getAttributes());
+				// Force the visit time and program to the url event just in case
+				// some supplied them in the item element
+				url->setVisitTime(visitTime);
+				url->setProgram(program);
+				visitEvent->addUrl(url);
+			}
+		}	
+	}
+
+	if(visitEvent->getUrls().size() > 0)
+	{
+		toVisit.push(visitEvent);
+		SetEvent(hQueueNotEmpty);
 	} else {
 		printf("Visitor-onServerEvent: ERROR no url specified for visit event\n");
+		delete visitEvent;
 	}
 }

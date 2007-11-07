@@ -23,8 +23,10 @@
  */
 #pragma once
 #include "CaptureGlobal.h"
-#include "Server.h"
-#include <boost/lexical_cast.hpp>
+#include "Element.h"
+#include <boost/signal.hpp>
+
+class Server;
 
 /*
 	Class: FileUploader
@@ -38,19 +40,19 @@
 class FileUploader
 {
 public:
-	FileUploader(Server* s);
+	FileUploader(Server& s);
 	~FileUploader(void);
 
-	bool sendFile(wstring file);
+	bool sendFile(std::wstring file);
 private:
-	Server* server;
+	Server& server;
 
-	void onReceiveFileOkEvent(Element* pElement);
-	void onReceiveFileErrorEvent(Element* pElement);
-	void onReceiveFileAcceptEvent(Element* pElement);
-	void onReceiveFileRejectEvent(Element* pElement);
+	void onReceiveFileOkEvent(const Element& element);
+	void onReceiveFileErrorEvent(const Element& element);
+	void onReceiveFileAcceptEvent(const Element& element);
+	void onReceiveFileRejectEvent(const Element& element);
 
-	BOOL getFileSize(wstring file, PLARGE_INTEGER fileSize);
+	BOOL getFileSize(std::wstring file, PLARGE_INTEGER fileSize);
 	size_t sendFilePart(unsigned int start, unsigned int size);
 
 	boost::signals::connection onReceiveFileOkEventConnection;
@@ -60,7 +62,7 @@ private:
 
 	bool fileAccepted;
 	bool fileOpened;
-	wstring fileName;
+	std::wstring fileName;
 	bool busy;
 	LARGE_INTEGER fileSize;
 	HANDLE hFileAcknowledged;

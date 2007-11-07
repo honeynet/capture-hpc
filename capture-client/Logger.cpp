@@ -1,4 +1,5 @@
 #include "Logger.h"
+#include <algorithm>
 
 Logger::Logger(void)
 {
@@ -22,75 +23,73 @@ Logger::getInstance()
 	return logger;
 }
 
-char* 
-Logger::convertToMultiByteString(wstring* message, size_t* charsConverted)
+std::string
+Logger::convertToMultiByteString(const std::wstring& message, size_t& charsConverted)
 {
-	*charsConverted = 0;
-	int length = static_cast<int>(message->length());
-	int mbsize = WideCharToMultiByte(CP_UTF8, 0, message->c_str(), length, NULL, 0, NULL, NULL);
+	charsConverted = 0;
+	int length = static_cast<int>(message.length());
+	int mbsize = WideCharToMultiByte(CP_UTF8, 0, message.c_str(), length, NULL, 0, NULL, NULL);
 	if (mbsize > 0)
-	{
+	{	
 		char* szMessage = (char*)malloc(mbsize);
-		int bytes = WideCharToMultiByte(CP_UTF8, 0, message->c_str(), length, szMessage, mbsize, NULL, NULL);
+		int bytes = WideCharToMultiByte(CP_UTF8, 0, message.c_str(), length, szMessage, mbsize, NULL, NULL);
 		if(bytes == 0)
 		{
 			DebugPrint(L"Logger-convertToMultiByteString: WideCharToMultiByte ERROR - %08x allocated: %i\n", GetLastError(), mbsize);
 		}
-		*charsConverted = bytes;
+		charsConverted = bytes;
 		return szMessage;
 	} else {
 		DebugPrint(L"Logger-convertToMultiByteString: WideCharToMultiByte ERROR - %08x allocated: %i\n", GetLastError(), mbsize);
 	}
-	return NULL;
+	return "";
 }
 
 void
-Logger::writeSystemEventToLog(wstring* type, wstring* time, 
-							  wstring* process, wstring* action, 
-							  wstring* object)
+Logger::writeSystemEventToLog(const std::wstring& type, const std::wstring& time, 
+							  const std::wstring& process, const std::wstring& action, 
+							  const std::wstring& object)
 {
 	if(isFileOpen())
 	{
-		wstring message = L"\"";
-		message += *time;
+		std::wstring message = L"\"";
+		message += time;
 		message += L"\",\"";
-		message += *type;
+		message += type;
 		message += L"\",\"";
-		message += *action;
+		message += action;
 		message += L"\",\"";
-		message += *process;
+		message += process;
 		message += L"\",\"";
-		message += *object;
+		message += object;
 		message += L"\"\r\n";
-		writeToLog(&message);
+		writeToLog(message);
 	}
 }
 
 void 
-Logger::writeToLog(wstring* message)
+Logger::writeToLog(const std::wstring& message)
 {
 	if(isFileOpen())
 	{
 		size_t charsConverted;
-		char* szMessage = convertToMultiByteString(message, &charsConverted);
-		if(szMessage != NULL)
+		std::string szMessage = convertToMultiByteString(message, charsConverted);
+		if(szMessage.length() > 0)
 		{
 			DWORD bytesWritten;
 			WriteFile(
 				hLog,
-				szMessage,
+				szMessage.c_str(),
 				static_cast<unsigned long>(charsConverted), // Ignore null charater
 				&bytesWritten,
 				NULL
 				);
-
-			free(szMessage);
 		}
 	}
 }
 
 void
-Logger::openLogFile(wstring file)
+Logger::openLogFile(const std::wstring& file)
 {
 	if(!isFileOpen())
 	{

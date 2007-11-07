@@ -24,8 +24,6 @@
 #pragma once
 #include "CaptureGlobal.h"
 #include <string>
-#include <queue>
-#include <list>
 /*
 	Class: Logger
 
@@ -39,27 +37,27 @@ public:
 	~Logger(void);
 	static Logger* getInstance();
 
-	void openLogFile(wstring file);
+	void openLogFile(const std::wstring& file);
 
-	void writeToLog(wstring* message);
-	void writeSystemEventToLog(wstring* type, wstring* time, wstring* process, wstring* action, wstring* object);
+	void writeToLog(const std::wstring& message);
+	void writeSystemEventToLog(const std::wstring& type, const std::wstring& time, const std::wstring& process, const std::wstring& action, const std::wstring& object);
 
 	void closeLogFile();
 
-	bool isFileOpen() { return fileOpen; }
+	inline bool isFileOpen() { return fileOpen; }
 
-	wstring getLogFileName() { return logFileName; }
-	wstring getLogFullPath() { return logFullPath; }
+	inline const std::wstring& getLogFileName() { return logFileName; }
+	inline const std::wstring& getLogFullPath() { return logFullPath; }
 
 private:
 	static bool instanceCreated;
     static Logger *logger;
 	Logger(void);
 
-	char* convertToMultiByteString(wstring* message, size_t* charsConverted);
+	std::string convertToMultiByteString(const std::wstring& message, size_t& charsConverted);
 
 	bool fileOpen;
-	wstring logFullPath;
-	wstring logFileName;
+	std::wstring logFullPath;
+	std::wstring logFileName;
 	HANDLE hLog;
 };

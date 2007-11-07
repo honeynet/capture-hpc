@@ -22,28 +22,13 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
-//#include "CaptureGlobal.h"
-#include <boost/signal.hpp>
-#include <boost/bind.hpp>
-#include <vector>
+
 #include <expatpplib.h>
+#include <string>
+#include <boost/signal.hpp>
 #include <hash_map>
 
-using namespace std;
-
-typedef struct _ATTRIBUTE
-{
-	wstring name;
-	wstring value;
-} Attribute, * pAttribute;
-
-typedef struct _ELEMENT
-{
-	wstring name;
-	vector<Attribute> attributes;
-	char * data;
-	size_t dataLength;
-} Element, * pElement;
+#include "Element.h"
 
 /*
 	Class: EventController
@@ -66,15 +51,14 @@ typedef struct _ELEMENT
 */
 class EventController : public expatpp
 {
-	
 public:
-	typedef boost::signal<void (Element*)> signal_serverEvent;
-	typedef pair <wstring, signal_serverEvent*> OnServerEventPair;
+	typedef boost::signal<void (const Element&)> signal_serverEvent;
+	typedef std::pair <std::wstring, signal_serverEvent*> OnServerEventPair;
 public:
 	~EventController(void);
 	static EventController* getInstance();
 
-	boost::signals::connection connect_onServerEvent(wstring eventType, const signal_serverEvent::slot_type& s);
+	boost::signals::connection connect_onServerEvent(const std::wstring& eventType, const signal_serverEvent::slot_type& s);
 
 	void receiveServerEvent(const char* xmlDocument);
 private:
@@ -84,8 +68,8 @@ private:
 
 	void notifyListeners();
 
-	stdext::hash_map<wstring, signal_serverEvent*> onServerEventMap;
-	Element* pCurrentElement;
+	stdext::hash_map<std::wstring, signal_serverEvent*> onServerEventMap;
+	Element* currentElement;
 	
 public:
 	virtual void startElement(const XML_Char *name, const XML_Char **atts);

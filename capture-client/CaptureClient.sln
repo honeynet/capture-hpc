@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaptureKernelDrivers", "Ker
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Application_ClientConfigManager", "ApplicationPlugins\ClientConfigParser\ClientConfigParser.vcproj", "{C57EC146-60B3-499B-BDFA-5BB5504FDB89}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Application_Safari", "ApplicationPlugins\Safari\Application_Safari.vcproj", "{9156126E-DEFD-44CD-8F8B-05879459F0B7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -31,6 +33,10 @@ Global
 		{C57EC146-60B3-499B-BDFA-5BB5504FDB89}.Debug|Win32.Build.0 = Debug|Win32
 		{C57EC146-60B3-499B-BDFA-5BB5504FDB89}.Release|Win32.ActiveCfg = Release|Win32
 		{C57EC146-60B3-499B-BDFA-5BB5504FDB89}.Release|Win32.Build.0 = Release|Win32
+		{9156126E-DEFD-44CD-8F8B-05879459F0B7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9156126E-DEFD-44CD-8F8B-05879459F0B7}.Debug|Win32.Build.0 = Debug|Win32
+		{9156126E-DEFD-44CD-8F8B-05879459F0B7}.Release|Win32.ActiveCfg = Release|Win32
+		{9156126E-DEFD-44CD-8F8B-05879459F0B7}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

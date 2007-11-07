@@ -1,4 +1,6 @@
 #include "ServerSend.h"
+#include "Server.h"
+
 
 ServerSend::ServerSend(Server* s)
 {
@@ -42,8 +44,8 @@ ServerSend::run()
 		if(!server->sendQueue.empty())
 		{
 			int result = 0;
-			wstring msg = server->sendQueue.front();
-			server->sendQueue.pop();
+			std::wstring msg = server->sendQueue.front();
+			server->sendQueue.pop_back();
 			LeaveCriticalSection(&server->sendQueueLock);
 			size_t allocateSize = (msg.length() + 1)*sizeof(wchar_t);
 			char *szMessage = (char*)malloc(allocateSize);

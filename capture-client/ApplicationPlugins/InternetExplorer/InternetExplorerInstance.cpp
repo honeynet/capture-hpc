@@ -2,18 +2,43 @@
 
 InternetExplorerInstance::InternetExplorerInstance(void)
 {
+	major = 0;
+	minor = 0;
 }
 
 InternetExplorerInstance::~InternetExplorerInstance(void)
 {
+		HWND hwndIE;
+	DWORD dProcessID;
+	pInternetExplorer->get_HWND((SHANDLE_PTR*)&hwndIE);
+	GetWindowThreadProcessId(hwndIE, &dProcessID);
+
+	HANDLE hProc = OpenProcess(PROCESS_TERMINATE, FALSE, dProcessID);
+	if(hProc != NULL)
+	{
+		if(!TerminateProcess(hProc, 0))
+		{
+			major = CAPTURE_VISITATION_PROCESS_ERROR;
+			minor = GetLastError();
+		}
+	} else {
+		major = CAPTURE_VISITATION_PROCESS_ERROR;
+		minor = GetLastError();
+	}
+
+	//CloseHandle(hVisiting);
+	pInternetExplorer->Release();
+
+	CoUninitialize();
 }
 
-DWORD 
-InternetExplorerInstance::visitUrl(Url* url, DWORD* minorError)
+void 
+InternetExplorerInstance::visitUrl(Url* url, HANDLE hEvent)
 {
 	HRESULT hr;
+	hVisiting = hEvent;
 	dwNetworkErrorCode = 0;
-	DWORD status = CAPTURE_VISITATION_OK;
+	major = CAPTURE_VISITATION_OK;
 	CoInitializeEx(NULL,COINIT_MULTITHREADED);
 	mainURL.vt = VT_EMPTY;
 	hr = CoCreateInstance(CLSID_InternetExplorer,
@@ -26,7 +51,7 @@ InternetExplorerInstance::visitUrl(Url* url, DWORD* minorError)
 	   events from IE */
 	if ( SUCCEEDED ( hr ) )
 	{
-		hVisiting = CreateEvent(NULL, FALSE, FALSE, NULL);
+		//hVisiting = CreateEvent(NULL, FALSE, FALSE, NULL);
 		IConnectionPointContainer *pCPContainer; 
 		if(SUCCEEDED(pInternetExplorer->QueryInterface(IID_IConnectionPointContainer,
 			(void **)&pCPContainer)))
@@ -52,56 +77,6 @@ InternetExplorerInstance::visitUrl(Url* url, DWORD* minorError)
 	URL = url->getUrl().c_str();
 		
 	hr = pInternetExplorer->Navigate2(&URL,&Flag,&TargetFrameName,&PostData,&Headers);
-		
-	DWORD dResult = WaitForSingleObject(hVisiting, 60*1000);
-
-	if(dResult == WAIT_TIMEOUT)
-	{
-		status = CAPTURE_VISITATION_TIMEOUT_ERROR;
-	} else {
-		/* If there is a network error such as 404, 401 etc then we should wait
-		   the required visit time as some sites use custom error pages which
-		   itself could be malicious. For all other errors we should not wait */
-		/* HTTP error codes */
-		if(dwNetworkErrorCode >= 100 && dwNetworkErrorCode <= 505)
-		{
-			Sleep(url->getVisitTime()*1000);
-		} else if(dwNetworkErrorCode >= 0x800C0000 && dwNetworkErrorCode <= 0x800CFFFF) {
-			/* URL Moniker error */
-		} else {
-			Sleep(url->getVisitTime()*1000);
-		}
-	}
-	if(bNetworkError)
-	{
-		status = CAPTURE_VISITATION_NETWORK_ERROR;
-		*minorError = dwNetworkErrorCode;
-	}
-
-	/* Close the IE window and COM references */
-	HWND hwndIE;
-	DWORD dProcessID;
-	pInternetExplorer->get_HWND((SHANDLE_PTR*)&hwndIE);
-	GetWindowThreadProcessId(hwndIE, &dProcessID);
-
-	HANDLE hProc = OpenProcess(PROCESS_TERMINATE, FALSE, dProcessID);
-	if(hProc != NULL)
-	{
-		if(!TerminateProcess(hProc, 0))
-		{
-			status = CAPTURE_VISITATION_PROCESS_ERROR;
-			*minorError = GetLastError();
-		}
-	} else {
-		status = CAPTURE_VISITATION_PROCESS_ERROR;
-		*minorError = GetLastError();
-	}
-
-	CloseHandle(hVisiting);
-	pInternetExplorer->Release();
-
-	CoUninitialize();
-	return status;
 }
 
 HRESULT STDMETHODCALLTYPE
@@ -146,7 +121,8 @@ InternetExplorerInstance::Invoke(
 		{
 			vt_statuscode = pDispParams->rgvarg[1].pvarVal;
 			dwNetworkErrorCode = vt_statuscode->lVal;
-			bNetworkError = true;
+			major = CAPTURE_VISITATION_NETWORK_ERROR;
+			minor = dwNetworkErrorCode;
 			SetEvent(hVisiting);
 		}
 		break;

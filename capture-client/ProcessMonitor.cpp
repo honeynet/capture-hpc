@@ -1,4 +1,26 @@
 #include "ProcessMonitor.h"
+#include "EventController.h"
+#include "ProcessManager.h"
+#include <boost/bind.hpp>
+
+#define IOCTL_CAPTURE_GET_PROCINFO	CTL_CODE(0x00000022, 0x0802, METHOD_NEITHER, FILE_READ_DATA | FILE_WRITE_DATA)
+#define IOCTL_CAPTURE_PROC_LIST    CTL_CODE(0x00000022, 0x0807, METHOD_NEITHER, FILE_READ_DATA | FILE_WRITE_DATA)
+
+typedef struct _ProcessInfo
+{
+	TIME_FIELDS time;
+    DWORD  ParentId;
+    DWORD  ProcessId;
+    BOOLEAN bCreate;
+	UINT processPathLength;
+	WCHAR processPath[1024];
+} ProcessInfo;
+
+typedef struct _PROCESS_TUPLE
+{
+	DWORD processID;
+	WCHAR name[1024];
+} PROCESS_TUPLE, * PPROCESS_TUPLE;
 
 ProcessMonitor::ProcessMonitor(void)
 {
@@ -59,21 +81,21 @@ ProcessMonitor::connect_onProcessEvent(const signal_processEvent::slot_type& s)
 }
 
 void
-ProcessMonitor::onProcessExclusionReceived(Element* pElement)
+ProcessMonitor::onProcessExclusionReceived(const Element& element)
 {
-	wstring excluded = L"";
-	wstring parentProcessPath = L"";
-	wstring processPath = L"";
+	std::wstring excluded = L"";
+	std::wstring parentProcessPath = L"";
+	std::wstring processPath = L"";
 
-	vector<Attribute>::iterator it;
-	for(it = pElement->attributes.begin(); it != pElement->attributes.end(); it++)
+	std::vector<Attribute>::const_iterator it;
+	for(it = element.getAttributes().begin(); it != element.getAttributes().end(); it++)
 	{
-		if(it->name == L"subject") {
-			parentProcessPath = it->value;
-		} else if(it->name == L"object") {
-			processPath = it->value;
-		} else if(it->name == L"excluded") {
-			excluded = it->value;
+		if((*it).getName() == L"subject") {
+			parentProcessPath = (*it).getValue();
+		} else if((*it).getName() == L"object") {
+			processPath = (*it).getValue();
+		} else if((*it).getName() == L"excluded") {
+			excluded = (*it).getValue();
 		}
 	}
 	Monitor::addExclusion(excluded, L"process", parentProcessPath, processPath);
@@ -82,10 +104,10 @@ ProcessMonitor::onProcessExclusionReceived(Element* pElement)
 void
 ProcessMonitor::initialiseKernelDriverProcessMap()
 {
-	stdext::hash_map<DWORD, wstring> processMap;
+	stdext::hash_map<DWORD, std::wstring> processMap;
 
 	processMap = ProcessManager::getInstance()->getProcessMap();
-	stdext::hash_map<DWORD, wstring>::iterator it;
+	stdext::hash_map<DWORD, std::wstring>::iterator it;
 	for(it = processMap.begin(); it != processMap.end(); it++)
 	{
 		DWORD dwReturn;
@@ -158,13 +180,11 @@ ProcessMonitor::run()
 				p.ParentId != tempP.ParentId ||
 				p.ProcessId != tempP.ProcessId)
 			{		
-				wstring processPath;
-				wstring processModuleName;
-				wstring parentProcessPath;
-				wstring parentProcessModuleName;
-				wchar_t szTempTime[256];
-				convertTimefieldsToString(p.time, szTempTime, 256);
-				wstring time = szTempTime;
+				std::wstring processPath;
+				std::wstring processModuleName;
+				std::wstring parentProcessPath;
+				std::wstring parentProcessModuleName;
+				std::wstring time = Time::timefieldToString(p.time);
 
 				ProcessManager::getInstance()->onProcessEvent(p.bCreate, time, p.ParentId, 
 					p.ProcessId, p.processPath);

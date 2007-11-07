@@ -23,14 +23,17 @@
  */
 #pragma once
 #include "CaptureGlobal.h"
-#include "Server.h"
+#include "Element.h"
 #include <string.h>
-#include <boost/lexical_cast.hpp>
+#include <boost/signal.hpp>
+
+class Server;
 
 /*
 	Class: Updater
 
 	NOTE only used in client server mode
+	NOTE2 NOT TESTED
 
 	Receives client updates from the server. Exits the client and runs the updater.
 
@@ -40,7 +43,6 @@
 	server will then probably save the new state of the VM this client is hosted on
 	and rerun the client again.
 */
-using namespace std;
 
 class Updater
 {
@@ -50,9 +52,9 @@ public:
 
 private:
 
-	void onReceiveUpdateEvent(Element* pElement);
-	void onReceiveUpdatePartEvent(Element* pElement);
-	void onReceiveUpdateFinishedEvent(Element* pElement);
+	void onReceiveUpdateEvent(const Element& element);
+	void onReceiveUpdatePartEvent(const Element& element);
+	void onReceiveUpdateFinishedEvent(const Element& element);
 
 	boost::signals::connection onReceiveUpdateEventConnection;
 	boost::signals::connection onReceiveUpdatePartEventConnection;
@@ -61,7 +63,7 @@ private:
 	bool fileAllocated;
 	char* fileBuffer;
 	int fileSize;
-	wstring fileName;
+	std::wstring fileName;
 
 	Server* server;
 };

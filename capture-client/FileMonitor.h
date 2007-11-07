@@ -23,16 +23,15 @@
  */
 #pragma once
 #include "CaptureGlobal.h"
-#include <winioctl.h>
+#include "Element.h"
 #include <boost/signal.hpp>
-#include <boost/bind.hpp>
+
 #include <hash_set>
-#include <shlobj.h>
+
 #include "Thread.h"
 #include "Monitor.h"
 #include "MiniFilter.h"
 
-typedef pair <wstring, wstring> DosPair;
 
 #define CAPTURE_FILEMON_PORT_NAME	L"\\CaptureFileMonitorPort"
 
@@ -175,7 +174,7 @@ typedef struct  _FILE_EVENT {
 class FileMonitor : public Runnable, public Monitor
 {
 	public:
-	typedef boost::signal<void (wstring, wstring, wstring, wstring)> signal_fileEvent;
+	typedef boost::signal<void (const std::wstring&, const std::wstring&, const std::wstring&, const std::wstring&)> signal_fileEvent;
 public:
 	FileMonitor(void);
 	virtual ~FileMonitor(void);
@@ -190,16 +189,16 @@ public:
 	void copyCreatedFiles();
 	void setMonitorModifiedFiles(bool monitor);
 
-	void onFileExclusionReceived(Element* pElement);
+	void onFileExclusionReceived(const Element& pElement);
 
 	boost::signals::connection connect_onFileEvent(const signal_fileEvent::slot_type& s);
 
 private:
-	bool getFileEventName(PFILE_EVENT pFileEvent, wstring* fileEventName);
-	wstring convertFileObjectNameToDosName(wstring fileObjectName);
+	bool getFileEventName(PFILE_EVENT pFileEvent, std::wstring* fileEventName);
+	std::wstring convertFileObjectNameToDosName(std::wstring fileObjectName);
 	void initialiseDosNameMap();
-	bool isDirectory(wstring filePath);
-	void createFilePathAndCopy(wstring* logPath, wstring* filePath);
+	bool isDirectory(std::wstring filePath);
+	void createFilePathAndCopy(std::wstring* logPath, std::wstring* filePath);
 
 	BYTE* fileEvents;
 	Thread* fileMonitorThread;
@@ -207,8 +206,8 @@ private:
 	HANDLE communicationPort;
 	HANDLE hMonitorStoppedEvent;
 	signal_fileEvent signal_onFileEvent;
-	stdext::hash_map<wstring, wstring> dosNameMap;
-	stdext::hash_set<wstring> modifiedFiles;
+	stdext::hash_map<std::wstring, std::wstring> dosNameMap;
+	stdext::hash_set<std::wstring> modifiedFiles;
 	bool monitorRunning;
 	bool driverInstalled;
 	bool monitorModifiedFiles;

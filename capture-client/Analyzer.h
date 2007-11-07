@@ -23,20 +23,18 @@
  */
 #pragma once
 #include "CaptureGlobal.h"
+#include "Observable.h"
+#include "VisitEvent.h"
 #include <string>
-#include <queue>
-#include "shellapi.h"
 #include <boost/signal.hpp>
-#include <boost/bind.hpp>
-#include "Server.h"
-#include "Visitor.h"
-#include "ProcessMonitor.h"
-#include "RegistryMonitor.h"
-#include "FileMonitor.h"
-#include "NetworkPacketDumper.h"
-#include "FileUploader.h"
 
-using namespace std;
+class FileUploader;
+class NetworkPacketDumper;
+class FileMonitor;
+class RegistryMonitor;
+class ProcessMonitor;
+class Visitor;
+class Server;
 
 /*
 	Class: Analyzer
@@ -52,10 +50,10 @@ using namespace std;
 	the monitor will signal the slot with the event information which is then
 	processed by the analyzer.
 */
-class Analyzer
+class Analyzer : public Observer<VisitEvent>
 {
 public:
-	Analyzer(Visitor* v, Server* s);
+	Analyzer(Visitor& v, Server& s);
 	~Analyzer(void);
 
 	/*
@@ -80,39 +78,39 @@ public:
 		application, the Visitor will signal various visit events which will be 
 		passed onto the Analyzer.
 	*/
-	void onVisitEvent(DWORD majorErrorCode, DWORD minorErrorCode, wstring url, wstring applicationPath);
+	void update(int eventType, const VisitEvent& visitEvent);
 	/*
 		Function: onProcessEvent
 
 		Method which binds to the <ProcessMonitor> process event slot. This is called
 		whenever a malicious process event occurs on the system
 	*/
-	void onProcessEvent(BOOLEAN created, wstring time, 
-						DWORD parentProcessId, wstring parentProcess, 
-						DWORD processId, wstring process);
+	void onProcessEvent(BOOLEAN created, const std::wstring& time, 
+						DWORD parentProcessId, const std::wstring& parentProcess, 
+						DWORD processId, const std::wstring& process);
 	/*
 		Function: onRegistryEvent
 
 		Method which binds to the <RegistryMonitor> registry event slot. Called when
 		ever a malcious registry event occurs
 	*/
-	void onRegistryEvent(wstring registryEventType, wstring time, 
-						 wstring processPath, wstring registryEventPath);
+	void onRegistryEvent(const std::wstring& registryEventType, const std::wstring& time, 
+						 const std::wstring& processPath, const std::wstring& registryEventPath);
 	/*
 		Function: onFileEvent
 
 		Method which binds to the <FileMonitor> file event slot. Called when
 		ever a malcious file event occurs
 	*/
-	void onFileEvent(wstring fileEventType, wstring time, 
-						 wstring processPath, wstring fileEventPath);
+	void onFileEvent(const std::wstring& fileEventType, const std::wstring& time, 
+						 const std::wstring& processPath, const std::wstring& fileEventPath);
 
 	/*
 		Function: onOptionChanged
 
 		Called when an option changes in OptionsManager
 	*/
-	void onOptionChanged(wstring option);
+	void onOptionChanged(const std::wstring& option);
 private:
 	/*
 		Variable: malcious
@@ -135,7 +133,7 @@ private:
 		so that it can be saved or sent to the server. It uses both tar.exe and gzip.exe
 		to perform this functionality
 	*/
-	bool compressLogDirectory(wstring logFileName);
+	bool compressLogDirectory(const std::wstring& logFileName);
 
 	/*
 		Method: sendSystemEvent
@@ -143,32 +141,24 @@ private:
 		Helper method which parses the monitor events into a readible XML document
 		which can be saved to a file as a CSV or sent to the server.
 	*/
-	void sendSystemEvent(wstring* type, wstring* time, wstring* process, wstring* action, wstring* object);
-	/*
-		Method: sendVisitEvent
+	void sendSystemEvent(const std::wstring& type, const std::wstring& time, const std::wstring& process, const std::wstring& action, const std::wstring& object);
 
-		Helper method which parses a visit event from <onVisitEvent> and sends it to the
-		server.
-	*/
-	void sendVisitEvent(wstring* type, wstring* time, 
-						 wstring* url, wstring* classification, wstring* application,
-						 wstring* majorErrorCode, wstring* minorErrorCode);
 
-	wstring errorCodeToString(DWORD errorCode);
+	std::wstring errorCodeToString(DWORD errorCode);
 
 	/*
 		Variable: visitor
 
 		Contains the <Visitor> component
 	*/	
-	Visitor* visitor;
+	Visitor& visitor;
 	/*
 		Variable: server
 
 		Contains the <Server> component. The analyzer is the only object allowed to
 		send data to the remote server
 	*/	
-	Server* server;
+	Server& server;
 	/*
 		Variable: processMonitor
 

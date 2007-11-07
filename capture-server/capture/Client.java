@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.Observable;
+import java.util.List;
+import java.util.Iterator;
 
 enum CLIENT_STATE {
 	CONNECTING,
@@ -53,7 +55,7 @@ enum CLIENT_STATE {
  */
 public class Client extends Observable implements Runnable {
 	private Socket clientSocket;
-	private Url visitingUrl;
+	private UrlGroup visitingUrlGroup;
 	private CLIENT_STATE clientState;
 	private VirtualMachine virtualMachine;
 	private ClientEventController clientEventController;
@@ -81,7 +83,7 @@ public class Client extends Observable implements Runnable {
 
 	}
 	
-	public String errorCodeToString(int error)
+	public String errorCodeToString(long error)
 	{
 		for (ERROR_CODES e : ERROR_CODES.values())
 		{
@@ -143,9 +145,9 @@ public class Client extends Observable implements Runnable {
 			virtualMachine.setClient(null);
 			virtualMachine.setState(VM_STATE.WAITING_TO_BE_REVERTED);
 		}
-		if(visitingUrl != null)
+		if(visitingUrlGroup != null)
 		{
-			visitingUrl.setUrlState(URL_STATE.ERROR);
+			visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);
 		}
 		try {
 			out.close();
@@ -157,6 +159,7 @@ public class Client extends Observable implements Runnable {
 	
 	public void parseEvent(Element element)
 	{
+        //only written to log if size of group is one
 		if(this.getClientState() == CLIENT_STATE.VISITING)
 		{
 			String type = element.attributes.get("type");
@@ -164,7 +167,7 @@ public class Client extends Observable implements Runnable {
 			String process = element.attributes.get("process");
 			String action = element.attributes.get("action");
 			String object = element.attributes.get("object");
-			visitingUrl.writeEventToLog("\"" + type + "\",\"" + time + 
+			visitingUrlGroup.writeEventToLog("\"" + type + "\",\"" + time +
 					"\",\"" + process + "\",\"" + action + "\",\"" + 
 					object + "\"");
 		}
@@ -172,39 +175,96 @@ public class Client extends Observable implements Runnable {
 	
 	public void parseVisitEvent(Element element)
 	{
-		String type = element.attributes.get("type");
+        String type = element.attributes.get("type");
 		if(type.equals("start")) {
-			System.out.println(this.getVirtualMachine().getLogHeader() + " Visiting " + visitingUrl.getEscapedUrl());
-			visitingUrl.setUrlState(URL_STATE.VISITING);
+			System.out.println(this.getVirtualMachine().getLogHeader() + " Visiting group" + visitingUrlGroup.getIdentifier());
+			visitingUrlGroup.setVisitStartTime(element.attributes.get("time"));
+
+            //iterate through url elements and set startvisitTime & visiting state
+            List<Element> items = element.childElements;
+            for (Iterator<Element> iterator = items.iterator(); iterator.hasNext();) {
+                Element item = iterator.next();
+                String uri = item.attributes.get("url");
+                Url url = visitingUrlGroup.getUrl(uri);
+                url.setVisitStartTime(item.attributes.get("time"));
+            }
+            visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITING); //will set underlying url state
+
+
 			this.setClientState(CLIENT_STATE.VISITING);
 		} else if(type.equals("finish")) {
 			System.out.print(this.getVirtualMachine().getLogHeader() + " Visited ");
-			String malicious = element.attributes.get("malicious");
-			if(malicious.equals("1"))
-			{
-				System.out.print("MALICIOUS");
-				visitingUrl.setMalicious(true);
-                visitingUrl.setUrlState(URL_STATE.VISITED);
-                System.out.println(" " + visitingUrl.getUrl());
-				visitingUrl = null;
-                this.setClientState(CLIENT_STATE.DISCONNECTED);
-			} else {
-				System.out.print("BENIGN");
-                visitingUrl.setUrlState(URL_STATE.VISITED);
-                System.out.println(" " + visitingUrl.getUrl());
-				visitingUrl = null;
-                this.setClientState(CLIENT_STATE.WAITING);
-			}	
+            visitingUrlGroup.setVisitFinishTime(element.attributes.get("time"));
+
+            //iterate through url elements and set startvisitTime & visiting state
+            List<Element> items = element.childElements;
+            int errorCount = 0;
+            for (Iterator<Element> iterator = items.iterator(); iterator.hasNext();) {
+                Element item = iterator.next();
+                String uri = item.attributes.get("url");
+                Url url = visitingUrlGroup.getUrl(uri);
+                url.setVisitFinishTime(item.attributes.get("time"));
+                String urlMajorErrorCode = item.attributes.get("major-error-code");
+                String urlMinorErrorCode = item.attributes.get("minor-error-code");
+                if(!urlMajorErrorCode.equals("")) {
+                    errorCount++;
+                    url.setMajorErrorCode(Long.parseLong(urlMajorErrorCode));
+                    url.setMinorErrorCode(Long.parseLong(urlMinorErrorCode));
+                }
+            }
+            if(errorCount==items.size()) { //all URLs contained errors
+                long major = ERROR_CODES.PROCESS_ERROR.errorCode;
+                long minor = 111;
+                System.out.println(this.getVirtualMachine().getLogHeader() + " Visit error - Major: " + errorCodeToString(major) + " Minor: " + minor);
+			    visitingUrlGroup.setMajorErrorCode(major);
+			    visitingUrlGroup.setMinorErrorCode(minor);
+		    	visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);   //will set underlying url state
+		    	this.setClientState(CLIENT_STATE.DISCONNECTED);
+		    	visitingUrlGroup = null;
+            } else {
+
+                String malicious = element.attributes.get("malicious");
+                if(malicious.equals("1"))
+                {
+                    System.out.print("MALICIOUS");
+                    visitingUrlGroup.setMalicious(true);
+                    visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
+                    System.out.println(" " + visitingUrlGroup.getIdentifier());
+                    visitingUrlGroup = null;
+                    this.setClientState(CLIENT_STATE.DISCONNECTED);
+                } else {
+                    System.out.print("BENIGN");
+                    visitingUrlGroup.setMalicious(false);
+                    visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
+                    System.out.println(" " + visitingUrlGroup.getIdentifier());
+                    visitingUrlGroup = null;
+                    this.setClientState(CLIENT_STATE.WAITING);
+                }
+            }
 		} else if(type.equals("error")) {
 			String major = element.attributes.get("major-error-code");
 			String minor = element.attributes.get("minor-error-code");
-			
-			System.out.println(this.getVirtualMachine().getLogHeader() + " Visit error - Major: " + errorCodeToString(Integer.parseInt(major)) + " Minor: " + minor);
-			visitingUrl.setMajorErrorCode(Long.parseLong(major));
-			visitingUrl.setMinorErrorCode(Long.parseLong(minor));
-			visitingUrl.setUrlState(URL_STATE.ERROR);
+
+			List<Element> items = element.childElements;
+            for (Iterator<Element> iterator = items.iterator(); iterator.hasNext();) {
+                Element item = iterator.next();
+                String uri = item.attributes.get("url");
+                Url url = visitingUrlGroup.getUrl(uri);
+                url.setVisitFinishTime(item.attributes.get("time"));
+                String urlMajorErrorCode = item.attributes.get("major-error-code");
+                String urlMinorErrorCode = item.attributes.get("minor-error-code");
+                if(!urlMajorErrorCode.equals("")) {
+                    url.setMajorErrorCode(Long.parseLong(urlMajorErrorCode));
+                    url.setMinorErrorCode(Long.parseLong(urlMinorErrorCode));
+                }
+            }
+
+            System.out.println(this.getVirtualMachine().getLogHeader() + " Visit error - Major: " + errorCodeToString(Integer.parseInt(major)) + " Minor: " + minor);
+			visitingUrlGroup.setMajorErrorCode(Long.parseLong(major));
+			visitingUrlGroup.setMinorErrorCode(Long.parseLong(minor));
+			visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);   //will set underlying url state
 			this.setClientState(CLIENT_STATE.DISCONNECTED);
-			visitingUrl = null;
+			visitingUrlGroup = null;
 		}
 	}
 	
@@ -269,18 +329,18 @@ public class Client extends Observable implements Runnable {
 		return clientSocket;
 	}
 
-	public Url getVisitingUrl() {
-		return visitingUrl;
+	public UrlGroup getVisitingUrlGroup() {
+		return visitingUrlGroup;
 	}
 
-	public void setVisitingUrl(Url visitingUrl) {
-		this.visitingUrl = visitingUrl;
-		boolean success = this.send(this.visitingUrl.toVisitEvent());
+	public void setVisitingUrlGroup(UrlGroup visitingUrlGroup) {
+		this.visitingUrlGroup = visitingUrlGroup;
+		boolean success = this.send(this.visitingUrlGroup.toVisitEvent());
         if(!success) {
             System.out.println("Sent URL to disconnected client");
-            this.visitingUrl.setMajorErrorCode(0x10000111);
-            this.visitingUrl.setMinorErrorCode(0x10005003);
-            this.visitingUrl.setUrlState(URL_STATE.ERROR);
+            this.visitingUrlGroup.setMajorErrorCode(0x10000111);
+            this.visitingUrlGroup.setMinorErrorCode(0x10005003);
+            this.visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);
         }
 	}
 	
@@ -297,7 +357,7 @@ public class Client extends Observable implements Runnable {
 					urlRetriever.wait();
 					if(clientState == CLIENT_STATE.WAITING)
 					{
-						this.setVisitingUrl(UrlsController.getInstance().takeUrl());
+						this.setVisitingUrlGroup(UrlGroupsController.getInstance().takeUrlGroup());
 					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();

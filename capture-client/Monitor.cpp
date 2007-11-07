@@ -1,4 +1,14 @@
 #include "Monitor.h"
+#include "Permission.h"
+#include <string>
+#include <iostream>
+#include <list>
+#include <fstream>
+#include <vector>
+#include <hash_map>
+#include <boost/algorithm/string.hpp>
+#include <boost\regex.hpp>
+
 
 Monitor::Monitor()
 {
@@ -7,7 +17,7 @@ Monitor::Monitor()
 
 Monitor::~Monitor()
 {
-	stdext::hash_map<wstring, std::list<Permission*>*>::iterator it;
+	stdext::hash_map<std::wstring, std::list<Permission*>*>::iterator it;
 	for(it = permissionMap.begin(); it != permissionMap.end(); it++)
 	{
 		std::list<Permission*>::iterator lit;
@@ -22,11 +32,12 @@ Monitor::~Monitor()
 }
 
 bool
-Monitor::isEventAllowed(std::wstring eventType, std::wstring subject, std::wstring object)
+Monitor::isEventAllowed(const std::wstring& eventType,  const std::wstring& subject, const std::wstring& object)
 {
-	stdext::hash_map<wstring, std::list<Permission*>*>::iterator it;
-	std::transform(eventType.begin(),eventType.end(),eventType.begin(),std::towlower);
-	it = permissionMap.find(eventType);
+	std::wstring event_type = eventType; // Copy
+	stdext::hash_map<std::wstring, std::list<Permission*>*>::iterator it;
+	std::transform(event_type.begin(),event_type.end(),event_type.begin(),std::towlower);
+	it = permissionMap.find(event_type);
 	PERMISSION_CLASSIFICATION excluded = NO_MATCH;
 	if(it != permissionMap.end())
 	{
@@ -56,7 +67,7 @@ Monitor::isEventAllowed(std::wstring eventType, std::wstring subject, std::wstri
 void
 Monitor::clearExclusionList()
 {
-	stdext::hash_map<wstring, std::list<Permission*>*>::iterator it;
+	stdext::hash_map<std::wstring, std::list<Permission*>*>::iterator it;
 	for(it = permissionMap.begin(); it != permissionMap.end(); it++)
 	{
 		std::list<Permission*>* lp = it->second;
@@ -74,7 +85,7 @@ Monitor::clearExclusionList()
 }
 
 bool
-Monitor::installKernelDriver(wstring driverPath, wstring driverName, wstring driverDescription)
+Monitor::installKernelDriver(const std::wstring& driverPath, const std::wstring& driverName, const std::wstring& driverDescription)
 {
 	SC_HANDLE hSCManager;
 
@@ -140,12 +151,12 @@ Monitor::unInstallKernelDriver()
 }
 
 void
-Monitor::loadExclusionList(wstring file)
+Monitor::loadExclusionList(const std::wstring& file)
 {
-	string line;
+	std::string line;
 	int lineNumber = 0;
 	DebugPrint(L"Monitor-loadExclusionList: Loading list - %ls\n", file.c_str());
-	ifstream exclusionList (file.c_str());
+	std::ifstream exclusionList (file.c_str());
 	if (exclusionList.is_open())
 	{
 		while (! exclusionList.eof() )
@@ -157,13 +168,13 @@ Monitor::loadExclusionList(wstring file)
 				try {
 					if(line.at(0) == '+' || line.at(0) == '-')
 					{
-						vector<std::wstring> splitLine;
+						std::vector<std::wstring> splitLine;
 
-						typedef split_iterator<string::iterator> sf_it;
-						for(sf_it it=make_split_iterator(line, token_finder(is_any_of("\t")));
+						typedef boost::algorithm::split_iterator<std::string::iterator> sf_it;
+						for(sf_it it = boost::algorithm::make_split_iterator(line, boost::algorithm::token_finder(boost::is_any_of("\t")));
 							it!=sf_it(); ++it)
 						{
-							splitLine.push_back(copy_range<std::wstring>(*it));				
+							splitLine.push_back(boost::copy_range<std::wstring>(*it));				
 						}
 
 						if(splitLine.size() == 4)
@@ -192,14 +203,14 @@ Monitor::loadExclusionList(wstring file)
 }
 
 void
-Monitor::prepareStringForExclusion(wstring* s)
+Monitor::prepareStringForExclusion(std::wstring& s)
 {
-	wstring from = L"\\";
-	wstring to = L"\\\\";
+	std::wstring from = L"\\";
+	std::wstring to = L"\\\\";
 	size_t offset = 0;
-	while((offset = s->find(from, offset)) != wstring::npos)
+	while((offset = s.find(from, offset)) != std::wstring::npos)
 	{
-		s->replace(offset, 
+		s.replace(offset, 
 			from.size(), 
 			to);
 		offset += to.length();
@@ -207,9 +218,9 @@ Monitor::prepareStringForExclusion(wstring* s)
 	from = L".";
 	to = L"\\.";
 	offset = 0;
-	while((offset = s->find(from, offset)) != wstring::npos)
+	while((offset = s.find(from, offset)) != std::wstring::npos)
 	{
-		s->replace(offset, 
+		s.replace(offset, 
 			from.size(), 
 			to);
 		offset += to.length();
@@ -217,9 +228,10 @@ Monitor::prepareStringForExclusion(wstring* s)
 }
 
 void
-Monitor::addExclusion(wstring excluded, wstring action, wstring subject, wstring object , bool permaneant)
+Monitor::addExclusion(const std::wstring& excluded, const std::wstring& action, const std::wstring& subject, const std::wstring& object , bool permaneant)
 {
 	//printf("Adding exclusion\n");
+	std::wstring action_copy = action; // Action copy
 	try {
 		Permission* p = new Permission();
 		if(excluded == L"yes" || excluded == L"+")
@@ -233,15 +245,15 @@ Monitor::addExclusion(wstring excluded, wstring action, wstring subject, wstring
 		boost::wregex objectRegex(object.c_str(), boost::wregex::icase);
 		p->objects.push_back(objectRegex);
 		p->subjects.push_back(subjectRegex);
-		std::transform(action.begin(),action.end(),action.begin(),std::towlower);
-		stdext::hash_map<wstring, std::list<Permission*>*>::iterator it;
-		it = permissionMap.find(action);
+		std::transform(action_copy.begin(),action_copy.end(),action_copy.begin(),std::towlower);
+		stdext::hash_map<std::wstring, std::list<Permission*>*>::iterator it;
+		it = permissionMap.find(action_copy );
 
 		if(it == permissionMap.end())
 		{
-			std::list<Permission*>*l = new list<Permission*>();
+			std::list<Permission*>* l = new std::list<Permission*>();
 			l->push_back(p);
-			permissionMap.insert(Permission_Pair(action, l));
+			permissionMap.insert(std::pair<std::wstring, std::list<Permission*>*>(action_copy, l));
 		} else {
 			std::list<Permission*>* lp = it->second;
 			lp->push_back(p);

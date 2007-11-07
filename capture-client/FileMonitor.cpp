@@ -1,4 +1,10 @@
 #include "FileMonitor.h"
+#include "ProcessManager.h"
+#include "EventController.h"
+#include "OptionsManager.h"
+#include "Logger.h"
+#include <shlobj.h>
+#include <boost/bind.hpp>
 
 FileMonitor::FileMonitor(void)
 {
@@ -14,6 +20,7 @@ FileMonitor::FileMonitor(void)
 	FilterUnload(L"CaptureFileMonitor");
 	hResult = FilterLoad(L"CaptureFileMonitor");
 	// Keep trying to load the filter - On some VM's this can take a few seconds
+#ifdef NDEBUG
 	while((turn < 5) && IS_ERROR( hResult ))
 	{
 		turn++;
@@ -21,7 +28,7 @@ FileMonitor::FileMonitor(void)
 		Sleep(3000);
 		hResult = FilterLoad(L"CaptureFileMonitor");
 	}
-	
+#endif
 	if (!IS_ERROR( hResult )) {
 		
 		hResult = FilterConnectCommunicationPort( CAPTURE_FILEMON_PORT_NAME,
@@ -47,12 +54,12 @@ FileMonitor::FileMonitor(void)
 		   Captures log directory */
 		wchar_t logDirectory[1024];
 		GetFullPathName(L"logs", 1024, logDirectory, NULL);
-		wstring captureLogDirectory = logDirectory;
-		Monitor::prepareStringForExclusion(&captureLogDirectory);
+		std::wstring captureLogDirectory = logDirectory;
+		Monitor::prepareStringForExclusion(captureLogDirectory);
 		captureLogDirectory += L"\\\\.*";
 
-		wstring captureExecutablePath = ProcessManager::getInstance()->getProcessPath(GetCurrentProcessId());
-		Monitor::prepareStringForExclusion(&captureExecutablePath);
+		std::wstring captureExecutablePath = ProcessManager::getInstance()->getProcessPath(GetCurrentProcessId());
+		Monitor::prepareStringForExclusion(captureExecutablePath);
 		
 		/* Exclude file events in the log directory */
 		/* NOTE we exclude all processes because files are copied/delete/openend
@@ -67,11 +74,11 @@ FileMonitor::FileMonitor(void)
 		/* Exclude Captures temp directory */
 		wchar_t tempDirectory[1024];
 		GetFullPathName(L"temp", 1024, tempDirectory, NULL);
-		wstring captureTempDirectory = tempDirectory;
-		Monitor::prepareStringForExclusion(&captureTempDirectory);
+		std::wstring captureTempDirectory = tempDirectory;
+		Monitor::prepareStringForExclusion(captureTempDirectory);
 		captureTempDirectory += L"\\\\.*";
 
-		//wstring captureExecutablePath = ProcessManager::getInstance()->getProcessPath(GetCurrentProcessId());
+		//std::wstring captureExecutablePath = ProcessManager::getInstance()->getProcessPath(GetCurrentProcessId());
 		//Monitor::prepareStringForExclusion(&captureExecutablePath);
 		
 		/* Exclude file events in the log directory */
@@ -85,8 +92,8 @@ FileMonitor::FileMonitor(void)
 		
 		if(OptionsManager::getInstance()->getOption(L"log-system-events-file") != L"")
 		{
-			wstring loggerFile = Logger::getInstance()->getLogFullPath();
-			Monitor::prepareStringForExclusion(&loggerFile);
+			std::wstring loggerFile = Logger::getInstance()->getLogFullPath();
+			Monitor::prepareStringForExclusion(loggerFile);
 			Monitor::addExclusion(L"+", L"create", captureExecutablePath, loggerFile, true);
 			Monitor::addExclusion(L"+", L"write", captureExecutablePath, loggerFile, true);
 		}
@@ -169,8 +176,8 @@ FileMonitor::initialiseDosNameMap()
 				sizeof(driveLetter)/sizeof(WCHAR) )
 				))
 			{
-				wstring dLetter = driveLetter;
-				dosNameMap.insert(DosPair(volumeBuffer->FilterVolumeName, dLetter));
+				std::wstring dLetter = driveLetter;
+				dosNameMap.insert(std::pair<std::wstring, std::wstring>(volumeBuffer->FilterVolumeName, dLetter));
 			}
 		} while (SUCCEEDED( hResult = FilterVolumeFindNext( volumeIterator,
 															FilterVolumeBasicInformation,
@@ -191,7 +198,7 @@ FileMonitor::connect_onFileEvent(const signal_fileEvent::slot_type& s)
 }
 
 bool
-FileMonitor::isDirectory(wstring filePath)
+FileMonitor::isDirectory(std::wstring filePath)
 {
 	DWORD code = GetFileAttributes(filePath.c_str());
 	if (code==INVALID_FILE_ATTRIBUTES)
@@ -202,24 +209,24 @@ FileMonitor::isDirectory(wstring filePath)
 }
 
 void
-FileMonitor::onFileExclusionReceived(Element* pElement)
+FileMonitor::onFileExclusionReceived(const Element& element)
 {
-	wstring excluded = L"";
-	wstring fileEventType = L"";
-	wstring processPath = L"";
-	wstring filePath = L"";
+	std::wstring excluded = L"";
+	std::wstring fileEventType = L"";
+	std::wstring processPath = L"";
+	std::wstring filePath = L"";
 
-	vector<Attribute>::iterator it;
-	for(it = pElement->attributes.begin(); it != pElement->attributes.end(); it++)
+	std::vector<Attribute>::const_iterator it;
+	for(it = element.getAttributes().begin(); it != element.getAttributes().end(); it++)
 	{
-		if(it->name == L"action") {
-			fileEventType = it->value;
-		} else if(it->name == L"object") {
-			filePath = it->value;
-		} else if(it->name == L"subject") {
-			processPath = it->value;
-		} else if(it->name == L"excluded") {
-			excluded = it->value;
+		if((*it).getName() == L"action") {
+			fileEventType = (*it).getValue();
+		} else if((*it).getName() == L"object") {
+			filePath = (*it).getValue();
+		} else if((*it).getName() == L"subject") {
+			processPath = (*it).getValue();
+		} else if((*it).getName() == L"excluded") {
+			excluded = (*it).getValue();
 		}
 	}
 	Monitor::addExclusion(excluded, fileEventType, processPath, filePath);
@@ -250,7 +257,7 @@ FileMonitor::stop()
 }
 
 bool
-FileMonitor::getFileEventName(PFILE_EVENT pFileEvent, wstring *fileEventName)
+FileMonitor::getFileEventName(PFILE_EVENT pFileEvent, std::wstring *fileEventName)
 {
 	bool found = true;
 	*fileEventName = L"UNKNOWN";
@@ -271,8 +278,8 @@ FileMonitor::getFileEventName(PFILE_EVENT pFileEvent, wstring *fileEventName)
 		//	found = false;
 		//}
 			/* Ignore stream accesses */
-			wstring eventPath = pFileEvent->filePath;
-			if(eventPath.find(L":", 0) != wstring::npos)
+			std::wstring eventPath = pFileEvent->filePath;
+			if(eventPath.find(L":", 0) != std::wstring::npos)
 			{
 				found = false;
 			}
@@ -290,14 +297,14 @@ FileMonitor::getFileEventName(PFILE_EVENT pFileEvent, wstring *fileEventName)
 	return found;
 }
 
-wstring 
-FileMonitor::convertFileObjectNameToDosName(wstring fileObjectName)
+std::wstring 
+FileMonitor::convertFileObjectNameToDosName(std::wstring fileObjectName)
 {
-	stdext::hash_map<wstring, wstring>::iterator it;
+	stdext::hash_map<std::wstring, std::wstring>::iterator it;
 	for(it = dosNameMap.begin(); it != dosNameMap.end(); it++)
 	{
 		size_t position = fileObjectName.rfind(it->first,0);
-		if(position != wstring::npos)
+		if(position != std::wstring::npos)
 		{
 			fileObjectName.replace(position, it->first.length(), it->second, 0, it->second.length());
 			break;
@@ -308,12 +315,12 @@ FileMonitor::convertFileObjectNameToDosName(wstring fileObjectName)
 }
 
 void
-FileMonitor::createFilePathAndCopy(wstring* logPath, wstring* filePath)
+FileMonitor::createFilePathAndCopy(std::wstring* logPath, std::wstring* filePath)
 {
 	printf("Copying file: %ls\n", filePath->c_str());
-	wstring drive = filePath->substr(0,filePath->find_first_of(L":"));
-	wstring fileName = filePath->substr(filePath->find_last_of(L"\\")+1);
-	wstring intermediateDirectory = *logPath;
+	std::wstring drive = filePath->substr(0,filePath->find_first_of(L":"));
+	std::wstring fileName = filePath->substr(filePath->find_last_of(L"\\")+1);
+	std::wstring intermediateDirectory = *logPath;
 	intermediateDirectory += drive;
 	intermediateDirectory += L"\\";
 	intermediateDirectory += filePath->substr(filePath->find_first_of(L"\\")+1,filePath->find_last_of(L"\\")-filePath->find_first_of(L"\\")-1);
@@ -321,7 +328,7 @@ FileMonitor::createFilePathAndCopy(wstring* logPath, wstring* filePath)
 							intermediateDirectory.c_str(),
 							NULL
 							);
-	wstring filePathAndName = intermediateDirectory;
+	std::wstring filePathAndName = intermediateDirectory;
 	filePathAndName += L"\\";
 	filePathAndName += fileName;
 	if(!CopyFile(
@@ -339,14 +346,14 @@ FileMonitor::createFilePathAndCopy(wstring* logPath, wstring* filePath)
 void
 FileMonitor::copyCreatedFiles()
 {
-	stdext::hash_set<wstring>::iterator it;
+	stdext::hash_set<std::wstring>::iterator it;
 	wchar_t currentDirectory[1024];
 	GetFullPathName(L"logs\\modified_files\\", 1024, currentDirectory, NULL);
-	wstring logPath = currentDirectory;
+	std::wstring logPath = currentDirectory;
 	DebugPrint(L"Modified file directory: %ls\n", logPath.c_str());
 	for(it = modifiedFiles.begin(); it != modifiedFiles.end(); it++)
 	{
-		wstring filePath = *it;
+		std::wstring filePath = *it;
 		createFilePathAndCopy(&logPath, &filePath );
 	}
 	modifiedFiles.clear();
@@ -377,10 +384,10 @@ FileMonitor::run()
 			do {
 				PFILE_EVENT e = (PFILE_EVENT)(fileEvents + offset);
 
-				wstring fileEventName;
-				wstring fileEventPath;
-				wstring processModuleName;
-				wstring processPath;
+				std::wstring fileEventName;
+				std::wstring fileEventPath;
+				std::wstring processModuleName;
+				std::wstring processPath;
 
 				if(getFileEventName(e, &fileEventName))
 				{
@@ -410,11 +417,7 @@ FileMonitor::run()
 								}
 							}
 
-							wchar_t szTempTime[256];
-							convertTimefieldsToString(e->time, szTempTime, 256);
-							wstring time = szTempTime;
-
-							signal_onFileEvent(fileEventName, time, processPath, fileEventPath);
+							signal_onFileEvent(fileEventName, Time::timefieldToString(e->time), processPath, fileEventPath);
 						}
 					}
 				}

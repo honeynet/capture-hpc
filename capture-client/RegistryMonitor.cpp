@@ -1,4 +1,39 @@
 #include "RegistryMonitor.h"
+#include "EventController.h"
+#include "ProcessManager.h"
+#include <boost/bind.hpp>
+
+/*
+typedef struct _REGISTRY_EVENT
+{
+	int type;
+	TIME_FIELDS time;
+	WCHAR name[1024];
+	UINT processID;
+} REGISTRY_EVENT, *PREGISTRY_EVENT;
+*/
+
+#define REGISTRY_EVENTS_BUFFER_SIZE 5*65536
+#define REGISTRY_DEFAULT_WAIT_TIME 65
+#define REGISTRY_BUFFER_FULL_WAIT_TIME 5
+
+struct UNICODE_STRING
+{
+	WORD Length;
+	WORD MaximumLength;
+	PWSTR Buffer;
+};
+
+typedef struct __PUBLIC_OBJECT_TYPE_INFORMATION {
+    UNICODE_STRING TypeName;
+    ULONG Reserved [22];    // reserved for internal use
+} PUBLIC_OBJECT_TYPE_INFORMATION, *PPUBLIC_OBJECT_TYPE_INFORMATION;
+
+#define IOCTL_GET_REGISTRY_EVENTS      CTL_CODE(0x00000022, 0x803, METHOD_NEITHER,FILE_READ_DATA | FILE_WRITE_DATA)
+#define NTSTATUS ULONG
+#define STATUS_INFO_LENGTH_MISMATCH ((NTSTATUS)0xC0000004L)
+
+typedef std::pair <std::wstring, std::wstring> ObjectPair;
 
 RegistryMonitor::RegistryMonitor(void)
 {
@@ -75,21 +110,21 @@ RegistryMonitor::initialiseObjectNameMap()
 
 				// Dont change the order of these ... _Classes should be inserted first
 				// Small bug but who cares
-				wstring temp2 = szTemp;
+				std::wstring temp2 = szTemp;
 				temp2 += L"_CLASSES";
-				wstring name2 = L"HKCR";
+				std::wstring name2 = L"HKCR";
 				objectNameMap.push_back(ObjectPair(temp2, name2));
-				wstring temp1 = szTemp;
-				wstring name1 = L"HKCU";
+				std::wstring temp1 = szTemp;
+				std::wstring name1 = L"HKCU";
 				objectNameMap.push_back(ObjectPair(temp1, name1));
-				wstring temp3 = L"\\REGISTRY\\MACHINE";
-				wstring name3 = L"HKLM";
+				std::wstring temp3 = L"\\REGISTRY\\MACHINE";
+				std::wstring name3 = L"HKLM";
 				objectNameMap.push_back(ObjectPair(temp3, name3));
-				wstring temp4 = L"\\REGISTRY\\USER";
-				wstring name4 = L"HKU";
+				std::wstring temp4 = L"\\REGISTRY\\USER";
+				std::wstring name4 = L"HKU";
 				objectNameMap.push_back(ObjectPair(temp4, name4));
-				wstring temp5 = L"\\Registry\\Machine";
-				wstring name5 = L"HKLM";
+				std::wstring temp5 = L"\\Registry\\Machine";
+				std::wstring name5 = L"HKLM";
 				objectNameMap.push_back(ObjectPair(temp5, name5));
 
 			}
@@ -105,24 +140,24 @@ RegistryMonitor::connect_onRegistryEvent(const signal_registryEvent::slot_type& 
 }
 
 void
-RegistryMonitor::onRegistryExclusionReceived(Element* pElement)
+RegistryMonitor::onRegistryExclusionReceived(const Element& element)
 {
-	wstring excluded = L"";
-	wstring registryEventType = L"";
-	wstring processPath = L"";
-	wstring registryPath = L"";
+	std::wstring excluded = L"";
+	std::wstring registryEventType = L"";
+	std::wstring processPath = L"";
+	std::wstring registryPath = L"";
 
-	vector<Attribute>::iterator it;
-	for(it = pElement->attributes.begin(); it != pElement->attributes.end(); it++)
+	std::vector<Attribute>::const_iterator it;
+	for(it = element.getAttributes().begin(); it != element.getAttributes().end(); it++)
 	{
-		if(it->name == L"action") {
-			registryEventType = it->value;
-		} else if(it->name == L"object") {
-			registryPath = it->value;
-		} else if(it->name == L"subject") {
-			processPath = it->value;
-		} else if(it->name == L"excluded") {
-			excluded = it->value;
+		if((*it).getName() == L"action") {
+			registryEventType = (*it).getValue();
+		} else if((*it).getName() == L"object") {
+			registryPath = (*it).getValue();
+		} else if((*it).getName() == L"subject") {
+			processPath = (*it).getValue();
+		} else if((*it).getName() == L"excluded") {
+			excluded = (*it).getValue();
 		}
 	}
 	Monitor::addExclusion(excluded, registryEventType, processPath, registryPath);
@@ -152,10 +187,10 @@ RegistryMonitor::stop()
 	}
 }
 
-wstring
+std::wstring
 RegistryMonitor::getRegistryEventName(int registryEventType)
 {
-	wstring eventName = L"<UNKNOWN>";
+	std::wstring eventName = L"<UNKNOWN>";
 	switch(registryEventType)
 	{
 		case RegNtPostCreateKey:
@@ -194,21 +229,114 @@ RegistryMonitor::getRegistryEventName(int registryEventType)
 	return eventName;
 }
 
-wstring
-RegistryMonitor::convertRegistryObjectNameToHiveName(wstring registryObjectName)
+std::wstring
+RegistryMonitor::convertRegistryObjectNameToHiveName(std::wstring& registryObjectName)
 {	
 	/* Convert /Registry/Machine etc to the actual hive name like HKLM */
 	std::list<ObjectPair>::iterator it;
 	for(it = objectNameMap.begin(); it != objectNameMap.end(); it++)
 	{
 		size_t position = registryObjectName.rfind(it->first,0);
-		if(position != wstring::npos)
+		if(position != std::wstring::npos)
 		{
 			return registryObjectName.replace(position, it->first.length(), it->second, 0, it->second.length());
 		}
 	}
 	return registryObjectName;
 }
+
+/*
+void
+RegistryMonitor::processRegistryData(PREGISTRY_EVENT registryEvent, BYTE* registryData, std::vector<std::wstring>& data)
+{
+	// Process registry data - Xeno (xenoatwork@gmail.com)
+	//Handle all the post-processing to format the data
+	wchar_t szTemp[256];
+	std::wstring other;
+	size_t tmp_len;
+	data.push_back(registryEvent->valueName);
+
+	//MS description of data types:
+	//http://support.microsoft.com/kb/256986
+	switch(registryEvent->dataType){
+		case REG_NONE:
+			data.push_back(L"REG_NONE");
+			data.push_back(L""); //This is so that the logger adds an extra blank value
+			break;
+		case REG_SZ:
+			data.push_back(L"REG_SZ");
+			data.push_back((wchar_t *)registryData);
+			break;
+		case REG_EXPAND_SZ:
+			data.push_back(L"REG_EXPAND_SZ");
+			data.push_back((wchar_t *)registryData);
+			break;
+		case REG_BINARY:
+			data.push_back(L"REG_BINARY");
+			for(DWORD n = 0; n < registryEvent->dataLengthB; n++){
+				swprintf(szTemp, L"%x", registryData[n]);
+				other.append(szTemp);
+			}
+			data.push_back(other);
+			break;
+		case REG_DWORD:
+			data.push_back(L"REG_DWORD");
+			swprintf_s(szTemp, 256, L"%lx", ((DWORD *)registryData)[0]);
+			data.push_back(szTemp);
+			break;
+		//TODO: Untested
+		case REG_DWORD_BIG_ENDIAN:
+			data.push_back(L"REG_DWORD_BIG_ENDIAN");
+			swprintf_s(szTemp, 256, L"%x%x%x%x", registryData[0],registryData[1],registryData[2],registryData[3]);
+			data.push_back(szTemp);
+			break;
+		//From MS: "A Unicode string naming a symbolic link."
+		//TODO: Untested
+		case REG_LINK:
+			data.push_back(L"REG_LINK");
+			data.push_back((wchar_t *)registryData);
+			break;
+		//TODO: regedit won't let me make a string,empty string, string, but that 
+		// doesn't mean something else might not be able to do it. Look into it as it would
+		// break the while condition into ending early.
+		case REG_MULTI_SZ:
+			data.push_back(L"REG_MULTI_SZ");
+			while(((wchar_t *)registryData)[0] != '\0' ){
+				other.append((wchar_t *)registryData);
+				other.append(L"-|-");
+				tmp_len = wcsnlen((wchar_t *)registryData, 512); //This doesn't count the null char in the length
+				registryData = (BYTE *)((wchar_t *)registryData + (tmp_len + 1));
+			}
+			data.push_back(other);
+			break;
+		//TODO: Untested, "A series of nested arrays..."
+		case REG_RESOURCE_LIST:
+			data.push_back(L"REG_RESOURCE_LIST");
+			data.push_back(L"FILL IN");
+			break;
+		//TODO: Untested, "A series of nested arrays..."
+		case REG_FULL_RESOURCE_DESCRIPTOR:
+			data.push_back(L"REG_FULL_RESOURCE_DESCRIPTOR");
+			data.push_back(L"FILL IN");
+			break;
+		//TODO: Untested, "A series of nested arrays..."
+		case REG_RESOURCE_REQUIREMENTS_LIST:
+			data.push_back(L"REG_RESOURCE_REQUIREMENTS_LIST");
+			data.push_back(L"FILL IN");
+			break;
+		case REG_QWORD_LITTLE_ENDIAN:
+			data.push_back(L"REG_QWORD");
+			swprintf_s(szTemp, 256, L"%lx%lx", ((DWORD *)registryData)[0],((DWORD *)registryData)[1]);
+			data.push_back(szTemp);
+			break;
+		default:
+			data.push_back(L"UNKNOWN TYPE!");
+			swprintf_s(szTemp, 256, L"%ld", registryEvent->dataType);
+			data.push_back(szTemp);
+			break;
+	}
+}
+*/
 
 void
 RegistryMonitor::run()
@@ -240,12 +368,12 @@ RegistryMonitor::run()
 				BYTE* registryData = NULL;
 				wchar_t* szRegistryPath = NULL;
 				
-				wstring registryEventName = getRegistryEventName(e->eventType);
+				std::wstring registryEventName = getRegistryEventName(e->eventType);
 				/* Get the registry string */
 				szRegistryPath = (wchar_t*)malloc(e->registryPathLengthB);
 				CopyMemory(szRegistryPath, e->registryData, e->registryPathLengthB);
-				wstring registryPath = convertRegistryObjectNameToHiveName(szRegistryPath);
-				wstring processPath = ProcessManager::getInstance()->getProcessPath((DWORD)e->processId);
+				std::wstring registryPath = convertRegistryObjectNameToHiveName(std::wstring(szRegistryPath));
+				std::wstring processPath = ProcessManager::getInstance()->getProcessPath((DWORD)e->processId);
 				
 				/* If there is data stored retrieve it */
 				if(e->dataLengthB > 0)
@@ -257,10 +385,10 @@ RegistryMonitor::run()
 				/* Is the event excluded */
 				if(!Monitor::isEventAllowed(registryEventName,processPath,registryPath))
 				{
-					wchar_t szTempTime[256];
-					convertTimefieldsToString(e->time, szTempTime, 256);
-					wstring time = szTempTime;
-					signal_onRegistryEvent(registryEventName, time, processPath, registryPath);
+					//std::vector<std::wstring> data;
+					//processRegistryData(e, registryData, data);
+	
+					signal_onRegistryEvent(registryEventName, Time::timefieldToString(e->time), processPath, registryPath);
 				}
 				if(registryData != NULL)
 					free(registryData);

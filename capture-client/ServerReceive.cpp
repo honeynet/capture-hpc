@@ -1,4 +1,7 @@
 #include "ServerReceive.h"
+#include "Server.h"
+#include "EventController.h"
+#include <winsock2.h>
 
 ServerReceive::ServerReceive(Server* s)
 {
@@ -56,7 +59,7 @@ ServerReceive::run()
 		*/
 
 		char buffer[MAX_RECEIVE_BUFFER];
-		string xmlDocument = "";
+		std::string xmlDocument = "";
 		int bytesRecv = 0;
 		while((bytesRecv = recv(server->serverSocket, buffer, MAX_RECEIVE_BUFFER, 0)) > 2)
 		{

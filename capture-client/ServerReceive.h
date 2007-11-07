@@ -23,11 +23,11 @@
  */
 #pragma once
 #include "CaptureGlobal.h"
-#include "Server.h"
 #include "Thread.h"
-#include <string.h>
+#include <string>
 
-using namespace std;
+class Server;
+
 /*
 	Class: ServerReceive
 

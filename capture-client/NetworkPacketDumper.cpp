@@ -1,6 +1,5 @@
 #include "NetworkPacketDumper.h"
-
-
+#include "NetworkAdapter.h"
 
 NetworkPacketDumper::NetworkPacketDumper(void)
 {

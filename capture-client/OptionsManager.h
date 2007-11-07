@@ -23,9 +23,9 @@
  */
 #pragma once
 #include "CaptureGlobal.h"
+#include "Element.h"
 #include <string>
 #include <boost/signal.hpp>
-#include <boost/bind.hpp>
 #include <hash_map>
 
 using namespace std;
@@ -43,19 +43,18 @@ using namespace std;
 class OptionsManager
 {
 public:
-	typedef boost::signal<void (wstring)> signal_optionChanged;
-	typedef pair<wstring, wstring> OptionPair;
+	typedef boost::signal<void (std::wstring)> signal_optionChanged;
 public:
 	~OptionsManager(void);
 	static OptionsManager* getInstance();
 
-	wstring getOption(wstring option);
-	bool addOption(wstring option, wstring value);
+	const std::wstring getOption(const std::wstring& option);
+	bool addOption(const std::wstring& option, const std::wstring& value);
 
 	boost::signals::connection connect_onOptionChanged(const signal_optionChanged::slot_type& s);
 
 private:
-	void onOptionEvent(Element* pElement);
+	void onOptionEvent(const Element& element);
 	OptionsManager(void);
 	static bool instanceCreated;
 	static OptionsManager* optionsManager;
@@ -63,6 +62,6 @@ private:
 
 	
 
-	stdext::hash_map<wstring, wstring> optionsMap;
+	stdext::hash_map<std::wstring, std::wstring> optionsMap;
 	boost::signals::connection onOptionEventConnection;
 };

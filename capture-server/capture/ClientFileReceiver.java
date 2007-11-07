@@ -20,9 +20,9 @@ public class ClientFileReceiver {
 		fileName = element.attributes.get("name");
 		fileSize = Integer.parseInt(element.attributes.get("size"));
 		fileType = element.attributes.get("type");
-		if(client.getVisitingUrl() != null)
+		if(client.getVisitingUrlGroup() != null)
 		{		
-			fileName = "log" + File.separator + client.getVisitingUrl().getUrlAsFileName() + "." + fileType;
+			fileName = "log" + File.separator + client.getVisitingUrlGroup().getGroupAsFileName() + "." + fileType;
 		}
 		try {
 			outputFile = new BufferedOutputStream(new FileOutputStream(new File(fileName)));

@@ -288,6 +288,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Element.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ErrorCodes.h"
 				>
 			</File>
@@ -321,6 +325,10 @@
 			</File>
 			<File
 				RelativePath=".\NetworkPacketDumper.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Observable.h"
 				>
 			</File>
 			<File
@@ -369,6 +377,10 @@
 			</File>
 			<File
 				RelativePath=".\Url.h"
+				>
+			</File>
+			<File
+				RelativePath=".\VisitEvent.h"
 				>
 			</File>
 			<File

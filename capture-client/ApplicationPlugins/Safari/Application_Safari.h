@@ -1,9 +1,9 @@
 /*
  *	PROJECT: Capture
- *	FILE: Client_InternetExplorer.h
+ *	FILE: Application_ClientConfigManager.h
  *	AUTHORS: Ramon Steenson (rsteenson@gmail.com) & Christian Seifert (christian.seifert@gmail.com)
  *
- *	Developed by Victoria University of Wellington and the New Zealand Honeynet Alliance
+ *	Developed by the New Zealand Honeynet Project
  *
  *	This file is part of Capture.
  *
@@ -22,25 +22,40 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
+
 #include "..\..\ApplicationPlugin.h"
 
-
-/* Define the application plugin name and the application names it supports */
-#define APPLICATION_PLUGIN_NAME		Application_InternetExplorer
-static wchar_t* supportedApplications[] = {L"iexplore", NULL};
 using namespace std;
 
-class Application_InternetExplorer : ApplicationPlugin
+/* Define the application plugin name and the application names it supports */
+#define APPLICATION_PLUGIN_NAME		Application_Safari
+static wchar_t* supportedApplications[] = {L"safari", NULL};
+
+static const wchar_t* safariBlankPreferences = 
+	L"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
+	L"<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n" \
+	L"<plist version=\"1.0\">\n" \
+		L"<dict>\n" \
+		L"</dict>\n" \
+	L"</plist>\n";
+
+class Application_Safari : public ApplicationPlugin
 {
-	
 public:
-	Application_InternetExplorer(void);
-	~Application_InternetExplorer(void);
+	Application_Safari(void);
+	~Application_Safari(void);
 	
 	void visitGroup(VisitEvent* visitEvent);
-	wchar_t** getSupportedApplicationNames();
+	DWORD visitUrl(Url* url, PROCESS_INFORMATION* piProcessInfo);
+	wchar_t** getSupportedApplicationNames()
+	{	
+		return supportedApplications;
+	}
 	unsigned int getPriority() { return 100; };
-	
+private:
+	bool openDocument(const wstring& file, std::wstring& document);
+	void writeDocument(const wstring& file, const wstring& document);
+
 };
 
 /* DO NOT REMOVE OR MOVE THIS LINE ... ADDS EXPORTS (NEW/DELETE) TO THE PLUGIN */

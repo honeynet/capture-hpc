@@ -25,18 +25,20 @@
 #include "CaptureGlobal.h"
 #include <list>
 #include <string>
-#include <iostream>
-#include <fstream>
 #include <vector>
 #include <hash_map>
-#include <winioctl.h>
-#include <tchar.h>
-#include "Permission.h"
 
-using namespace std;
-using namespace boost;
+class Permission;
 
-
+#define CTL_CODE(devType, func, meth, acc) (((devType) << 16) | ((acc) << 14) | ((func) << 2) | (meth))
+#define METHOD_BUFFERED				0
+#define METHOD_IN_DIRECT			1
+#define METHOD_OUT_DIRECT			2
+#define METHOD_NEITHER				3
+#define FILE_ANY_ACCESS				0
+#define FILE_READ_ACCESS			( 0x0001 )
+#define FILE_WRITE_ACCESS			( 0x0002 )
+#define FILE_DEVICE_CONTROLLER		0x00000004
 
 /*
    Class: Monitor
@@ -52,8 +54,6 @@ using namespace boost;
 */
 #define IOCTL_CAPTURE_START    CTL_CODE(0x00000022, 0x0805, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
 #define IOCTL_CAPTURE_STOP    CTL_CODE(0x00000022, 0x0806, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
-
-typedef pair <wstring, std::list<Permission*>*> Permission_Pair;
 
 class Monitor
 {
@@ -73,21 +73,15 @@ public:
 
 protected:
 	/*
-		Function: convertTimeFieldToWString
-
-		Converts a <TIME_FIELDS> structure to a readible wstring
-	*/
-	wstring convertTimeFieldToWString(SYSTEMTIME time);
-	/*
 		Function: EventIsAllowed
 		Checks whether an event is allowed
 	*/
-	bool isEventAllowed(std::wstring eventType, std::wstring subject, std::wstring object);
+	bool isEventAllowed(const std::wstring& eventType, const std::wstring& subject, const std::wstring& object);
 	/*
 		Function: InstallKernelDriver
 		Installs a kernel driver
 	*/
-	bool installKernelDriver(wstring driverPath, wstring driverName, wstring driverDescription);
+	bool installKernelDriver(const std::wstring& driverPath, const std::wstring& driverName, const std::wstring& driverDescription);
 	/*
 		Function: UnInstallKernelDriver
 		Uninstalls a kernel driver
@@ -97,20 +91,20 @@ protected:
 		Function: LoadExclusionList
 		Loads an exclusion list from a a file and creates a permission list
 	*/
-	void loadExclusionList(wstring file);
+	void loadExclusionList(const std::wstring& file);
 	/*
 		Function: prepareStringForExclusion
 
 		Helper function which parses a string for "." and adds a "\" in front of it
 	*/
-	void prepareStringForExclusion(wstring* s);
+	void prepareStringForExclusion(std::wstring& s);
 
 	/*
 		Function: addExclusion
 
 		Creates a permission and adds an the exclusion to the internal list
 	*/
-	void addExclusion(wstring excluded, wstring action, wstring subject, wstring object, bool permaneant = false);
+	void addExclusion(const std::wstring& excluded, const std::wstring& action, const std::wstring& subject, const std::wstring& object, bool permaneant = false);
 
 
 	SC_HANDLE hService;
@@ -119,5 +113,5 @@ protected:
          Variable:  permissionMap
          A map containing a list of permissions based on a particular event type
     */
-	stdext::hash_map<wstring, std::list<Permission*>*> permissionMap;
+	stdext::hash_map<std::wstring, std::list<Permission*>*> permissionMap;
 };

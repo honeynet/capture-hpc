@@ -13,14 +13,12 @@ public class EventsController {
 		eventObservers = new HashMap<String, LinkedList<EventObserver>>();
 	}
 	
-	private static class EventControllerHolder
-	{ 
-		private final static EventsController instance = new EventsController();
-	}
-	 
+
+    private final static EventsController instance = new EventsController();
+
 	public static EventsController getInstance()
 	{
-		return EventControllerHolder.instance;
+		return instance;
 	}
 	
 	public void addEventObserver(String eventName, EventObserver o)

@@ -16,7 +16,17 @@ public class VirtualMachineServerFactory {
             
 			VMwareServer vmServer = new VMwareServer(address, port, username, password);
 			return vmServer;
+		} else if(type.equals("mock-vm-server"))
+		{
+			String address = attributes.get("address");
+			int port = Integer.parseInt(attributes.get("port"));
+			String username = attributes.get("username");
+			String password = attributes.get("password");
+
+			MockVirtualMachineServer mockVirtualMachineServer = new MockVirtualMachineServer(address, port, username, password);
+			return mockVirtualMachineServer;
 		}
+
 		return null;
 	}	
 

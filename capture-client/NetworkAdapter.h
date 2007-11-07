@@ -27,7 +27,7 @@
 #include "Monitor.h"
 #include <pcap.h>
 #include <string>
-#include "NetworkPacketDumper.h"
+
 /*
 	Class: NetworkAdapter
 

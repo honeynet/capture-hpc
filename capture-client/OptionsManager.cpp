@@ -1,4 +1,6 @@
 #include "OptionsManager.h"
+#include "EventController.h"
+#include <boost/bind.hpp>
 
 OptionsManager::OptionsManager(void)
 {
@@ -24,19 +26,19 @@ OptionsManager::getInstance()
 }
 
 void
-OptionsManager::onOptionEvent(Element* pElement)
+OptionsManager::onOptionEvent(const Element& element)
 {
-	if(pElement->name == L"option")
+	if(element.getName() == L"option")
 	{	
-		wstring option = L"";
-		wstring value = L"";
-		vector<Attribute>::iterator it;
-		for(it = pElement->attributes.begin(); it != pElement->attributes.end(); it++)
+		std::wstring option = L"";
+		std::wstring value = L"";
+		std::vector<Attribute>::const_iterator it;
+		for(it = element.getAttributes().begin(); it != element.getAttributes().end(); it++)
 		{
-			if(it->name == L"name") {
-				option = it->value;
-			} else if(it->name == L"value") {
-				value = it->value;
+			if((*it).getName() == L"name") {
+				option = (*it).getValue();
+			} else if((*it).getName() == L"value") {
+				value = (*it).getValue();
 			}
 		}
 		if(option != L"" && value != L"")
@@ -47,10 +49,10 @@ OptionsManager::onOptionEvent(Element* pElement)
 	}
 }
 
-wstring
-OptionsManager::getOption(wstring option)
+const std::wstring
+OptionsManager::getOption(const std::wstring& option)
 {
-	stdext::hash_map<wstring, wstring>::iterator it;
+	stdext::hash_map<std::wstring, std::wstring>::iterator it;
 	it = optionsMap.find(option);
 	if(it != optionsMap.end())
 	{
@@ -60,14 +62,14 @@ OptionsManager::getOption(wstring option)
 }
 
 bool
-OptionsManager::addOption(wstring option, wstring value)
+OptionsManager::addOption(const std::wstring& option, const std::wstring& value)
 {
-	stdext::hash_map<wstring, wstring>::iterator it;
+	stdext::hash_map<std::wstring, std::wstring>::iterator it;
 	it = optionsMap.find(option);
 	if(it == optionsMap.end())
 	{
 		DebugPrint(L"Adding option: %ls => %ls\n", option.c_str(), value.c_str());
-		optionsMap.insert(OptionPair(option, value));
+		optionsMap.insert(std::pair<wstring, wstring>(option, value));
 	} else {
 		DebugPrint(L"Changing option: %ls => %ls\n", option.c_str(), value.c_str());
 		it->second = value;
@@ -81,7 +83,7 @@ OptionsManager::connect_onOptionChanged(const signal_optionChanged::slot_type& s
 {
 	boost::signals::connection conn = signalOnOptionChanged.connect(s);
 	
-	stdext::hash_map<wstring, wstring>::iterator it;
+	stdext::hash_map<std::wstring, std::wstring>::iterator it;
 	for(it = optionsMap.begin(); it != optionsMap.end(); it++)
 	{
 		signalOnOptionChanged(it->first);

@@ -25,7 +25,7 @@
 #include <windows.h>
 #include <string>
 #include <list>
-#include "Url.h"
+#include "VisitEvent.h"
 #include "ErrorCodes.h"
 
 using namespace std;
@@ -36,7 +36,7 @@ public:
 	/* Visits a particular url. After visitation, this function needs to
 	   return one of the status codes defined in ErrorCodes.h. Optionally
 	   a minor error code can be placed into the minorError parameter. */
-	virtual DWORD visitUrl(Url* url, DWORD* minorError) = 0;
+	virtual void visitGroup(VisitEvent* visitEvent) = 0;
 	/* Returns a pointer to an array that is allocated in the plugin
 	   and contains the list of supported application names */
 	virtual wchar_t** getSupportedApplicationNames() = 0;

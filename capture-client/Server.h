@@ -21,22 +21,17 @@
  *  along with Capture; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef SERVER_H_
-#define SERVER_H_
+#pragma once
 
 #define MAX_SEND_BUFFER 2048
 #define MAX_RECEIVE_BUFFER 2048
 
 #include "CaptureGlobal.h"
+#include "Element.h"
 #include <string>
-#include <queue>
-#include <winsock2.h>
-#include <Ws2tcpip.h>
-#include <boost/signal.hpp>
-#include <boost/bind.hpp>
-#include <stdlib.h>
+#include <vector>
 
-using namespace std;
+#include <boost/signal.hpp>
 /*
 	Class: Server
 	
@@ -61,41 +56,40 @@ class Server
 	friend class ServerReceive;
 public:
 	typedef boost::signal<void (bool)> signal_setConnected;
+	typedef UINT_PTR SOCKET;
 public:
-	Server(wstring serverAddress, int port);
+	Server(const std::wstring& serverAddress, int port);
 	~Server();
 	bool connectToServer(bool startSenderAndReciever = true);
-	void sendMessage(wstring* message);
-	void sendData(char* data, size_t length);
-	void sendXML(wstring elementName, queue<Attribute>* vAttributes);
-	void sendXMLElement(Element* pElement);
+	void sendMessage(const std::wstring& message);
+	void sendData(const char* data, size_t length);
+	void sendXML(const std::wstring& elementName, const std::vector<Attribute>& vAttributes);
+	void sendElement(const Element& pElement);
 	//int send(const char* buf,int len,int flags);
 
 	void disconnectFromServer();
 	bool isConnected();
 
 
-	wstring getServerAddress() { return serverAddress; }
+	inline std::wstring getServerAddress() { return serverAddress; }
 	
 	
 	boost::signals::connection onConnectionStatusChanged(const signal_setConnected::slot_type& s);
 private:
 	bool initialiseWinsock2();
 	void setConnected(bool connected);
-	void xml_escape(wstring* xml);
+	std::wstring xml_escape(const std::wstring& xml);
 
 	int port;
 	SOCKET serverSocket;
 	bool connected;
-	wstring serverAddress;
+	std::wstring serverAddress;
 	CRITICAL_SECTION sendQueueLock;
-	queue<wstring> sendQueue;
+	std::vector<std::wstring> sendQueue;
 	ServerSend* serverSend;
 	ServerReceive* serverReceive;
 	
 	signal_setConnected signalSetConnected;
 protected:
-	SOCKET getSocket() { return serverSocket; }
+	inline SOCKET getSocket() { return serverSocket; }
 };
-
-#endif /*SERVER_H_*/

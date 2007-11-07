@@ -60,7 +60,7 @@ public:
 	Application_ClientConfigManager(void);
 	~Application_ClientConfigManager(void);
 	
-	DWORD visitUrl(Url* url,DWORD* minorError);
+	void visitGroup(VisitEvent* visitEvent);
 	wchar_t** getSupportedApplicationNames()
 	{
 		
@@ -70,7 +70,7 @@ public:
 private:
 	void loadApplicationsList();
 	static BOOL CALLBACK EnumWindowsProc(HWND hwnd,LPARAM lParam);
-	bool closeProcess(DWORD processId, DWORD* error);
+	bool closeProcess(const PROCESS_INFORMATION& processInfo, DWORD* error);
 
 	wchar_t** supportedApplications;
 	stdext::hash_map<wstring, APPLICATION*> applicationsMap;

@@ -12,7 +12,10 @@ class InternetExplorerInstance : DWebBrowserEvents2
 public:
 	InternetExplorerInstance(void);
 	~InternetExplorerInstance(void);
-	DWORD visitUrl(Url* url, DWORD* minorError);
+	void visitUrl(Url* url, HANDLE hEvent);
+
+	DWORD major;
+	DWORD minor;
 private:
 	HANDLE hVisiting;
 	bool bNetworkError;

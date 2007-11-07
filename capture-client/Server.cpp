@@ -25,8 +25,13 @@
 #include "ServerSend.h"
 #include "ServerReceive.h"
 
+#include <boost/bind.hpp>
+#include <winsock2.h>
+#include <Ws2tcpip.h>
+#include <stdlib.h>
 
-Server::Server(wstring sAddress, int p)
+
+Server::Server(const std::wstring& sAddress, int p)
 {
 	InitializeCriticalSection(&sendQueueLock);
 	serverAddress = sAddress;
@@ -94,16 +99,16 @@ Server::connectToServer(bool startSenderAndReciever)
 }
 
 void
-Server::sendMessage(wstring* message)
+Server::sendMessage(const std::wstring& message)
 {
 	if(isConnected())
 	{
 		int result = 0;
-		int mbsize = WideCharToMultiByte(CP_UTF8, 0, message->c_str(), static_cast<int>(message->length()), NULL, 0, NULL, NULL);
+		int mbsize = WideCharToMultiByte(CP_UTF8, 0, message.c_str(), static_cast<int>(message.length()), NULL, 0, NULL, NULL);
 		if (mbsize > 0)
 		{
 			char *szMessage = (char*)malloc(mbsize);
-			int bytes = WideCharToMultiByte(CP_UTF8, 0, message->c_str(), static_cast<int>(message->length()), szMessage, mbsize, NULL, NULL);
+			int bytes = WideCharToMultiByte(CP_UTF8, 0, message.c_str(), static_cast<int>(message.length()), szMessage, mbsize, NULL, NULL);
 			result = send(serverSocket, szMessage, bytes, 0);		
 			DebugPrint(L"Capture-Server-sendMessage: Allocated: %i, Converted: %i, Sent: %i\n", mbsize, bytes, result);
 			if(result == SOCKET_ERROR)
@@ -117,7 +122,7 @@ Server::sendMessage(wstring* message)
 }
 
 void
-Server::sendData(char* data, size_t length)
+Server::sendData(const char* data, size_t length)
 {
 	if(isConnected())
 	{
@@ -131,86 +136,86 @@ Server::sendData(char* data, size_t length)
 }
 
 void
-Server::sendXMLElement(Element* pElement)
+Server::sendElement(const Element& element)
 {
 	if(!isConnected())
 	{
 		return;
 	}
+	sendMessage(element.toString());
+	/*
 	EnterCriticalSection(&sendQueueLock);
-	wstring xmlDocument = L"<";
-	xmlDocument += pElement->name;
-	vector<Attribute>::iterator it;
-	for(it = pElement->attributes.begin(); it < pElement->attributes.end(); it++)
+	std::wstring xmlDocument = L"<";
+	xmlDocument += element.getName();
+	std::vector<Attribute>::const_iterator it;
+	for(it = element.getAttributes().begin(); it != element.getAttributes().end(); it++)
 	{
 		xmlDocument += L" ";
-		xmlDocument += it->name;
+		xmlDocument += (*it).getName();
 		xmlDocument += L"=\"";
-		xml_escape(&it->value);
-		xmlDocument += it->value;
+		xmlDocument += xml_escape((*it).getValue());
 		xmlDocument += L"\"";
 	}
-	if(pElement->data != NULL)
+	if(element.getData() != NULL)
 	{
 		xmlDocument += L">";
-		sendMessage(&xmlDocument);
-		sendData(pElement->data, pElement->dataLength);
+		sendMessage(xmlDocument);
+		sendData(element.getData(), element.getDataSize());
 		xmlDocument = L"</";
-		xmlDocument += pElement->name;
+		xmlDocument += element.getName();
 		xmlDocument += L">\r\n";
-		sendMessage(&xmlDocument);
+		sendMessage(xmlDocument);
 	} else {
 		xmlDocument += L"/>\r\n";
-		sendMessage(&xmlDocument);
+		sendMessage(xmlDocument);
 	}
 	LeaveCriticalSection(&sendQueueLock);
+	*/
 	
 }
 
-void
-Server::xml_escape(wstring* xml)
+std::wstring
+Server::xml_escape(const std::wstring& xml)
 {
-	for(unsigned int i = 0; i < xml->length(); i++)
+	std::wstring escaped = xml;
+	for(unsigned int i = 0; i < xml.length(); i++)
 	{
-		if(xml->at(i) == 0x0026) {
-			*xml = xml->replace(i, 1, L"&amp;");
-		} else if(xml->at(i) == 0x003C) {
-			*xml = xml->replace(i, 1, L"&lt;");
-		} else if(xml->at(i) == 0x003E) {
-			*xml = xml->replace(i, 1, L"&gt;");
-		} else if(xml->at(i) == 0x0022) {
-			*xml = xml->replace(i, 1, L"&quot;");
-		} else if(xml->at(i) == 0x0027) {
-			*xml = xml->replace(i, 1, L"&apos;");
+		if(escaped.at(i) == 0x0026) {
+			escaped = escaped.replace(i, 1, L"&amp;");
+		} else if(escaped.at(i) == 0x003C) {
+			escaped = escaped.replace(i, 1, L"&lt;");
+		} else if(escaped.at(i) == 0x003E) {
+			escaped = escaped.replace(i, 1, L"&gt;");
+		} else if(escaped.at(i) == 0x0022) {
+			escaped = escaped.replace(i, 1, L"&quot;");
+		} else if(escaped.at(i) == 0x0027) {
+			escaped = escaped.replace(i, 1, L"&apos;");
 		}
-
-
 	}
+	return escaped;
 }
 
 void
-Server::sendXML(wstring elementName, queue<Attribute>* vAttributes)
+Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& vAttributes)
 {
 	if(!isConnected())
 	{
 		return;
 	}
 	EnterCriticalSection(&sendQueueLock);
-	wstring xmlDocument = L"<";
+	std::wstring xmlDocument = L"<";
 	xmlDocument += elementName;
-	while(!vAttributes->empty())
+	std::vector<Attribute>::const_iterator it;
+	for(it = vAttributes.begin(); it != vAttributes.end(); it++)
 	{
-		Attribute att = vAttributes->front();
-		vAttributes->pop();
 		xmlDocument += L" ";
-		xmlDocument += att.name;
+		xmlDocument += it->getName();
 		xmlDocument += L"=\"";
-		xml_escape(&att.value);
-		xmlDocument += att.value;
+		xmlDocument += xml_escape(it->getValue());;
 		xmlDocument += L"\"";
 	}
 	xmlDocument += L"/>\r\n";
-	sendMessage(&xmlDocument);
+	sendMessage(xmlDocument);
 	LeaveCriticalSection(&sendQueueLock);
 }
 

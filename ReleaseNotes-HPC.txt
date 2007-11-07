@@ -1,6 +1,16 @@
 Release Notes
 -------------
 
+
+Version 2.1
+-----------
+Changes
+-------
++ Capture-HPC is now compiled with Visual C++ SP1. As a result, the Visual C++ Redist Libraries SP1 are required to run Capture-HPC. One can still compile Capture-HPC without the service pack. However, we only destribute the version with service pack.
++ Added Safari plugin
++ Network traffic collection can now be configured to occur on malicious as well as benign URLs. Previously only network traffic on malicious URLs was pushed to the server.
++ Capture supports only VMware Server 1.0.4. VMware Server 1.0.3 is unsupported.
+
 Version 2.0
 -----------
 Changes

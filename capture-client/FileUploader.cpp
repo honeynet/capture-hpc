@@ -1,8 +1,11 @@
 #include "FileUploader.h"
+#include "EventController.h"
+#include "Server.h"
+#include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
 
-FileUploader::FileUploader(Server* s)
+FileUploader::FileUploader(Server& s) : server(s)
 {
-	server = s;
 	hFileAcknowledged = CreateEvent(NULL, FALSE, FALSE, NULL);
 	fileAccepted = false;
 	fileOpened = false;
@@ -28,23 +31,23 @@ FileUploader::~FileUploader(void)
 }
 
 void
-FileUploader::onReceiveFileOkEvent(Element* pElement)
+FileUploader::onReceiveFileOkEvent(const Element& element)
 {
 
 }
 
 void
-FileUploader::onReceiveFileErrorEvent(Element* pElement)
+FileUploader::onReceiveFileErrorEvent(const Element& element)
 {
 	int start = 0;
 	int end = 0;
-	vector<Attribute>::iterator it;
-	for(it = pElement->attributes.begin(); it != pElement->attributes.end(); it++)
+	std::vector<Attribute>::const_iterator it;
+	for(it = element.getAttributes().begin(); it != element.getAttributes().end(); it++)
 	{
-		if(it->name == L"part-start") {
-			start = boost::lexical_cast<int>(it->value);
-		} else if(it->name == L"part-end") {
-			end = boost::lexical_cast<int>(it->value);
+		if((*it).getName() == L"part-start") {
+			start = boost::lexical_cast<int>((*it).getValue());
+		} else if((*it).getName() == L"part-end") {
+			end = boost::lexical_cast<int>((*it).getValue());
 		}
 	}
 
@@ -59,20 +62,20 @@ FileUploader::onReceiveFileErrorEvent(Element* pElement)
 }
 
 void
-FileUploader::onReceiveFileAcceptEvent(Element* pElement)
+FileUploader::onReceiveFileAcceptEvent(const Element& element)
 {
 	fileAccepted = true;
 	SetEvent(hFileAcknowledged);
 }
 
 void
-FileUploader::onReceiveFileRejectEvent(Element* pElement)
+FileUploader::onReceiveFileRejectEvent(const Element& element)
 {
 	SetEvent(hFileAcknowledged);
 }
 
 BOOL
-FileUploader::getFileSize(wstring file, PLARGE_INTEGER fileSize)
+FileUploader::getFileSize(std::wstring file, PLARGE_INTEGER fileSize)
 {
 	/* Open the file and get is size */
 	HANDLE hFile;
@@ -96,9 +99,9 @@ FileUploader::getFileSize(wstring file, PLARGE_INTEGER fileSize)
 }
 
 bool
-FileUploader::sendFile(wstring file)
+FileUploader::sendFile(std::wstring file)
 {
-	if(!server->isConnected())
+	if(!server.isConnected())
 	{
 		printf("FileUploader: ERROR - Not connected to server so not sending file\n");
 		return false;
@@ -106,9 +109,6 @@ FileUploader::sendFile(wstring file)
 
 	busy = true;
 
-	Attribute fileNameAttribute;
-	Attribute fileSizeAttribute;
-	Attribute fileTypeAttribute;
 	fileName = file;
 	errno_t error;
 	
@@ -130,19 +130,13 @@ FileUploader::sendFile(wstring file)
 		fileOpened = true;
 	}
 	
-	queue<Attribute> atts;
-	fileNameAttribute.name = L"name";
-	fileNameAttribute.value = file;
-	fileSizeAttribute.name = L"size";
-	fileSizeAttribute.value = boost::lexical_cast<wstring>(fileSize.QuadPart);
-	fileTypeAttribute.name = L"type";
-	fileTypeAttribute.value = file.substr(file.find_last_of(L".")+1);
-	atts.push(fileNameAttribute);
-	atts.push(fileSizeAttribute);
-	atts.push(fileTypeAttribute);
+	std::vector<Attribute> atts;
+	atts.push_back(Attribute(L"name", file));
+	atts.push_back(Attribute(L"size", boost::lexical_cast<std::wstring>(fileSize.QuadPart)));
+	atts.push_back(Attribute(L"type", file.substr(file.find_last_of(L".")+1)));
 	
 	/* Send request to server to accept a file */
-	server->sendXML(L"file", &atts);
+	server.sendXML(L"file", atts);
 
 	/* Wait for the server to accept the file or timeout if it fails 
 	   to respond or rejects it */
@@ -172,10 +166,10 @@ FileUploader::sendFile(wstring file)
 		offset += bytesRead;
 	} while(bytesRead > 0);
 
-	atts.push(fileNameAttribute);
-	atts.push(fileSizeAttribute);
+	//atts.push_back(Attribute(L"name", file));
+	//atts.push_back(Attribute(L"size", boost::lexical_cast<std::wstring>(fileSize.QuadPart)));
 
-	server->sendXML(L"file-finished", &atts);
+	server.sendXML(L"file-finished", atts);
 
 	fclose(pFileStream);
 	fileOpened = false;
@@ -189,25 +183,12 @@ FileUploader::sendFilePart(unsigned int offset, unsigned int size)
 	if(fileOpened)
 	{
 		char *pFilePart = (char*)malloc(size);
-		Element* pElement = new Element();
-		pElement->name = L"part";
-	
-		Attribute fileNameAttribute;
-		Attribute filePartStartAttribute;
-		Attribute filePartEndAttribute;
-		Attribute filePartEncoding;
+		Element element;
+		element.setName(L"part");
 
-		fileNameAttribute.name = L"name";
-		fileNameAttribute.value = fileName.c_str();
-		filePartStartAttribute.name = L"part-start";
-		filePartStartAttribute.value = boost::lexical_cast<wstring>(offset);
-		filePartEncoding.name = L"encoding";
-		filePartEncoding.value = L"base64";
-
-		pElement->attributes.push_back(fileNameAttribute);
-		pElement->attributes.push_back(filePartStartAttribute);
-		pElement->attributes.push_back(filePartEncoding);
-		
+		element.addAttribute(L"name", fileName);
+		element.addAttribute(L"part-start", boost::lexical_cast<std::wstring>(offset));
+		element.addAttribute(L"encoding", L"base64");
 
 		/* Seek to offset and read size bytes */
 		//printf("size: %i\n", size);
@@ -217,28 +198,24 @@ FileUploader::sendFilePart(unsigned int offset, unsigned int size)
 		size_t bytesRead = fread(pFilePart , sizeof(char), size, pFileStream);
 		//printf("bytesRead: %i\n", bytesRead);
 		//printf("fread error: %i\n", ferror(pFileStream));
-		filePartEndAttribute.name = L"part-end";
 		int end = offset + bytesRead;
-		filePartEndAttribute.value = boost::lexical_cast<wstring>(end);
-		pElement->attributes.push_back(filePartEndAttribute);
+		element.addAttribute(L"part-end", boost::lexical_cast<std::wstring>(end));
 
 		/* Encode the data just read in base64 and append to XML element */
 		size_t encodedLength = 0;
-		char* pEncodedFilePart = encode_base64(pFilePart, bytesRead, &encodedLength);
-		pElement->data = pEncodedFilePart;
-		pElement->dataLength = encodedLength;
+		char* pEncodedFilePart = Base64::encode(pFilePart, bytesRead, &encodedLength);
+		element.setData(pEncodedFilePart, encodedLength);
 
 		/* Send the XML element to the server */
 		//printf("feof: %i\n", feof(pFileStream));
 		if(bytesRead > 0)
 		{
-			server->sendXMLElement(pElement);
+			server.sendElement(element);
 		}
 
 		/* Cleanup */
 		free(pEncodedFilePart);
 		free(pFilePart);
-		delete pElement;
 		if(feof(pFileStream) > 0)
 		{
 			return 0;

@@ -1,12 +1,15 @@
 #include <iostream>
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
+#include <tchar.h>
 #include "Server.h"
 #include "Visitor.h"
 #include "Analyzer.h"
 #include "ProcessManager.h"
+#include "EventController.h"
+#include "Logger.h"
+#include "OptionsManager.h"
 #include "shellapi.h"
-using namespace std;
 
 /* Initialise static variables. These are all singletons */
 /* Process manager which keeps track of opened processes and their paths */
@@ -48,7 +51,7 @@ public:
 			Logger::getInstance()->openLogFile(OptionsManager::getInstance()->getOption(L"log-system-events-file"));
 
 		hStopRunning = CreateEvent(NULL, FALSE, FALSE, NULL);
-		wstring serverIp = OptionsManager::getInstance()->getOption(L"server");
+		std::wstring serverIp = OptionsManager::getInstance()->getOption(L"server");
 		server = new Server(serverIp, 7070);
 		server->onConnectionStatusChanged(boost::bind(&CaptureClient::onConnectionStatusChanged, this, _1));
 
@@ -58,7 +61,7 @@ public:
 
 		/* Start running the Capture Client */
 		visitor = new Visitor();
-		analyzer =  new Analyzer(visitor, server);
+		analyzer =  new Analyzer(*visitor, *server);
 		Thread* captureClientThread = new Thread(this);
 		captureClientThread->start("CaptureClient");
 	}
@@ -85,7 +88,7 @@ public:
 		if((OptionsManager::getInstance()->getOption(L"server") == L"") || 
 			server->connectToServer())
 		{
-			//EventController::
+			//EventController::getInstance()->receiveServerEvent("<visit url=\"http://www.neowin.net\" program=\"safari\" time=\"30\"/>");
 			/* If Capture is being run in standalone mode start the analyzer now */
 			/* Send file test */
 			printf("---------------------------------------------------------\n");
@@ -120,30 +123,25 @@ public:
 
 	/* Responds to a connect event from the server. It sends the virtual machine
 	   server id and virtual machine id this client is hosted on back to the server */
-	void onServerConnectEvent(Element* pElement)
+	void onServerConnectEvent(const Element& element)
 	{
 		printf("Got connect event\n");
-		if(pElement->name == L"connect")
+		if(element.getName() == L"connect")
 		{
-			Attribute att;
-			queue<Attribute> vAttributes;
-			att.name = L"vm-server-id";
-			att.value = OptionsManager::getInstance()->getOption(L"vm-server-id");
-			vAttributes.push(att);
-			att.name = L"vm-id";
-			att.value = OptionsManager::getInstance()->getOption(L"vm-id");
-			vAttributes.push(att);
-			server->sendXML(L"connect", &vAttributes);
+			vector<Attribute> attributes;
+			attributes.push_back(Attribute(L"vm-server-id", OptionsManager::getInstance()->getOption(L"vm-server-id")));
+			attributes.push_back(Attribute(L"vm-id", OptionsManager::getInstance()->getOption(L"vm-id")));
+			server->sendXML(L"connect", attributes);
 		}
 	}
 
 	/* Sends a pong message back to the server when a ping is received */
-	void onServerPingEvent(Element* pElement)
+	void onServerPingEvent(const Element& element)
 	{
-		if(pElement->name == L"ping")
+		if(element.getName() == L"ping")
 		{
-			queue<Attribute> vAttributes;
-			server->sendXML(L"pong", &vAttributes);
+			vector<Attribute> attributes;
+			server->sendXML(L"pong", attributes);
 		}
 	}
 
@@ -262,7 +260,7 @@ int _tmain(int argc, WCHAR* argv[])
 	GetFullPathName(argv[0], 4096, szFullPath, NULL);
 	DebugPrint(L"Capture: Argv[0] -> %s\n", argv[0]);
 	DebugPrint(L"Capture: GetFullPathName -> %ls\n", szFullPath);
-	wstring dir = szFullPath;
+	std::wstring dir = szFullPath;
 	dir = dir.substr(0, dir.find_last_of(L"\\")+1);
 	SetCurrentDirectory(dir.c_str());
 	DebugPrint(L"Capture: Dir -> %ls\n", dir.c_str());
@@ -284,16 +282,16 @@ int _tmain(int argc, WCHAR* argv[])
 
 	delete [] szFullPath;
 	
-	wstring serverIp = L"";
-	wstring vmServerId = L"";
-	wstring vmId = L"";
-	wstring logSystemEventsFile = L"";
-	wstring collectModifiedFiles = L"false";
-	wstring captureNetworkPackets = L"false";
+	std::wstring serverIp = L"";
+	std::wstring vmServerId = L"";
+	std::wstring vmId = L"";
+	std::wstring logSystemEventsFile = L"";
+	std::wstring collectModifiedFiles = L"false";
+	std::wstring captureNetworkPackets = L"false";
 
 	for(int i = 1; i < argc; i++)
 	{
-		wstring option = argv[i];
+		std::wstring option = argv[i];
 		if(option == L"--help" || option == L"-h") {
 			printf("\nCapture client is a high interaction client honeypot which using event monitoring can monitor the state of the system it is being run on. ");
 			printf("Capture can monitor processes, files, and the registry at the moment and classifies an event as being malicious by checking exclusion lists. ");

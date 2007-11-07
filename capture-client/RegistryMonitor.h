@@ -23,11 +23,12 @@
  */
 #pragma once
 #include "CaptureGlobal.h"
-#include <winioctl.h>
 #include <boost/signal.hpp>
-#include <boost/bind.hpp>
+#include <vector>
+
 #include "Thread.h"
 #include "Monitor.h"
+#include "Element.h"
 
 typedef enum _REG_NOTIFY_CLASS {
     RegNtDeleteKey,
@@ -91,16 +92,6 @@ typedef enum _REG_NOTIFY_CLASS {
     MaxRegNtNotifyClass 
 } REG_NOTIFY_CLASS;
 
-/*
-typedef struct _REGISTRY_EVENT
-{
-	int type;
-	TIME_FIELDS time;
-	WCHAR name[1024];
-	UINT processID;
-} REGISTRY_EVENT, *PREGISTRY_EVENT;
-*/
-
 typedef struct  _REGISTRY_EVENT {
 	REG_NOTIFY_CLASS eventType;
 	TIME_FIELDS time;	
@@ -108,33 +99,10 @@ typedef struct  _REGISTRY_EVENT {
 	ULONG dataType;
 	ULONG dataLengthB;
 	ULONG registryPathLengthB;
-	/* Contains path and optionally data */
+	//ULONG valueLengthB;
+	/* Contains path and optionally data and the value*/
 	UCHAR registryData[];
 } REGISTRY_EVENT, * PREGISTRY_EVENT;
-
-#define REGISTRY_EVENTS_BUFFER_SIZE 5*65536
-#define REGISTRY_DEFAULT_WAIT_TIME 65
-#define REGISTRY_BUFFER_FULL_WAIT_TIME 5
-
-struct UNICODE_STRING
-{
-	WORD Length;
-	WORD MaximumLength;
-	PWSTR Buffer;
-};
-
-typedef struct __PUBLIC_OBJECT_TYPE_INFORMATION {
-    UNICODE_STRING TypeName;
-    ULONG Reserved [22];    // reserved for internal use
-} PUBLIC_OBJECT_TYPE_INFORMATION, *PPUBLIC_OBJECT_TYPE_INFORMATION;
-
-#define IOCTL_GET_REGISTRY_EVENTS      CTL_CODE(FILE_DEVICE_UNKNOWN, 0x803, METHOD_NEITHER,FILE_READ_DATA | FILE_WRITE_DATA)
-#define NTSTATUS ULONG
-#define STATUS_INFO_LENGTH_MISMATCH ((NTSTATUS)0xC0000004L)
-
-
-typedef pair <wstring, wstring> ObjectPair;
-
 /*
 	Class: RegistryMonitor
    
@@ -154,7 +122,7 @@ typedef pair <wstring, wstring> ObjectPair;
 class RegistryMonitor : public Runnable, public Monitor
 {
 public:
-	typedef boost::signal<void (wstring, wstring, wstring, wstring)> signal_registryEvent;
+	typedef boost::signal<void (const std::wstring&, const std::wstring&, const std::wstring&, const std::wstring&)> signal_registryEvent;
 public:
 	RegistryMonitor(void);
 	virtual ~RegistryMonitor(void);
@@ -163,16 +131,17 @@ public:
 	void stop();
 	void run();
 
-	bool isMonitorRunning() { return monitorRunning; }
-	bool isDriverInstalled() { return driverInstalled; }
+	inline bool isMonitorRunning() { return monitorRunning; }
+	inline bool isDriverInstalled() { return driverInstalled; }
 
-	void onRegistryExclusionReceived(Element* pElement);
+	void onRegistryExclusionReceived(const Element& element);
 
 	boost::signals::connection connect_onRegistryEvent(const signal_registryEvent::slot_type& s);
 private:
-	wstring getRegistryEventName(int registryEventType);
-	wstring convertRegistryObjectNameToHiveName(wstring registryObjectName);
+	std::wstring getRegistryEventName(int registryEventType);
+	std::wstring convertRegistryObjectNameToHiveName(std::wstring& registryObjectName);
 	void initialiseObjectNameMap();
+	//void processRegistryData(REGISTRY_EVENT* registryEvent, BYTE* registryData, std::vector<std::wstring>& data);
 
 	boost::signals::connection onRegistryExclusionReceivedConnection;
 
@@ -182,7 +151,7 @@ private:
 	BYTE* registryEventsBuffer;
 	Thread* registryMonitorThread;
 	signal_registryEvent signal_onRegistryEvent;
-	std::list<ObjectPair> objectNameMap;
+	std::list<std::pair<std::wstring, std::wstring>> objectNameMap;
 	bool driverInstalled;
 	bool monitorRunning;
 };

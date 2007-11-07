@@ -25,11 +25,6 @@
 #include "CaptureGlobal.h"
 #include <string>
 #include <hash_map>
-#include <Psapi.h>
-
-using namespace std;
-
-typedef pair <DWORD, wstring> ProcessPair;
 
 /*
 	Class: ProcessManager
@@ -54,15 +49,15 @@ public:
 	~ProcessManager(void);
 	static ProcessManager* getInstance();
 
-	wstring getProcessPath(DWORD processId);
-	wstring getProcessModuleName(DWORD processId);
-	void onProcessEvent(BOOLEAN created, wstring time, 
+	std::wstring getProcessPath(DWORD processId);
+	std::wstring getProcessModuleName(DWORD processId);
+	void onProcessEvent(BOOLEAN created, const std::wstring& time, 
 						DWORD parentProcessId,
-						DWORD processId, wstring process);
+						DWORD processId, const std::wstring& process);
 
 	
 
-	stdext::hash_map<DWORD, wstring> getProcessMap() { return processMap; }
+	stdext::hash_map<DWORD, std::wstring> getProcessMap() { return processMap; }
 
 private:
 	static bool instanceCreated;
@@ -75,9 +70,9 @@ private:
 	int cacheFailures;
 
 	void initialiseProcessMap();
-	void insertProcess(DWORD processId, wstring processPath);
-	wstring convertFileObjectPathToDOSPath(wstring fileObjectPath);
-	wstring convertDevicePathToDOSDrive(wstring devicePath);
+	void insertProcess(DWORD processId, const std::wstring& processPath);
+	std::wstring convertFileObjectPathToDOSPath(const std::wstring& fileObjectPath);
+	std::wstring convertDevicePathToDOSDrive(const std::wstring& devicePath);
 
-	stdext::hash_map<DWORD, wstring> processMap;
+	stdext::hash_map<DWORD, std::wstring> processMap;
 };

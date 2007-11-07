@@ -1,4 +1,5 @@
 #include "ProcessManager.h"
+#include <Psapi.h>
 
 ProcessManager::ProcessManager(void)
 {
@@ -30,9 +31,9 @@ ProcessManager::getInstance()
 }
 
 void
-ProcessManager::onProcessEvent(BOOLEAN created, wstring time, 
+ProcessManager::onProcessEvent(BOOLEAN created, const std::wstring& time, 
 							   DWORD parentProcessId,
-							   DWORD processId, wstring process)
+							   DWORD processId, const std::wstring& process)
 {
 	// When a process is terminated we do not delete it from the processMap.
 	// This is because there may be events that occur from the process after
@@ -46,20 +47,20 @@ ProcessManager::onProcessEvent(BOOLEAN created, wstring time,
 }
 
 void 
-ProcessManager::insertProcess(DWORD processId, wstring processPath)
+ProcessManager::insertProcess(DWORD processId, const std::wstring& processPath)
 {
-	stdext::hash_map<DWORD, wstring>::iterator it;
+	stdext::hash_map<DWORD, std::wstring>::iterator it;
 	it = processMap.find(processId);
 	if(it !=  processMap.end()) {
 		processMap.erase(it);
 	}
-	processPath = convertFileObjectPathToDOSPath(processPath);
-	DebugPrint(L"Capture-ProcessManager: Insert process %i -> %ls\n", processId, processPath.c_str()); 
-	processMap.insert(ProcessPair(processId, processPath));
+	std::wstring processCompletePath = convertFileObjectPathToDOSPath(processPath);
+	DebugPrint(L"Capture-ProcessManager: Insert process %i -> %ls\n", processId, processCompletePath.c_str()); 
+	processMap.insert(std::pair<DWORD, std::wstring>(processId, processCompletePath));
 }
 
-wstring
-ProcessManager::convertDevicePathToDOSDrive(wstring devicePath)
+std::wstring
+ProcessManager::convertDevicePathToDOSDrive(const std::wstring& devicePath)
 {
 	wchar_t drive = L'A';
 	while(drive <= L'Z')
@@ -74,16 +75,16 @@ ProcessManager::convertDevicePathToDOSDrive(wstring devicePath)
 	return L"?:";
 }
 
-wstring
-ProcessManager::convertFileObjectPathToDOSPath(wstring fileObjectPath)
+std::wstring
+ProcessManager::convertFileObjectPathToDOSPath(const std::wstring& fileObjectPath)
 {
 	if(fileObjectPath.length() > 23)
 	{
 		wchar_t szTemp[2048];
 		size_t pathOffset = fileObjectPath.find(L'\\', fileObjectPath.find(L'\\',1)+1);
-		wstring devicePath = fileObjectPath.substr(0, pathOffset);
-		wstring dosDrive = convertDevicePathToDOSDrive(devicePath);
-		wstring dosPath = dosDrive;
+		std::wstring devicePath = fileObjectPath.substr(0, pathOffset);
+		std::wstring dosDrive = convertDevicePathToDOSDrive(devicePath);
+		std::wstring dosPath = dosDrive;
 		dosPath += fileObjectPath.substr(pathOffset);
 		if(GetLongPathName(dosPath.c_str(),szTemp,2048) > 0)
 		{
@@ -94,16 +95,16 @@ ProcessManager::convertFileObjectPathToDOSPath(wstring fileObjectPath)
 	return fileObjectPath;
 }
 
-wstring
+std::wstring
 ProcessManager::getProcessPath(DWORD processId)
 {
-	wstring processPath = L"UNKNOWN";
+	std::wstring processPath = L"UNKNOWN";
 	if(processId == 4)
 	{
 		processPath = L"System";
 		return processPath;
 	}
-	stdext::hash_map<DWORD, wstring>::iterator it;
+	stdext::hash_map<DWORD, std::wstring>::iterator it;
 	it = processMap.find(processId);
 	if((it !=  processMap.end()) && (it->second != L"<unknown>"))
 	{
@@ -148,13 +149,13 @@ ProcessManager::getProcessPath(DWORD processId)
 	return processPath;
 }
 
-wstring
+std::wstring
 ProcessManager::getProcessModuleName(DWORD processId)
 {
-	wstring processPath = getProcessPath(processId);
-	wstring processModuleName = L"UNKNOWN";
+	std::wstring processPath = getProcessPath(processId);
+	std::wstring processModuleName = L"UNKNOWN";
 	size_t moduleNameStart = processPath.find_last_of(L"\\");
-	if(moduleNameStart != wstring::npos)
+	if(moduleNameStart != std::wstring::npos)
 	{
 		processModuleName = processPath.substr(moduleNameStart+1);
 	}
@@ -175,7 +176,7 @@ ProcessManager::initialiseProcessMap()
 		if( aProcesses[i] != 0 ) {
 			DWORD processId;
 			wchar_t processPathTemp[1024];
-			wstring processPath = L"<unknown>";
+			std::wstring processPath = L"<unknown>";
 			HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION |
                                PROCESS_VM_READ,
                                FALSE, aProcesses[i] );

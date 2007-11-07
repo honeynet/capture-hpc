@@ -22,9 +22,9 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
+#include "Element.h"
 #include <string>
 
-using namespace std;
 /*
 	Class: Url
 	
@@ -33,15 +33,36 @@ using namespace std;
 class Url
 {
 public:
-	Url(wstring u, wstring app, int vTime);
-	~Url(void);
+	Url(std::wstring u, std::wstring app, int vTime);
+	virtual ~Url(void);
 
-	wstring getUrl() { return url; }
-	wstring getApplicationName() { return applicationName; }
-	int getVisitTime() { return visitTime; }
+	void setUrl(const std::wstring& u) { url = u; }
+	void setProgram(const std::wstring & prog) { program = prog; }
+	void setVisitTime(int time) { visitTime = time; }
+	void setVisited(bool vis) { visited = vis; }
+	void setMajorErrorCode(unsigned long error) { majorErrorCode = error; }
+	void setMinorErrorCode(unsigned long error) { minorErrorCode = error; }
+
+	Element toElement();
+
+	inline const std::wstring getUrl() const { return url; }
+	inline const std::wstring getProgram() const { return program; }
+	inline int getVisitTime() { return visitTime; }
+	inline bool isVisited() { return visited; }
 
 private:
-	wstring url;
-	wstring applicationName;
+	std::wstring url;
+	std::wstring program;
 	int visitTime;
+
+	bool visited;
+	bool malicious;
+	unsigned long majorErrorCode;
+	unsigned long minorErrorCode;
+
+public:
+	static std::wstring encode(const std::wstring& url);
+	static std::wstring decode(const std::wstring& url);
+private:
+	static const wchar_t * hexenc[];
 };

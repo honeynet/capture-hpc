@@ -14,6 +14,7 @@ import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -36,18 +37,20 @@ public class Url extends Observable {
 	private int errorCount;
 	private ERROR_CODES majorErrorCode;
 	private long minorErrorCode;
-	private boolean malicious;
+	private Boolean malicious;
 	private URL_STATE urlState;
-	private long visitStartTime;
-	private long visitFinishTime;
+	private Date visitStartTime;
+	private Date visitFinishTime;
 	private String logFileDate;
 	
 	private BufferedWriter logFile;
+    private long groupID;
+    private boolean initialGroup;
 
-	public Url(String u, String cProgram, int vTime) throws URISyntaxException
+    public Url(String u, String cProgram, int vTime) throws URISyntaxException
 	{
 		url = new URI(u);
-		malicious = false;
+		malicious = null;
 		if(cProgram == null || cProgram == "") {
 			clientProgram = "iexplore";
 		} else {
@@ -56,7 +59,40 @@ public class Url extends Observable {
 		visitTime = vTime;
 		urlState = URL_STATE.NONE;
 	}
-	
+
+    public void setVisitStartTime(String visitStartTime)
+    {
+        try {
+            SimpleDateFormat sf = new SimpleDateFormat("d/M/yyyy H:m:s.S");
+            this.visitStartTime=sf.parse(visitStartTime);
+        } catch (ParseException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+    }
+
+    public void setGroupId(long groupID) {
+        this.groupID = groupID;
+    }
+
+    public String getVisitStartTime() {
+        SimpleDateFormat sf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss.S");
+		return sf.format(visitStartTime);
+    }
+
+    public void setVisitFinishTime(String visitFinishTime)  {
+        try {
+            SimpleDateFormat sf = new SimpleDateFormat("d/M/yyyy H:m:s.S");
+            this.visitFinishTime=sf.parse(visitFinishTime);
+        } catch (ParseException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+    }
+
+    public String getVisitFinishTime() {
+        SimpleDateFormat sf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss.S");
+		return sf.format(visitFinishTime);
+    }
+
     private String getLogfileDate(long time) {
         SimpleDateFormat sf = new SimpleDateFormat("ddMMyyyy_HHmmss");        
         return sf.format(new Date(time));
@@ -65,6 +101,11 @@ public class Url extends Observable {
 	public void writeEventToLog(String event)
 	{
 		try {
+            if(logFile==null) {
+                String logFileName = filenameEscape(url.toString())+ "_" + this.getLogfileDate(visitStartTime.getTime());
+                logFile = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("log" + File.separator + logFileName + ".log"), "UTF-8"));
+            }
+
 			logFile.write(event);
 			logFile.newLine();
 			logFile.flush();
@@ -75,21 +116,7 @@ public class Url extends Observable {
 		}    
 	}
 	
-	public String toVisitEvent()
-	{
-		String urlEvent = "<visit ";
-		urlEvent += "url=\"";
-		urlEvent += this.getEscapedUrl();
-		if(clientProgram != null)
-		{
-			urlEvent += "\" program=\"";
-			urlEvent += clientProgram;
-		}
-		urlEvent += "\" time=\"";
-		urlEvent += visitTime;
-		urlEvent += "\" />";
-		return urlEvent;
-	}
+
 	
 	public boolean isMalicious()
 	{
@@ -118,28 +145,23 @@ public class Url extends Observable {
 
 		urlState = newState;
 		System.out.println("\tUrlSetState: " + newState.toString());
-		String date = DateFormat.getDateTimeInstance().format(new Date());
 		if(urlState == URL_STATE.VISITING) {
-			visitStartTime = Calendar.getInstance().getTimeInMillis();
-			try {
-				String logFileName = filenameEscape(url.toString())+ "_" + this.getLogfileDate(visitStartTime);
-				logFile = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("log" + File.separator + logFileName + ".log"), "UTF-8"));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			Logger.getInstance().writeToProgressLog("\"" + date + "\",\"visiting\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
-			
+			String date = getVisitStartTime();
+			Logger.getInstance().writeToProgressLog("\"" + date + "\",\"visiting\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
+
 		} else if(urlState == URL_STATE.VISITED) {
-			Logger.getInstance().writeToProgressLog("\"" + date + "\",\"visited\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
-			visitFinishTime = Calendar.getInstance().getTimeInMillis();
-			if(this.malicious)
-			{			
-				Logger.getInstance().writeToMaliciousUrlLog("\"" + date + "\",\"malicious\",\"" + url + 
-						"\",\"" + clientProgram + "\",\"" + visitTime + "\"");
-			} else {
-			    Logger.getInstance().writeToSafeUrlLog("\"" + date + "\",\"benign\",\"" + url +
-						"\",\"" + clientProgram + "\",\"" + visitTime + "\"");
-			}
+            String date = getVisitFinishTime();
+			Logger.getInstance().writeToProgressLog("\"" + date + "\",\"visited\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
+			if(this.malicious!=null) {
+                if(this.malicious)
+                {
+                    Logger.getInstance().writeToMaliciousUrlLog("\"" + date + "\",\"malicious\",\"" + groupID + "\",\"" + url +
+                            "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
+                } else {
+                    Logger.getInstance().writeToSafeUrlLog("\"" + date + "\",\"benign\",\"" + groupID + "\",\"" + url +
+                            "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
+                }
+            }
 			try {
 			    if(logFile!=null) {
 				logFile.close();
@@ -148,7 +170,8 @@ public class Url extends Observable {
 				e.printStackTrace();
 			}
 		} else if(urlState == URL_STATE.ERROR) {
-		    Logger.getInstance().writeToProgressLog("\"" + date + "\",\"error"+errorCount+":"+majorErrorCode+"-"+minorErrorCode+"\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
+            String date = getVisitFinishTime();
+		    Logger.getInstance().writeToProgressLog("\"" + date + "\",\"error"+errorCount+":"+majorErrorCode+"-"+minorErrorCode+"\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
 			try {
 			    if(logFile!=null) {
 				logFile.close();
@@ -206,10 +229,13 @@ public class Url extends Observable {
 	}
 	
 	public String getUrlAsFileName() {
-		return this.filenameEscape(this.getUrl()) + "_" + this.getLogfileDate(visitStartTime);
+		return this.filenameEscape(this.getUrl()) + "_" + this.getLogfileDate(visitStartTime.getTime());
 	}
 
 	public ERROR_CODES getMajorErrorCode() {
+        if(majorErrorCode==null) {
+            return ERROR_CODES.OK;
+        }
 		return majorErrorCode;
 	}
 
@@ -221,7 +247,7 @@ public class Url extends Observable {
 				this.majorErrorCode = e;
 			}
 		}
-		
+
 	}
 
 	public long getMinorErrorCode() {
@@ -231,4 +257,16 @@ public class Url extends Observable {
 	public void setMinorErrorCode(long minorErrorCode) {
 		this.minorErrorCode = minorErrorCode;
 	}
+
+    public long getGroupID() {
+        return groupID;
+    }
+
+    public void setInitialGroup(boolean initialGroup) {
+        this.initialGroup = initialGroup;
+    }
+
+    public boolean getInitialGroup() {
+        return initialGroup;
+    }
 }

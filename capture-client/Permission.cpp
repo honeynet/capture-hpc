@@ -1,4 +1,8 @@
 #include "Permission.h"
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/find_iterator.hpp>
+#include <boost/algorithm/string/finder.hpp> 
+#include <boost/tokenizer.hpp> 
 
 PERMISSION_CLASSIFICATION
 Permission::Check(std::wstring subject, std::wstring object)

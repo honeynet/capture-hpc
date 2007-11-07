@@ -1,4 +1,5 @@
 #include "NetworkAdapter.h"
+#include "NetworkPacketDumper.h"
 
 NetworkAdapter::NetworkAdapter(NetworkPacketDumper* npDumper, string aName, pcap_t* adap)
 {

@@ -1,4 +1,8 @@
 #include "Updater.h"
+#include "Server.h"
+#include "EventController.h"
+#include <boost/lexical_cast.hpp>
+#include <boost/bind.hpp>
 
 Updater::Updater(Server* s)
 {
@@ -22,43 +26,46 @@ Updater::~Updater(void)
 
 
 void
-Updater::onReceiveUpdateEvent(Element* pElement)
+Updater::onReceiveUpdateEvent(const Element& element)
 {
+	Element send_element = element;
 	if(!fileAllocated)
 	{
-		vector<Attribute>::iterator it;
-		for(it = pElement->attributes.begin(); it != pElement->attributes.end(); it++)
+		std::vector<Attribute>::const_iterator it;
+		for(it = element.getAttributes().begin(); it != element.getAttributes().end(); it++)
 		{
-			if(it->name == L"file-size") {
-				fileSize = boost::lexical_cast<int>(it->value);
-			} else if(it->name == L"file-name") {
-				fileName = it->value;
+			if((*it).getName() == L"file-size") {
+				fileSize = boost::lexical_cast<int>((*it).getValue());
+			} else if((*it).getName() == L"file-name") {
+				fileName = (*it).getValue();
 			}
 		}
 		fileBuffer = (char*)malloc(fileSize);
 		fileAllocated = true;
-		pElement->name = L"update-accept";
-		server->sendXMLElement(pElement);
+		send_element.setName(L"update-accept");
+		server->sendElement(send_element);
 	} else {
 		printf("Updater: ERROR - Can only download one update at a time\n");
-		pElement->name = L"update-reject";
-		server->sendXMLElement(pElement);
+		send_element.setName(L"update-reject");
+		server->sendElement(send_element);
 	}
 }
 
 void
-Updater::onReceiveUpdatePartEvent(Element* pElement)
-{
-	vector<Attribute>::iterator it;
+Updater::onReceiveUpdatePartEvent(const Element& element)
+{	
 	int start = 0;
 	int end = 0;
 	int partSize = 0;
-	for(it = pElement->attributes.begin(); it != pElement->attributes.end(); it++)
+	Element send_element = element;	
+	std::vector<Attribute>::const_iterator it;
+
+	for(it = element.getAttributes().begin(); it != element.getAttributes().end(); it++)
 	{
-		if(it->name == L"file-part-start") {
-			start = boost::lexical_cast<int>(it->value);
-		} else if(it->name == L"file-part-end") {
-			end = boost::lexical_cast<int>(it->value);
+		if((*it).getName() == L"file-part-start") {
+			start = boost::lexical_cast<int>((*it).getValue());
+		} else if((*it).getName() == L"file-part-end") {
+			end = boost::lexical_cast<int>((*it).getValue());
 		}
 	}
 
@@ -68,22 +75,24 @@ Updater::onReceiveUpdatePartEvent(Element* pElement)
 
 		// TODO Check the checksum of the part is correct
 
-		decode_base64(pElement->data);
+		char* decodedData = Base64::decode(send_element.getData());
 
-		memcpy((void*)fileBuffer[start], pElement->data, partSize);
+		memcpy((void*)fileBuffer[start], decodedData, partSize);
+
+		free(decodedData);
 	} else {
 		printf("Updater: ERROR - File not allocated: %08x\n", GetLastError());
-		pElement->name = L"update-error";
-		server->sendXMLElement(pElement);
+		send_element.setName(L"update-error");
+		server->sendElement(send_element);
 	}
 }
 
 void
-Updater::onReceiveUpdateFinishedEvent(Element* pElement)
+Updater::onReceiveUpdateFinishedEvent(const Element& element)
 {
 	HANDLE hFile;
 	int offset = 0;
- 
+	Element send_element = element;
 	hFile = CreateFile(fileName.c_str(),    // file to open
                    GENERIC_WRITE,          // open for reading
                    FILE_SHARE_READ,       // share for reading
@@ -94,13 +103,13 @@ Updater::onReceiveUpdateFinishedEvent(Element* pElement)
 	if(hFile ==  INVALID_HANDLE_VALUE)
 	{
 		printf("Updater: ERROR - Could not open file: %08x\n", GetLastError());
-		pElement->name = L"update-error";
-		server->sendXMLElement(pElement);
+		send_element.setName(L"update-error");
+		server->sendElement(send_element);
 	} else {
 		DWORD bytesWritten = 0;
 		WriteFile(hFile, fileBuffer, fileSize, &bytesWritten, NULL);
-		pElement->name = L"update-ok";
-		server->sendXMLElement(pElement);
+		send_element.setName(L"update-ok");
+		server->sendElement(send_element);
 		fileAllocated = false;
 		free(fileBuffer);
 	}

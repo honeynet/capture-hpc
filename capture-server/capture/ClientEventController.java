@@ -27,7 +27,7 @@ public class ClientEventController extends DefaultHandler implements Runnable {
 		client = c;
 		currentElement = null;
 		clientFileReceivers = new HashMap<String, ClientFileReceiver>();
-		this.client.send("<file-accept />");
+//		this.client.send("<file-accept />");
 	}
 	
 	public void run() {

@@ -1,6 +1,19 @@
 #include "Analyzer.h"
+#include "Server.h"
+#include "Visitor.h"
+#include "ProcessMonitor.h"
+#include "RegistryMonitor.h"
+#include "FileMonitor.h"
+#include "NetworkPacketDumper.h"
+#include "FileUploader.h"
+#include "OptionsManager.h"
+#include "Logger.h"
+#include "Url.h"
+#include <boost/lexical_cast.hpp>
+#include <boost/bind.hpp>
+#include <shellapi.h>
 
-Analyzer::Analyzer(Visitor* v, Server* s)
+Analyzer::Analyzer(Visitor& v, Server& s) : visitor(v), server(s)
 {
 	processMonitor = new ProcessMonitor();
 	registryMonitor = new RegistryMonitor();
@@ -13,12 +26,9 @@ Analyzer::Analyzer(Visitor* v, Server* s)
 	onOptionChangedConnection = OptionsManager::getInstance()->connect_onOptionChanged(boost::bind(&Analyzer::onOptionChanged, this, _1));
 
 
-	visitor = v;
-	visitor->onVisitEvent(boost::bind(&Analyzer::onVisitEvent, this, _1, _2, _3, _4));
+	//visitor.onVisitEvent(boost::bind(&Analyzer::onVisitEvent, this, _1, _2, _3, _4));
+	visitor.attach(this);
 	
-	server = s;
-	
-
 
 	processMonitor->start();
 	registryMonitor->start();
@@ -46,10 +56,12 @@ Analyzer::~Analyzer(void)
 }
 
 void
-Analyzer::onOptionChanged(wstring option)
+Analyzer::onOptionChanged(const std::wstring& option)
 {
-	wstring value = OptionsManager::getInstance()->getOption(option); 
-	if(option == L"capture-network-packets") {
+	std::wstring value = OptionsManager::getInstance()->getOption(option); 
+	if(option == L"capture-network-packets-malicious" || 
+		option == L"capture-network-packets-benign" ||
+		option == L"capture-network-packets") {
 		if(value == L"true")
 		{
 			if(captureNetworkPackets == false)
@@ -62,9 +74,14 @@ Analyzer::onOptionChanged(wstring option)
 		} else {
 			if(captureNetworkPackets == true)
 			{
-				captureNetworkPackets = false;
-				//if(networkPacketDumper != NULL)
-				//delete networkPacketDumper;			
+				if(OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") != L"true" &&
+					OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") != L"true" &&
+					OptionsManager::getInstance()->getOption(L"capture-network-packets") != L"true")
+				{
+					captureNetworkPackets = false;
+					if(networkPacketDumper != NULL)
+						delete networkPacketDumper;	
+				}
 			}
 		}
 	} else if(option == L"collect-modified-files") {
@@ -134,25 +151,24 @@ Analyzer::stop()
 
 		wchar_t* szLogFileName = new wchar_t[1024];
 
-		wstring log = L"capture_";
-		log += boost::lexical_cast<wstring>(st.wDay);
-		log += boost::lexical_cast<wstring>(st.wMonth);
-		log += boost::lexical_cast<wstring>(st.wYear);
+		std::wstring log = L"capture_";
+		log += boost::lexical_cast<std::wstring>(st.wDay);
+		log += boost::lexical_cast<std::wstring>(st.wMonth);
+		log += boost::lexical_cast<std::wstring>(st.wYear);
 		log += L"_";
-		log += boost::lexical_cast<wstring>(st.wHour);
-		log += boost::lexical_cast<wstring>(st.wMinute);
+		log += boost::lexical_cast<std::wstring>(st.wHour);
+		log += boost::lexical_cast<std::wstring>(st.wMinute);
 		log += L".zip";
 		GetFullPathName(log.c_str(), 1024, szLogFileName, NULL);
 
 		bool compressed = compressLogDirectory(szLogFileName);
 
-		if(malicious)
+		if(malicious || OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") == L"true")
 		{
-			if(server->isConnected() && compressed)
+			if(server.isConnected() && compressed)
 			{				
-				FileUploader* uploader = new FileUploader(server);
-				uploader->sendFile(szLogFileName);
-				delete uploader;
+				FileUploader uploader(server);
+				uploader.sendFile(szLogFileName);
 				DeleteFile(szLogFileName);
 			}
 		}
@@ -173,39 +189,37 @@ Analyzer::stop()
 	delete [] szFullPath;
 }
 
-wstring
+std::wstring
 Analyzer::errorCodeToString(DWORD errorCode)
 {
 	wchar_t szTemp[16];
 	swprintf_s(szTemp, 16, L"%08x", errorCode);
-	wstring error = szTemp;
+	std::wstring error = szTemp;
 	return error;
 }
 
 
 bool
-Analyzer::compressLogDirectory(wstring logFileName)
+Analyzer::compressLogDirectory(const std::wstring& logFileName)
 {
 	BOOL created = FALSE;
 	STARTUPINFO siStartupInfo;
-	wchar_t szTempPath[1024];
 	PROCESS_INFORMATION piProcessInfo;
 
 	DeleteFile(logFileName.c_str());
 
 	memset(&siStartupInfo, 0, sizeof(siStartupInfo));
 	memset(&piProcessInfo, 0, sizeof(piProcessInfo));
-	ZeroMemory(&szTempPath, sizeof(szTempPath));
 
 	siStartupInfo.cb = sizeof(siStartupInfo);
 
-	_tcscat_s(szTempPath, 1024, L"\"");
-	_tcscat_s(szTempPath, 1024, L"7za.exe");
-	_tcscat_s(szTempPath, 1024, L"\" a -tzip -y \"");
-	_tcscat_s(szTempPath, 1024, logFileName.c_str());
-	_tcscat_s(szTempPath, 1024, L"\" logs");
-	LPTSTR szCmdline=_tcsdup(szTempPath);
-	created = CreateProcess(NULL,szCmdline, 0, 0, FALSE,
+	wstring processCommand = L"\"";
+	processCommand += L"7za.exe";
+	processCommand += L"\" a -tzip -y \"";
+	processCommand += logFileName.c_str();
+	processCommand += L"\" logs";
+
+	created = CreateProcess(NULL,(LPWSTR)processCommand.c_str(), 0, 0, FALSE,
 		CREATE_DEFAULT_ERROR_MODE, 0, 0, &siStartupInfo,
 		&piProcessInfo);
 
@@ -223,169 +237,102 @@ Analyzer::compressLogDirectory(wstring logFileName)
 }
 
 void
-Analyzer::sendVisitEvent(wstring* type, wstring* time, 
-						 wstring* url, wstring* classification, wstring* application,
-						 wstring* majorErrorCode, wstring* minorErrorCode)
-{
-	Attribute att;
-	queue<Attribute> vAttributes;
-	att.name = L"type";
-	att.value = *type;
-	vAttributes.push(att);
-	att.name = L"time";
-	att.value = *time;
-	vAttributes.push(att);
-	att.name = L"url";
-	att.value = CaptureGlobal::urlEncode(*url);
-	vAttributes.push(att);
-	att.name = L"application";
-	att.value = *application;
-	vAttributes.push(att);
-	att.name = L"malicious";
-	att.value = *classification;
-	vAttributes.push(att);
-	att.name = L"major-error-code";
-	att.value = *majorErrorCode;
-	vAttributes.push(att);
-	att.name = L"minor-error-code";
-	att.value = *minorErrorCode;
-	vAttributes.push(att);
-
-	server->sendXML(L"visit-event", &vAttributes);
-}
-
-void
-Analyzer::onVisitEvent(DWORD majorErrorCode, DWORD minorErrorCode, std::wstring url, std::wstring applicationPath)
-{
+Analyzer::update(int eventType, const VisitEvent& visitEvent)
+{	
 	bool send = false;
-	wstring type = L"";
-	wstring classification = L"";
-	wstring majErrorCode = L"";
-	wstring minErrorCode = L"";
+	std::wstring type;
 
-	if(majorErrorCode == CAPTURE_VISITATION_START) {
-		type = L"start";
-		send = true;
-	} else if(majorErrorCode == CAPTURE_VISITATION_FINISH) {
-		this->stop();
-	} else if(majorErrorCode == CAPTURE_VISITATION_NETWORK_ERROR || 
-		majorErrorCode == CAPTURE_VISITATION_TIMEOUT_ERROR ||
-		majorErrorCode == CAPTURE_VISITATION_EXCEPTION)
+	switch(eventType)
 	{
-		type = L"error";
-		classification = boost::lexical_cast<wstring>(malicious);
-		majErrorCode = boost::lexical_cast<wstring>(majorErrorCode);
-		minErrorCode = boost::lexical_cast<wstring>(minorErrorCode);
+	case CAPTURE_VISITATION_PRESTART:
+		start();
+		break;
+	case CAPTURE_VISITATION_START:
 		send = true;
-	} else if(majorErrorCode == CAPTURE_VISITATION_PRESTART) {
-		this->start();
-	} else if(majorErrorCode == CAPTURE_VISITATION_POSTFINISH) {	
+		type = L"start";
+		break;
+	case CAPTURE_VISITATION_FINISH:
+		stop();
+		break;
+	case CAPTURE_VISITATION_POSTFINISH:
+		send = true;
 		type = L"finish";
-		classification = boost::lexical_cast<wstring>(malicious);
+		break;
+	default:
 		send = true;
-	} else if(majorErrorCode == CAPTURE_VISITATION_PROCESS_ERROR) {
-		malicious = true;
 		type = L"error";
-		classification = boost::lexical_cast<wstring>(malicious);
-		majErrorCode = boost::lexical_cast<wstring>(majorErrorCode);
-		minErrorCode = boost::lexical_cast<wstring>(minorErrorCode);
-		send = true;
+		break;
 	}
 
 	if(send)
 	{
-		SYSTEMTIME st;
-
-		GetLocalTime(&st);             // gets current time
-		wstring time = L"";
-		time += boost::lexical_cast<wstring>(st.wDay);
-		time += L"/";
-		time += boost::lexical_cast<wstring>(st.wMonth);
-		time += L"/";
-		time += boost::lexical_cast<wstring>(st.wYear);
-		time += L" ";
-		time += boost::lexical_cast<wstring>(st.wHour);
-		time += L":";
-		time += boost::lexical_cast<wstring>(st.wMinute);
-		time += L":";
-		time += boost::lexical_cast<wstring>(st.wSecond);
-		time += L".";
-		time += boost::lexical_cast<wstring>(st.wMilliseconds);
-		printf("%ls: %ls %ls %ls %ls\n", type.c_str(), url.c_str(), applicationPath.c_str(), majErrorCode.c_str(), minErrorCode.c_str());
-		sendVisitEvent(&type, &time, &url, &classification, &applicationPath, &majErrorCode, &minErrorCode);
+		Element element = visitEvent.toElement();
+		element.addAttribute(L"type", type);
+		element.addAttribute(L"time", Time::getCurrentTime());
+		element.addAttribute(L"malicious", boost::lexical_cast<std::wstring>(malicious));
+		server.sendElement(element);
 	}
 }
 
 void
-Analyzer::sendSystemEvent(wstring* type, wstring* time, 
-					wstring* process, wstring* action, 
-					wstring* object)
+Analyzer::sendSystemEvent(const std::wstring& type, const std::wstring& time, 
+					const std::wstring& process, const std::wstring& action, 
+					const std::wstring& object)
 {
-	Attribute att;
-	queue<Attribute> vAttributes;
-	att.name = L"time";
-	att.value = *time;
-	vAttributes.push(att);
-	att.name = L"type";
-	att.value = *type;
-	vAttributes.push(att);
-	att.name = L"process";
-	att.value = *process;
-	vAttributes.push(att);
-	att.name = L"action";
-	att.value = *action;
-	vAttributes.push(att);
-	att.name = L"object";
-	att.value = *object;
-	vAttributes.push(att);
+	vector<Attribute> attributes;
+	attributes.push_back(Attribute(L"time", time));
+	attributes.push_back(Attribute(L"type", type));
+	attributes.push_back(Attribute(L"process", process));
+	attributes.push_back(Attribute(L"action", action));
+	attributes.push_back(Attribute(L"object", object));
 	if(OptionsManager::getInstance()->getOption(L"log-system-events-file") == L"")
 	{
 		// Output the event to stdout
-		printf("%ls: %ls %ls -> %ls\n", type->c_str(), action->c_str(), process->c_str(), object->c_str());
+		printf("%ls: %ls %ls -> %ls\n", type.c_str(), action.c_str(), process.c_str(), object.c_str());
 	} else {
 		// Send the event to the logger
 		Logger::getInstance()->writeSystemEventToLog(type, time, process, action, object);
 	}
-	server->sendXML(L"system-event", &vAttributes);
+	server.sendXML(L"system-event", attributes);
 }
 
 void
-Analyzer::onProcessEvent(BOOLEAN created, wstring time, 
-						 DWORD parentProcessId, wstring parentProcess, 
-						 DWORD processId, wstring process)
+Analyzer::onProcessEvent(BOOLEAN created, const std::wstring& time, 
+						 DWORD parentProcessId, const std::wstring& parentProcess, 
+						 DWORD processId, const std::wstring& process)
 {
 	malicious = true;
-	wstring processEvent = L"process";
-	wstring processType = L"";
+	std::wstring processEvent = L"process";
+	std::wstring processType = L"";
 	if(created == TRUE)
 	{
 		processType = L"created";
 	} else {
 		processType = L"terminated";
 	}
-	sendSystemEvent(&processEvent, &time, 
-					&parentProcess, &processType, 
-					&process);
+	sendSystemEvent(processEvent, time, 
+					parentProcess, processType, 
+					process);
 }
 
 void 
-Analyzer::onRegistryEvent(wstring registryEventType, wstring time, 
-						  wstring processPath, wstring registryEventPath)
+Analyzer::onRegistryEvent(const std::wstring& registryEventType, const std::wstring& time, 
+						  const std::wstring& processPath, const std::wstring& registryEventPath)
 {
 	malicious = true;
-	wstring registryEvent = L"registry";
-	sendSystemEvent(&registryEvent, &time, 
-					&processPath, &registryEventType, 
-					&registryEventPath);
+	std::wstring registryEvent = L"registry";
+	sendSystemEvent(registryEvent, time, 
+					processPath, registryEventType, 
+					registryEventPath);
 }
 
 void
-Analyzer::onFileEvent(wstring fileEventType, wstring time, 
-						 wstring processPath, wstring fileEventPath)
+Analyzer::onFileEvent(const std::wstring& fileEventType, const std::wstring& time, 
+						 const std::wstring& processPath, const std::wstring& fileEventPath)
 {
 	malicious = true;
-	wstring fileEvent = L"file";
-	sendSystemEvent(&fileEvent, &time, 
-					&processPath, &fileEventType, 
-					&fileEventPath);
+	std::wstring fileEvent = L"file";
+	sendSystemEvent(fileEvent, time, 
+					processPath, fileEventType, 
+					fileEventPath);
 }

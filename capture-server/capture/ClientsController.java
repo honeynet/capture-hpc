@@ -97,8 +97,10 @@ public class ClientsController extends Observable implements Observer, Runnable,
 		{
 			this.removeClient(client);
 		} else if(client.getClientState() == CLIENT_STATE.CONNECTED) {
-			client.send("<option name=\"capture-network-packets\" value=\"" + 
-					ConfigManager.getInstance().getConfigOption("capture-network-packets") + "\"/>");
+            client.send("<option name=\"capture-network-packets-malicious\" value=\"" +
+                    ConfigManager.getInstance().getConfigOption("capture-network-packets-malicious") + "\"/>");
+			client.send("<option name=\"capture-network-packets-benign\" value=\"" + 
+					ConfigManager.getInstance().getConfigOption("capture-network-packets-benign") + "\"/>");
 			client.send("<option name=\"collect-modified-files\" value=\"" + 
 					ConfigManager.getInstance().getConfigOption("collect-modified-files") + "\"/>");
 	        if(ConfigManager.getInstance().getConfigOption("send-exclusion-lists").equals("true"))

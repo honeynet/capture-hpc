@@ -1,8 +1,7 @@
 #several urls. as shown below, one can specify a client application identifier (iexplore) as well as overwrite the default visitation time for the url
 http://www.google.com
 http://www.google.de
-http://www.google.fr::iexplore
-http://www.google.it::iexplore::30
-http://www.google.co.nz::90
-http://www.ahostthatdoesnotexist.com
-http://www.google.com/aurlthatcausesa404
+http://www.google.fr
+http://www.google.it
+http://www.google.co.nz
+

@@ -37,66 +37,94 @@ Application_ClientConfigManager::~Application_ClientConfigManager(void)
 	delete [] supportedApplications;
 }
 
-DWORD 
-Application_ClientConfigManager::visitUrl(Url* url, DWORD* minorError)
+void
+Application_ClientConfigManager::visitGroup(VisitEvent* visitEvent)
 {
 	DWORD status = CAPTURE_VISITATION_OK;
-	std::wstring url_path = url->getUrl();
 	stdext::hash_map<wstring, APPLICATION*>::iterator it;
-	it = applicationsMap.find(url->getApplicationName());
+	it = applicationsMap.find(visitEvent->getProgram());
 	if(it != applicationsMap.end())
 	{	
-		// Download file to temp directory if required
-		if(it->second->downloadURL)
+		PROCESS_INFORMATION* piProcessInfo = new PROCESS_INFORMATION[visitEvent->getUrls().size()];
+		for(int i = 0; i < visitEvent->getUrls().size(); i++)
 		{
-			FileDownloader* downloader = new FileDownloader();
-			wstring file = url->getUrl().substr(url->getUrl().find_last_of(L"/"));
-			DWORD downloadStatus = 0;
-			if((downloadStatus = downloader->Download(url->getUrl(), &file)) > 0)
+			// Download file to temp directory if required
+			Url* url = visitEvent->getUrls()[i];
+			wstring url_path = url->getUrl();
+			if(it->second->downloadURL)
 			{
-				*minorError = downloadStatus;
-				return CAPTURE_VISITATION_NETWORK_ERROR;
-			} else {
-				url_path = file;
+				FileDownloader* downloader = new FileDownloader();
+				wstring file = url->getUrl().substr(url->getUrl().find_last_of(L"/"));
+				DWORD downloadStatus = 0;
+				if((downloadStatus = downloader->Download(url->getUrl(), &file)) > 0)
+				{
+					visitEvent->setErrorCode(CAPTURE_VISITATION_NETWORK_ERROR);
+					url->setMajorErrorCode(CAPTURE_VISITATION_NETWORK_ERROR);
+					url->setMinorErrorCode(downloadStatus);
+					continue;
+				} else {
+					url_path = file;
+				}
+			}
+
+			PAPPLICATION pApplication = it->second;
+			STARTUPINFO siStartupInfo;
+			//PROCESS_INFORMATION piProcessInfo;
+
+			memset(&siStartupInfo, 0, sizeof(siStartupInfo));
+			memset(&piProcessInfo[i], 0, sizeof(PROCESS_INFORMATION));
+			siStartupInfo.cb = sizeof(siStartupInfo);
+
+			wstring processCommand = L"\"";
+			processCommand += pApplication->path;
+			processCommand += L"\" ";
+			processCommand += L"\"";
+			processCommand += url_path;
+			processCommand += L"\"";
+
+			BOOL created = CreateProcess(NULL,(LPWSTR)processCommand.c_str(), 0, 0, FALSE,
+				CREATE_DEFAULT_ERROR_MODE, 0, 0, &siStartupInfo,
+				&piProcessInfo[i]);
+
+			if(created == FALSE)
+			{
+				visitEvent->setErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
+				url->setMajorErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
+				url->setMinorErrorCode(GetLastError());
 			}
 		}
 
-		PAPPLICATION pApplication = it->second;
-		STARTUPINFO siStartupInfo;
-		PROCESS_INFORMATION piProcessInfo;
+		bool sleep = true;
 
-		memset(&siStartupInfo, 0, sizeof(siStartupInfo));
-		memset(&piProcessInfo, 0, sizeof(piProcessInfo));
-		siStartupInfo.cb = sizeof(siStartupInfo);
-
-		wstring processCommand = L"\"";
-		processCommand += pApplication->path;
-		processCommand += L"\" ";
-		processCommand += url_path;
-
-		BOOL created = CreateProcess(NULL,(LPWSTR)processCommand.c_str(), 0, 0, FALSE,
-			CREATE_DEFAULT_ERROR_MODE, 0, 0, &siStartupInfo,
-			&piProcessInfo);
-
-		if(created == FALSE)
+		if(visitEvent->getErrorCode() != CAPTURE_VISITATION_OK)
 		{
-			status = CAPTURE_VISITATION_PROCESS_ERROR;
-			*minorError = GetLastError();
-		} else {
-			Sleep(url->getVisitTime()*1000);
-					
-			bool processClosed = closeProcess(piProcessInfo.dwProcessId, minorError);
+			sleep = false;
+		}
+
+		if(sleep)
+		{
+			Sleep(visitEvent->getUrls()[0]->getVisitTime()*1000);
+		}
+
+		for(int i = 0; i < visitEvent->getUrls().size(); i++)
+		{
+			DWORD minorError = 0;
+			Url* url = visitEvent->getUrls()[i];
+			bool processClosed = closeProcess(piProcessInfo[i], &minorError);
 			if(!processClosed)
 			{
-				status = CAPTURE_VISITATION_PROCESS_ERROR;
+				visitEvent->setErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
+				url->setMajorErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
+				url->setMinorErrorCode(minorError);
 			}
 			Sleep(1000);
 		}
+		delete [] piProcessInfo;
 	} else {
-		status = CAPTURE_VISITATION_PROCESS_ERROR;
-		*minorError = CAPTURE_PE_PROCESS_PATH_NOT_FOUND;
+		visitEvent->setErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
+		//url->setMajorErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
+		//url->setMinorErrorCode(CAPTURE_PE_PROCESS_PATH_NOT_FOUND);
 	}
-	return status;
 }
 
 void 
@@ -161,10 +189,10 @@ Application_ClientConfigManager::loadApplicationsList()
 }
 
 bool 
-Application_ClientConfigManager::closeProcess(DWORD processId, DWORD* error)
+Application_ClientConfigManager::closeProcess(const PROCESS_INFORMATION& processInfo, DWORD* error)
 {
-	HANDLE hProcess = OpenProcess(PROCESS_TERMINATE,TRUE, processId);
-	if(hProcess == NULL)
+	//HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS,TRUE, processId);
+	if(processInfo.hProcess == NULL)
 	{
 		*error = GetLastError();
 		if(*error == ERROR_INVALID_PARAMETER)
@@ -172,12 +200,12 @@ Application_ClientConfigManager::closeProcess(DWORD processId, DWORD* error)
 			*error = CAPTURE_PE_PROCESS_ALREADY_TERMINATED;
 		}
 	} else {
-		EnumWindows(Application_ClientConfigManager::EnumWindowsProc, (LPARAM)processId);
+		EnumWindows(Application_ClientConfigManager::EnumWindowsProc, (LPARAM)processInfo.dwProcessId);
 
-		DWORD tempProcessId = GetProcessId(hProcess);
-		if(tempProcessId == processId)
+		DWORD tempProcessId = GetProcessId(processInfo.hProcess);
+		if(tempProcessId == 0 || tempProcessId == processInfo.dwProcessId)
 		{
-			if(!TerminateProcess(hProcess, 0))
+			if(!TerminateProcess(processInfo.hProcess, 0))
 			{
 				*error = GetLastError();
 			} else {

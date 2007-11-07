@@ -1,80 +1,29 @@
 #include "CaptureGlobal.h"
 #include <strsafe.h>
+#include <boost/lexical_cast.hpp>
 
-wstring
-CaptureGlobal::urlEncode(wstring text)
-{
-	size_t len = text.length();
-	wstring encoded = L"";
-	for(size_t i = 0; i < len; i++)
-	{
-		wchar_t wch = text.at(i);
-		if ('A' <= wch && wch <= 'Z') {
-			encoded += wch;
-		} else if ('a' <= wch && wch <= 'z') {
-			encoded += wch;
-		} else if ('0' <= wch && wch <= '9') {
-			encoded += wch;
-		} else if (wch == ' ') {
-			encoded += L"+";
-		} else if (wch == '-' || wch == '_'
-			|| wch == '.' || wch == '!'
-			|| wch == '~' || wch == '*'
-			|| wch == '\'' || wch == '('
-			|| wch == ')') {
-			encoded += wch;
-		} else if (wch <= 0x007f) {		// other ASCII
-			encoded += hexenc[wch];
-		} else if (wch <= 0x07FF) {		// non-ASCII <= 0x7FF
-			encoded += hexenc[0xc0 | (wch >> 6)];
-			encoded += hexenc[0x80 | (wch & 0x3F)];
-		} else {					// 0x7FF < ch <= 0xFFFF
-			encoded += hexenc[0xe0 | (wch >> 12)];
-			encoded += hexenc[0x80 | ((wch >> 6) & 0x3F)];
-			encoded += hexenc[0x80 | (wch & 0x3F)];
-		}
-	}
-	return encoded;
-}
+#define XX 100
 
-wstring
-CaptureGlobal::urlDecode(wstring text)
-{
-	wstring decoded = L"";
-	wchar_t temp[] = L"0x00";
-	size_t len = text.length();
-	int sequence = 0;
-	wchar_t conwch = 0;
-	for(size_t i = 0; i < len; i++)
-	{	
-		wchar_t wch = text.at(i++);
-		if((wch == '%') && (i+1 < len))
-		{			
-			temp[2] = text.at(i++);
-			temp[3] = text.at(i);
-			long tconwch = wcstol(temp, NULL, 16);
-			if(tconwch <= 0x7F) {
-				decoded += tconwch; // normal ascii char
-			} else if(tconwch >= 0x80 && tconwch <= 0xBF) { // partial byte
-				tconwch = tconwch & 0x3F;
-				if(sequence-- == 2)
-					tconwch = tconwch << 6;
-				conwch |= tconwch;
-				if(sequence == 0)
-					decoded += conwch;
-			} else if(tconwch >= 0xC0 && tconwch <= 0xDF) {
-				conwch = (tconwch & 0x1F) << 6; // make space for partial bytes
-				sequence = 1; // 1 more partial bytes follow
-			} else if(tconwch >= 0xE0 && tconwch <= 0xEF) {
-				conwch = (tconwch & 0xF) << 12; // make space for partial bytes
-				sequence = 2; // 2 more partial bytes follow
-			} // TODO add case fore 3 partial bytes ... very rare
-		} else {
-			decoded += text.at(--i);
-		}
-	}
-	return decoded;
-}
+const char Base64::b64_list[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const int Base64::b64_index[256] = {
+		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
+		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
+		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,62, XX,XX,XX,63,
+		52,53,54,55, 56,57,58,59, 60,61,XX,XX, XX,XX,XX,XX,
+		XX, 0, 1, 2,  3, 4, 5, 6,  7, 8, 9,10, 11,12,13,14,
+		15,16,17,18, 19,20,21,22, 23,24,25,XX, XX,XX,XX,XX,
+		XX,26,27,28, 29,30,31,32, 33,34,35,36, 37,38,39,40,
+		41,42,43,44, 45,46,47,48, 49,50,51,XX, XX,XX,XX,XX,
+		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
+		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
+		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
+		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
+		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
+		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
+		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
+		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
+	};
+
 
 
 void DebugPrint(LPCTSTR pszFormat, ... )
@@ -92,29 +41,33 @@ void DebugPrint(LPCTSTR pszFormat, ... )
 //#endif
 }
 
-void decode_base64(char* encodedBuffer)
+char*
+Base64::decode(const char* encodedBuffer)
 {
 	size_t position = 0;
 	char encoded[4];
 	size_t len = strlen(encodedBuffer);
+	char* buffer = (char*)malloc(len);
 	for(size_t i = 0; i < len+1; i++)
 	{
 		if((i > 0) && ((i % 4) == 0))
 		{
-			encodedBuffer[position++] = (unsigned char) (b64_index[encoded[0]] << 2 | b64_index[encoded[1]] >> 4);
-			encodedBuffer[position++] = (unsigned char) (b64_index[encoded[1]] << 4 | b64_index[encoded[2]] >> 2);	
-			encodedBuffer[position++] = (unsigned char) (b64_index[encoded[2]] << 6 | b64_index[encoded[3]]);
+			buffer[position++] = (unsigned char) (b64_index[encoded[0]] << 2 | b64_index[encoded[1]] >> 4);
+			buffer[position++] = (unsigned char) (b64_index[encoded[1]] << 4 | b64_index[encoded[2]] >> 2);	
+			buffer[position++] = (unsigned char) (b64_index[encoded[2]] << 6 | b64_index[encoded[3]]);
 		}
 		encoded[i%4] = encodedBuffer[i];
 	}
 	/* Should alway succeed as base64 encoded string length > decoded string length */
 	if(position < len)
 	{
-		encodedBuffer[position] = '\0';
+		buffer[position] = '\0';
 	}
+	return buffer;
 }
 
-char* encode_base64(char* cleartextBuffer, unsigned int length, size_t* encodedLength)
+char* 
+Base64::encode(char* cleartextBuffer, unsigned int length, size_t* encodedLength)
 {
 	/* Fairly ineffecient base64 encoding method ... could be a lot better but it works
 	   at the moment. If performance is slow when transferring large files this could be
@@ -128,7 +81,7 @@ char* encode_base64(char* cleartextBuffer, unsigned int length, size_t* encodedL
 		nBlocks++;
 	}
 	char* encodedBuffer = (char*)malloc((nBlocks*4)+2);
-
+	//*encodedLength = (nBlocks*4)+2;
 	int k = 0;
 	for(unsigned int i = 0; i < len; i+=3)
 	{
@@ -157,38 +110,50 @@ char* encode_base64(char* cleartextBuffer, unsigned int length, size_t* encodedL
 	return encodedBuffer;
 }
 
-size_t convertTimefieldsToString(TIME_FIELDS time, wchar_t* buffer, size_t bufferLength)
+std::wstring
+Time::timefieldToString(const TIME_FIELDS& time)
 {
-	wchar_t szTime[16];
-	wchar_t wtime[256];
-	ZeroMemory(&szTime, sizeof(szTime));
-	ZeroMemory(&wtime, sizeof(wtime));
-	_itow_s(time.wDay,szTime,16,10);
-	wcscat_s(wtime, 256, szTime);
-	wcscat_s(wtime, 256, L"/");
-	_itow_s(time.wMonth,szTime,16,10);
-	wcscat_s(wtime, 256, szTime);
-	wcscat_s(wtime, 256, L"/");
-	_itow_s(time.wYear,szTime,16,10);
-	wcscat_s(wtime, 256, szTime);
-	wcscat_s(wtime, 256, L" ");
-	_itow_s(time.wHour,szTime,16,10);
-	wcscat_s(wtime, 256, szTime);
-	wcscat_s(wtime, 256, L":");
-	_itow_s(time.wMinute,szTime,16,10);
-	wcscat_s(wtime, 256, szTime);
-	wcscat_s(wtime, 256, L":");
-	_itow_s(time.wSecond,szTime,16,10);
-	wcscat_s(wtime, 256, szTime);
-	wcscat_s(wtime, 256, L".");
-	_itow_s(time.wMilliseconds,szTime,16,10);
-	wcscat_s(wtime, 256, szTime);
-	size_t timeLength = wcslen(wtime);
-	if(bufferLength >= timeLength)
-	{
-		wcscpy_s(buffer, bufferLength, wtime);
-		return timeLength;
-	} else {
-		return -1;
-	}
+	std::wstring stime;
+	stime += boost::lexical_cast<std::wstring>(time.wDay);
+	stime += L"/";
+	stime += boost::lexical_cast<std::wstring>(time.wMonth);
+	stime += L"/";
+	stime += boost::lexical_cast<std::wstring>(time.wYear);
+	stime += L" ";
+	stime += boost::lexical_cast<std::wstring>(time.wHour);
+	stime += L":";
+	stime += boost::lexical_cast<std::wstring>(time.wMinute);
+	stime += L":";
+	stime += boost::lexical_cast<std::wstring>(time.wSecond);
+	stime += L".";
+	stime += boost::lexical_cast<std::wstring>(time.wMilliseconds);
+	return stime;
+}
+
+std::wstring
+Time::systemtimeToString(const SYSTEMTIME& time)
+{
+	std::wstring stime;
+	stime += boost::lexical_cast<std::wstring>(time.wDay);
+	stime += L"/";
+	stime += boost::lexical_cast<std::wstring>(time.wMonth);
+	stime += L"/";
+	stime += boost::lexical_cast<std::wstring>(time.wYear);
+	stime += L" ";
+	stime += boost::lexical_cast<std::wstring>(time.wHour);
+	stime += L":";
+	stime += boost::lexical_cast<std::wstring>(time.wMinute);
+	stime += L":";
+	stime += boost::lexical_cast<std::wstring>(time.wSecond);
+	stime += L".";
+	stime += boost::lexical_cast<std::wstring>(time.wMilliseconds);
+	return stime;
+}
+
+std::wstring
+Time::getCurrentTime()
+{
+	SYSTEMTIME st;
+	GetLocalTime(&st);
+	return systemtimeToString(st);
 }

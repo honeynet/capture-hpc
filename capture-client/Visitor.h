@@ -23,29 +23,19 @@
  */
 #pragma once
 #include "CaptureGlobal.h"
+#include "Thread.h"
+#include "Element.h"
+#include "Observable.h"
 #include <string>
 #include <queue>
-#include <list>
-#include <iostream>
-#include <fstream>
 #include <vector>
 #include <hash_map>
 #include <boost/signal.hpp>
-#include <boost/bind.hpp>
-#include <boost\regex.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/find_iterator.hpp>
-#include <boost/algorithm/string/finder.hpp> 
-#include <boost/lexical_cast.hpp>
-#include <boost/tokenizer.hpp>
-#include "Url.h"
-#include "Thread.h"
-#include "ApplicationPlugin.h"
 
-using namespace std;
-using namespace boost;
+class Url;
+class ApplicationPlugin;
+class VisitEvent;
 
-typedef split_iterator<string::iterator> sf_it;
 
 /*
 	Class: Visitor
@@ -55,34 +45,33 @@ typedef split_iterator<string::iterator> sf_it;
 	to visit the url by creating the process requested and instructing it to visit 
 	the url.
 */
-class Visitor : public Runnable
+class Visitor : public Runnable, public Observable<VisitEvent>
 {
 public:
-	typedef boost::signal<void (DWORD, DWORD, wstring, wstring)> signal_visitEvent;
-	typedef pair <HMODULE, std::list<ApplicationPlugin*>*> PluginPair;
-	typedef pair <wstring, ApplicationPlugin*> ApplicationPair;
-	typedef pair <ApplicationPlugin*, Url*> VisitPair;
+	typedef std::pair <HMODULE, std::list<ApplicationPlugin*>*> PluginPair;
+	typedef std::pair <std::wstring, ApplicationPlugin*> ApplicationPair;
 public:
 	Visitor(void);
-	~Visitor(void);
+	virtual ~Visitor(void);
 
-	boost::signals::connection onVisitEvent(const signal_visitEvent::slot_type& s);
 private:
 	void loadClientPlugins();
 	void unloadClientPlugins();
+	Url* createUrl(const std::vector<Attribute>& attributes);
+	ApplicationPlugin* getApplicationPlugin(const std::wstring& applicationName);
 
 	void run();
 
-	void onServerEvent(Element* pElement);
+	void onServerEvent(const Element& element);
 
 	ApplicationPlugin* createApplicationPluginObject(HMODULE hPlugin);
 
+	boost::signals::connection onServerEventConnection;
+
 	HANDLE hQueueNotEmpty;
 	bool visiting;
-	queue<VisitPair> toVisit;
+	std::queue<VisitEvent*> toVisit;
 	Thread* visitorThread;
-	signal_visitEvent signalVisitEvent;
 	stdext::hash_map<HMODULE, std::list<ApplicationPlugin*>*> applicationPlugins;
-	boost::signals::connection onServerVisitEventConnection;
-	stdext::hash_map<wstring, ApplicationPlugin*> applicationMap;
+	stdext::hash_map<std::wstring, ApplicationPlugin*> applicationMap;
 };
