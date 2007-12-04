@@ -60,6 +60,7 @@ Url::toElement()
 	element.addAttribute(L"program", program);
 	element.addAttribute(L"major-error-code", boost::lexical_cast<std::wstring>(majorErrorCode));
 	element.addAttribute(L"minor-error-code", boost::lexical_cast<std::wstring>(minorErrorCode));
+	element.addAttribute(L"time", Time::getCurrentTime());
 	element.addAttribute(L"visited", boost::lexical_cast<std::wstring>(visited));
 	return element;
 }

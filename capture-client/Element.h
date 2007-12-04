@@ -81,6 +81,13 @@ public:
 
 	std::wstring toString() const
 	{
+		std::wstring document = toStringWithoutNewLine();
+		document += L"\r\n";
+		return document;
+	}
+	
+	std::wstring toStringWithoutNewLine() const
+	{
 		std::wstring document = L"<";
 		document += name;
 		for each(Attribute attribute in attributes)
@@ -100,7 +107,7 @@ public:
 
 			for each(Element* childElement in childElements)
 			{
-				document += childElement->toString();
+				document += childElement->toStringWithoutNewLine();
 			}
 		}
 
@@ -122,7 +129,7 @@ public:
 
 		document += L"</";
 		document += name;
-		document += L">\r\n";
+		document += L">";
 
 		return document;
 	}

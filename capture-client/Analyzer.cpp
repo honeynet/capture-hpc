@@ -268,7 +268,7 @@ Analyzer::update(int eventType, const VisitEvent& visitEvent)
 	{
 		Element element = visitEvent.toElement();
 		element.addAttribute(L"type", type);
-		element.addAttribute(L"time", Time::getCurrentTime());
+		//element.addAttribute(L"time", Time::getCurrentTime());
 		element.addAttribute(L"malicious", boost::lexical_cast<std::wstring>(malicious));
 		server.sendElement(element);
 	}

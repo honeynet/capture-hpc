@@ -23,6 +23,7 @@
  */
 #pragma once
 #include "Element.h"
+#include "CaptureGlobal.h"
 #include <string>
 
 /*
