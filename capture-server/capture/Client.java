@@ -206,7 +206,7 @@ public class Client extends Observable implements Runnable {
                 url.setVisitFinishTime(item.attributes.get("time"));
                 String urlMajorErrorCode = item.attributes.get("major-error-code");
                 String urlMinorErrorCode = item.attributes.get("minor-error-code");
-                if(!urlMajorErrorCode.equals("")) {
+                if(!(urlMajorErrorCode.equals("0") || urlMajorErrorCode.equals(""))) {
                     errorCount++;
                     url.setMajorErrorCode(Long.parseLong(urlMajorErrorCode));
                     url.setMinorErrorCode(Long.parseLong(urlMinorErrorCode));

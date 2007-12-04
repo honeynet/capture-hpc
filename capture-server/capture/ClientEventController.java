@@ -99,7 +99,14 @@ public class ClientEventController extends DefaultHandler implements Runnable {
         	System.err.println(where + " " + e.getMessage());
 			System.err.println(where + "\nSAXException: Buffer=" +  
 					buffer + "\n\n" + e.toString());      		
-		} finally {
+		} catch (Exception e) {
+            String where = "[unknown server]";
+            if(client.getVirtualMachine() != null)
+                where = client.getVirtualMachine().getLogHeader();
+            System.err.println(where + " " + e.getMessage());
+            System.err.println(where + "\nException: Buffer=" +
+                    buffer + "\n\n" + e.toString());
+        } finally {
 			client.setClientState(CLIENT_STATE.DISCONNECTED);
 			running = false;
 		}

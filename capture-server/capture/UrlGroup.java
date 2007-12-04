@@ -59,7 +59,7 @@ public class UrlGroup extends Observable {
     public Url getUrl(String uri) {
         for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
             Url url = iterator.next();
-            if(url.getEscapedUrl().equals(uri)) {
+            if(url.getEscapedUrl().equalsIgnoreCase(uri)) {
                 return url;
             }
         }
@@ -107,13 +107,13 @@ public class UrlGroup extends Observable {
 
     public String toVisitEvent()
 	{
-		String urlGroupEvent = "<visit ";
+		String urlGroupEvent = "<visit-event ";
         urlGroupEvent += "identifier=\"" + identifier + "\" program=\"" + clientProgram + "\" time=\"" + visitTime + "\">";
 		for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
             Url url = iterator.next();
             urlGroupEvent += "<item url=\"" + url.getEscapedUrl() + "\"/>";
         }
-		urlGroupEvent += "</visit>";
+		urlGroupEvent += "</visit-event>";
 		return urlGroupEvent;
 	}
 
