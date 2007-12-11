@@ -163,7 +163,9 @@ Analyzer::stop()
 
 		bool compressed = compressLogDirectory(szLogFileName);
 
-		if(malicious || OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") == L"true")
+		if((malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets") == L"true")) ||
+			(!malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") == L"true")) ||
+			(malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") == L"true")))
 		{
 			if(server.isConnected() && compressed)
 			{				

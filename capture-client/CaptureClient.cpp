@@ -371,6 +371,8 @@ int _tmain(int argc, WCHAR* argv[])
 	OptionsManager::getInstance()->addOption(L"log-system-events-file", logSystemEventsFile);
 	OptionsManager::getInstance()->addOption(L"collect-modified-files", collectModifiedFiles);
 	OptionsManager::getInstance()->addOption(L"capture-network-packets", captureNetworkPackets);
+	OptionsManager::getInstance()->addOption(L"capture-network-packets-malicious", L"false");
+	OptionsManager::getInstance()->addOption(L"capture-network-packets-benign", L"false");
 
 	if(collectModifiedFiles == L"true")
 	{
