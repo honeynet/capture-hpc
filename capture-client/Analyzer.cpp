@@ -60,8 +60,7 @@ Analyzer::onOptionChanged(const std::wstring& option)
 {
 	std::wstring value = OptionsManager::getInstance()->getOption(option); 
 	if(option == L"capture-network-packets-malicious" || 
-		option == L"capture-network-packets-benign" ||
-		option == L"capture-network-packets") {
+		option == L"capture-network-packets-benign") {
 		if(value == L"true")
 		{
 			if(captureNetworkPackets == false)
@@ -75,8 +74,7 @@ Analyzer::onOptionChanged(const std::wstring& option)
 			if(captureNetworkPackets == true)
 			{
 				if(OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") != L"true" &&
-					OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") != L"true" &&
-					OptionsManager::getInstance()->getOption(L"capture-network-packets") != L"true")
+					OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") != L"true")
 				{
 					captureNetworkPackets = false;
 					if(networkPacketDumper != NULL)
@@ -163,8 +161,7 @@ Analyzer::stop()
 
 		bool compressed = compressLogDirectory(szLogFileName);
 
-		if((malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets") == L"true")) ||
-			(!malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") == L"true")) ||
+		if((!malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") == L"true")) ||
 			(malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") == L"true")))
 		{
 			if(server.isConnected() && compressed)
