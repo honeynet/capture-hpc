@@ -50,6 +50,8 @@ public:
 	inline const std::wstring getProgram() const { return program; }
 	inline int getVisitTime() { return visitTime; }
 	inline bool isVisited() { return visited; }
+	inline unsigned long getMajorErrorCode() { return majorErrorCode; }
+	inline unsigned long getMinorErrorCode() { return minorErrorCode; }
 
 private:
 	std::wstring url;

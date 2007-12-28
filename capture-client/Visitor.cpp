@@ -63,6 +63,9 @@ Visitor::run()
 			notify(CAPTURE_VISITATION_START, *visitEvent);
 
 			// Send the group of urls to the appropiate application plugin
+#ifdef _DEBUG
+			applicationPlugin->visitGroup(visitEvent);
+#else
 			try
 			{
 				applicationPlugin->visitGroup(visitEvent);
@@ -71,7 +74,7 @@ Visitor::run()
 			{
 				notify(CAPTURE_VISITATION_EXCEPTION, *visitEvent);
 			}
-
+#endif
 			// If there are errors report it else finish visitation
 			if(visitEvent->isError())
 			{

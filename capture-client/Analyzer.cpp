@@ -165,7 +165,8 @@ Analyzer::stop()
 			(malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") == L"true")))
 		{
 			if(server.isConnected() && compressed)
-			{				
+			{
+				printf("Sending log file to server\n");
 				FileUploader uploader(server);
 				uploader.sendFile(szLogFileName);
 				DeleteFile(szLogFileName);

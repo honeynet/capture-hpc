@@ -10,9 +10,9 @@
 class InternetExplorerInstance : DWebBrowserEvents2 
 {
 public:
-	InternetExplorerInstance(void);
+	InternetExplorerInstance(IClassFactory* ie_factory);
 	~InternetExplorerInstance(void);
-	void visitUrl(Url* url, HANDLE hEvent);
+	void visitUrl(Url* url);
 
 	DWORD major;
 	DWORD minor;
@@ -24,6 +24,9 @@ private:
 	bool open;
 	_variant_t mainURL;
 
+	void Close();
+
+	IClassFactory* internet_explorer_factory;
 private:
 	/* Below are various methods we must implement for DWebBrowserEvents.
 	   Just ignore most of them as they are just stubs. The important ones

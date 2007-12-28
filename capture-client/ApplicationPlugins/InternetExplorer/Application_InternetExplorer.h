@@ -24,6 +24,7 @@
 #pragma once
 #include "..\..\ApplicationPlugin.h"
 
+#define MAX_WORKER_THREADS 5
 
 /* Define the application plugin name and the application names it supports */
 #define APPLICATION_PLUGIN_NAME		Application_InternetExplorer
@@ -40,7 +41,10 @@ public:
 	void visitGroup(VisitEvent* visitEvent);
 	wchar_t** getSupportedApplicationNames();
 	unsigned int getPriority() { return 100; };
-	
+private:
+	static DWORD WINAPI InternetExplorerWorker(LPVOID data);
+
+
 };
 
 /* DO NOT REMOVE OR MOVE THIS LINE ... ADDS EXPORTS (NEW/DELETE) TO THE PLUGIN */
