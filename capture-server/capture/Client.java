@@ -311,6 +311,7 @@ public class Client extends Observable implements Runnable {
 		}	
 		if(clientState == CLIENT_STATE.WAITING)
 		{
+			 virtualMachine.setState(VM_STATE.RUNNING);
 			synchronized (urlRetriever) {
 				urlRetriever.notify();
 			}

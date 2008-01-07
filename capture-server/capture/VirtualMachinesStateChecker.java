@@ -26,12 +26,20 @@ public class VirtualMachinesStateChecker extends TimerTask {
 					if(vm.getState() == VM_STATE.RUNNING)
 					{		        		
 		        		long diff = currentTime - vm.getLastContact();
-		        		if(diff >= 30000)
+		        		if(diff >= 60000)
 		        		{
 		        			System.out.println("[" + vmServer.getAddress() + ":" + vmServer.getPort() + "-" + 
 		        					vm.getVmUniqueId() + "] Client inactivity, reverting VM");
 		        			vm.setState(VM_STATE.WAITING_TO_BE_REVERTED);
 		        		}
+					
+					diff = currentTime - vm.getTimeOfLastStateChange();
+			        	if(diff >= 300000)
+			        	{
+			        		System.out.println("[" + vmServer.getAddress() + ":" + vmServer.getPort() + "-" +
+			    					vm.getVmUniqueId() + "] VM stalled during operation, reverting VM");
+			        		vm.setState(VM_STATE.WAITING_TO_BE_REVERTED);
+			        	}
 		        	} else {
 		        		if(vm.getState() == VM_STATE.REVERTING)
 		        		{

@@ -79,7 +79,8 @@ public class VirtualMachine extends Observable implements Observer {
 	 * @return VM_STATE - The current state of the virtual machine
 	 */
 	public void setState(VM_STATE newState) {
-		if(newState == vmState)
+        vmStateTimeChange = Calendar.getInstance().getTimeInMillis();
+        if(newState == vmState)
 		{
 			return;
 		}
@@ -92,7 +93,6 @@ public class VirtualMachine extends Observable implements Observer {
 			}
 		}
 		System.out.println(this.getLogHeader() + " VMSetState: " + newState.toString());
-		vmStateTimeChange = Calendar.getInstance().getTimeInMillis();
 		this.setChanged();
 		this.notifyObservers();
 	}
