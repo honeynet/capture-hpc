@@ -1,5 +1,9 @@
 #include "InternetExplorerInstance.h"
 
+#define _WIN32_WINNT 0x0501
+#define _WIN32_DCOM
+#include <objbase.h>
+
 InternetExplorerInstance::InternetExplorerInstance(IClassFactory* ie_factory)
 {
 	internet_explorer_factory = ie_factory;
