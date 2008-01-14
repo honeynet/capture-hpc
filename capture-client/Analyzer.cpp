@@ -241,6 +241,8 @@ Analyzer::update(int eventType, const VisitEvent& visitEvent)
 {	
 	bool send = false;
 	std::wstring type;
+	std::wstring error_code;
+	Element element = visitEvent.toElement();
 
 	switch(eventType)
 	{
@@ -261,12 +263,12 @@ Analyzer::update(int eventType, const VisitEvent& visitEvent)
 	default:
 		send = true;
 		type = L"error";
+		element.addAttribute(L"error-code", boost::lexical_cast<std::wstring>(eventType));
 		break;
 	}
 
 	if(send)
-	{
-		Element element = visitEvent.toElement();
+	{	
 		element.addAttribute(L"type", type);
 		//element.addAttribute(L"time", Time::getCurrentTime());
 		element.addAttribute(L"malicious", boost::lexical_cast<std::wstring>(malicious));
