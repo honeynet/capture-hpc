@@ -59,4 +59,6 @@ private:
 	NetworkPacketDumper* networkPacketDumper;
 	pcap_dumper_t *dumpFile;
 	Thread* adapterThread;
+
+	CRITICAL_SECTION adapter_thread_lock;
 };
