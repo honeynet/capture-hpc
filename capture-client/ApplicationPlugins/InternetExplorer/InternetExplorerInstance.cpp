@@ -98,19 +98,27 @@ InternetExplorerInstance::visitUrl(Url* url)
 	}
 
 	// Close the IE window
-	Close();
+	bool closed = Close();
+
+	if( !closed )
+	{
+		url->setMajorErrorCode( CAPTURE_VISITATION_WARNING );
+		url->setMinorErrorCode( CAPTURE_PE_PROCESS_ALREADY_TERMINATED );
+	}
 }
 
-void
+bool
 InternetExplorerInstance::Close()
 {
 	// Closes the IE window, except for the last one
 	HRESULT hr = pInternetExplorer->Quit();
 
-	pInternetExplorer->Release();
+	ULONG num_references = pInternetExplorer->Release();
 
 	CloseHandle(hVisiting);
 	CoUninitialize();
+
+	return (hr == S_OK);
 	
 }
 

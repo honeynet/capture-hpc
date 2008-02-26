@@ -66,6 +66,9 @@ Application_InternetExplorer::InternetExplorerWorker(LPVOID data)
 
 Application_InternetExplorer::Application_InternetExplorer()
 {
+	// Start the COM interface
+	CoInitializeEx(NULL,COINIT_MULTITHREADED);
+
 	// Reset worker threads status
 	for(unsigned int i = 0; i < MAX_WORKER_THREADS; i++)
 	{
@@ -85,6 +88,8 @@ Application_InternetExplorer::~Application_InternetExplorer(void)
 		CloseHandle(worker_finished[i]);
 		CloseHandle(worker_threads[i]);
 	}
+
+	CoUninitialize();
 }
 
 
@@ -96,8 +101,7 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 	unsigned int n_visiting = 0;
 	int n_urls = visitEvent->getUrls().size();
 
-	// Start the COM interface
-	CoInitializeEx(NULL,COINIT_MULTITHREADED);
+
 
 	IClassFactory* internet_explorer_factory;
 
@@ -156,23 +160,30 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 	IWebBrowser2* pInternetExplorer;
 	hr = internet_explorer_factory->CreateInstance(NULL, IID_IWebBrowser2, 
 							(void**)&pInternetExplorer);
-	HWND hwndIE;
-	DWORD dProcessID;
-	pInternetExplorer->get_HWND((SHANDLE_PTR*)&hwndIE);
-	GetWindowThreadProcessId(hwndIE, &dProcessID);
-
-	// Close the IE process
-	HANDLE hProc = OpenProcess(PROCESS_TERMINATE, FALSE, dProcessID);
-	if(hProc != NULL)
+	if( hr == S_OK )
 	{
-		if(!TerminateProcess(hProc, 0))
+		HWND hwndIE;
+		DWORD dProcessID;
+		pInternetExplorer->get_HWND((SHANDLE_PTR*)&hwndIE);
+		GetWindowThreadProcessId(hwndIE, &dProcessID);
+
+		// Close the IE process
+		HANDLE hProc = OpenProcess(PROCESS_TERMINATE, FALSE, dProcessID);
+		if(hProc != NULL)
 		{
-			visitEvent->setErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
+			if(!TerminateProcess(hProc, 0))
+			{
+				visitEvent->setErrorCode( CAPTURE_VISITATION_PROCESS_ERROR );
+			}
+		} else {
+			visitEvent->setErrorCode( CAPTURE_VISITATION_PROCESS_ERROR );
 		}
-	} else {
-		visitEvent->setErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
+		pInternetExplorer->Release();
 	}
-	pInternetExplorer->Release();
+	else
+	{
+		visitEvent->setErrorCode( CAPTURE_VISITATION_WARNING );
+	}
 
 	//Delete all IE instance objects
 	delete [] visit_information;
@@ -183,8 +194,7 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 	free(iexplore_instances);
 
 	// Free the COM interface stuff
-	internet_explorer_factory->Release();
-	CoUninitialize();
+	ULONG num_references = internet_explorer_factory->Release();
 }
 
 wchar_t**

@@ -24,7 +24,7 @@ private:
 	bool open;
 	_variant_t mainURL;
 
-	void Close();
+	bool Close();
 
 	IClassFactory* internet_explorer_factory;
 private:
