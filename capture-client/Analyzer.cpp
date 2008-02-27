@@ -254,11 +254,12 @@ Analyzer::update(int eventType, const VisitEvent& visitEvent)
 		type = L"start";
 		break;
 	case CAPTURE_VISITATION_FINISH:
-		stop();
-		break;
-	case CAPTURE_VISITATION_POSTFINISH:
+		stop();		
 		send = true;
 		type = L"finish";
+		break;
+	case CAPTURE_VISITATION_POSTFINISH:
+		// sending the finish command used to be here ...
 		break;
 	default:
 		send = true;
