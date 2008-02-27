@@ -223,16 +223,17 @@ Analyzer::compressLogDirectory(const std::wstring& logFileName)
 		CREATE_DEFAULT_ERROR_MODE, 0, 0, &siStartupInfo,
 		&piProcessInfo);
 
-	DWORD err = WaitForSingleObject( piProcessInfo.hProcess, INFINITE );
-
-	//DebugPrint(L"Analyzer: compressLogDirectory - WaitForSingleObject = 0x%08x, CreateProcess=%i", err, created);
-	if(!created)
+	if( created )
+	{
+		DWORD err = WaitForSingleObject( piProcessInfo.hProcess, INFINITE );
+		return true;
+	}
+	else
 	{
 		printf("Analyzer: Cannot open 7za.exe process - 0x%08x\n", GetLastError());
-		printf("Log directory not compressed ... \n");
+		printf("This is an internal error, Capture will now exit\n");
+		exit(0);
 		return false;
-	} else {
-		return true;
 	}
 }
 
