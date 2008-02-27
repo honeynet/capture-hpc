@@ -109,7 +109,7 @@ public class ClientEventController extends DefaultHandler implements Runnable {
             if (client != null) {
                 UrlGroup visitingUrlGroup = client.getVisitingUrlGroup();
                 if (visitingUrlGroup != null) {
-                    visitingUrlGroup.setMajorErrorCode(ERROR_CODES.CONNECTION_RESET.errorCode);
+                    visitingUrlGroup.setMajorErrorCode(ERROR_CODES.CAPTURE_CLIENT_CONNECTION_RESET.errorCode);
                     visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);
                 }
             }

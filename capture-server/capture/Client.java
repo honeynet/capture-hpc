@@ -78,7 +78,7 @@ public class Client extends Observable implements Runnable {
         } catch (IOException e) {
             e.printStackTrace(System.out);
             if(visitingUrlGroup!=null) {
-                visitingUrlGroup.setMajorErrorCode(ERROR_CODES.CONNECTION_RESET.errorCode);
+                visitingUrlGroup.setMajorErrorCode(ERROR_CODES.CAPTURE_CLIENT_CONNECTION_RESET.errorCode);
                 visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);
             }
 
