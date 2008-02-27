@@ -2,8 +2,6 @@ package capture;
 
 public class Server
 {
-	private CommandPrompt commandPrompt;
-	
 	public Server(String[] args)
 	{	
 		for(int i = 0; i < args.length; i++)
@@ -40,7 +38,7 @@ public class Server
 		/* Check that an address was specified to listen on */
 		if(ConfigManager.getInstance().getConfigOption("server-listen-address") == null)
 		{
-			System.err.println("Capture Server must be run with at least the -s argument set");
+			System.out.println("Capture Server must be run with at least the -s argument set");
 			System.out.println(getUsageString());
 			System.exit(1);
 		}
@@ -59,10 +57,6 @@ public class Server
 			Thread tailthread = new Thread(tail, "FileTail:" + file);
 			tailthread.start();
 		}
-		
-		commandPrompt = new CommandPrompt(this);
-		Thread t = new Thread(commandPrompt);
-		t.start();
 	}
 
     private static String getUsageString() {

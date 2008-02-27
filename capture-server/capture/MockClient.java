@@ -29,7 +29,7 @@ public class MockClient implements Runnable {
         try {
             maliciousURLsURIEncoded.add(URLEncoder.encode("http://www.google.fr", "UTF-8"));
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         }
     }
 
@@ -68,18 +68,18 @@ public class MockClient implements Runnable {
 
 
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         } catch (SAXException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace(System.out);
         } finally {
             if(input!=null) {
-                try { input.close(); } catch (IOException io) { io.printStackTrace(); }
+                try { input.close(); } catch (IOException io) { io.printStackTrace(System.out); }
             }
             if(output!=null) {
-               try { output.close(); } catch (IOException io) { io.printStackTrace(); }
+               try { output.close(); } catch (IOException io) { io.printStackTrace(System.out); }
             }
             if(client!=null) {
-                try { client.close(); } catch (IOException io) { io.printStackTrace(); }
+                try { client.close(); } catch (IOException io) { io.printStackTrace(System.out); }
             }
         }
     }
@@ -91,7 +91,7 @@ public class MockClient implements Runnable {
             output.writeBytes(connectResponse);
             System.out.println("Mock Client: Sent " + connectResponse);
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         }
     }
 
@@ -102,7 +102,7 @@ public class MockClient implements Runnable {
             output.writeBytes(pong);
             System.out.println("Mock Client: Sent " + pong);
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         }
     }
 
@@ -174,10 +174,10 @@ public class MockClient implements Runnable {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
 
         } catch (InterruptedException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace(System.out);
         }
 
     }
@@ -198,7 +198,7 @@ public class MockClient implements Runnable {
             output.writeBytes(visitEndResponse);
             System.out.println("Mock Client: Sent " + visitEndResponse);
         } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace(System.out);  
         }
     }
 }

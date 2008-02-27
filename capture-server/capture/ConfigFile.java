@@ -51,7 +51,7 @@ public class ConfigFile implements Observer, ErrorHandler {
 		        validator.validate(new DOMSource(configDocument));
 		        System.out.println(file + " successfully validated");
 		    } catch (SAXException e) {
-		    	e.printStackTrace(System.err);
+		    	e.printStackTrace(System.out);
 		    	System.exit(1);
 		    }
 			
@@ -60,13 +60,13 @@ public class ConfigFile implements Observer, ErrorHandler {
 			this.parseServerElements();
 			loaded = true;
 		} catch (SAXException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.out);
 	    	System.exit(1);
 		} catch (IOException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.out);
 	    	System.exit(1);
 		} catch (ParserConfigurationException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(System.out);
 	    	System.exit(1);
 		}
 	}
@@ -167,30 +167,33 @@ public class ConfigFile implements Observer, ErrorHandler {
 			Transformer t = tf.newTransformer();		        
 			t.transform(new DOMSource(configDocument), new StreamResult(new File("config.xml")));
 		} catch (TransformerConfigurationException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		} catch (TransformerException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 	}
 
 	@Override
 	public void error(SAXParseException exception) throws SAXException {
 		System.out.println("Error occured during parsing of config.xml\n");
-		System.err.println(exception.getMessage() + " Line: " + 
+		System.out.println(exception.getMessage() + " Line: " +
 				exception.getLineNumber() + " Column: " + exception.getColumnNumber());
-		System.exit(1);
+        exception.printStackTrace(System.out);
+        System.exit(1);
 	}
 
 	@Override
 	public void fatalError(SAXParseException exception) throws SAXException {
 		System.out.println("Fatal Error occured during parsing of config.xml\n");
-		System.err.println(exception.getMessage());
-		System.exit(1);
+		System.out.println(exception.getMessage());
+        exception.printStackTrace(System.out);
+        System.exit(1);
 	}
 
 	@Override
 	public void warning(SAXParseException exception) throws SAXException {
 		System.out.println("Warning occured during parsing of config.xml\n");
-		System.err.println(exception.getMessage());
-	}
+		System.out.println(exception.getMessage());
+        exception.printStackTrace(System.out);
+    }
 }

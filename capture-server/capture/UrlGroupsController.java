@@ -138,8 +138,7 @@ public class UrlGroupsController extends Observable implements Observer {
             List<Url> urls = urlGroup.getUrlList();
             for (Iterator<Url> iterator = urls.iterator(); iterator.hasNext();) {
                 Url url = iterator.next();
-                url.setMajorErrorCode(urlGroup.getMajorErrorCode());
-                url.setMajorErrorCode(urlGroup.getMinorErrorCode());
+                url.setMajorErrorCode(urlGroup.getMajorErrorCode().errorCode);
                 url.setUrlState(URL_STATE.ERROR);
             }
         }

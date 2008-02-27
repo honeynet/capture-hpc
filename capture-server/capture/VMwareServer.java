@@ -111,6 +111,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                                         }
                                     } catch (Exception ef) {
                                         System.out.println(ef.getMessage());
+                                        ef.printStackTrace(System.out);
                                     }
                                     vix.destroy();
                                 }
@@ -126,10 +127,11 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                                         }
                                     } catch (Exception ef) {
                                         System.out.println(ef.getMessage());
+                                        ef.printStackTrace(System.out);
                                     }
                                     vix.destroy();
                                 }
-                                e.printStackTrace();
+                                e.printStackTrace(System.out);
                                 System.out.println("[" + address + ":" + port + "-" + vmUniqueId + "] Unable to access external Vix library.");
                             }
                         }
@@ -162,7 +164,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                 }
             } catch (Exception e) {
                 System.out.println("Exception thrown in queue processor of VMware server " + e.toString());
-                e.printStackTrace();
+                e.printStackTrace(System.out);
             }
         }
     }

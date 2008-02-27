@@ -55,7 +55,7 @@ public class ClientsController extends Observable implements Observer, Runnable,
             }
         } catch (IOException ioe) {
         	System.out.println("CaptureServer: exception - " + ioe);
-            ioe.printStackTrace();
+            ioe.printStackTrace(System.out);
         }
 	}
 	

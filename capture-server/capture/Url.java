@@ -34,8 +34,7 @@ public class Url extends Observable {
     private URI url;
     private String clientProgram;
     private int visitTime;
-    private int errorCount;
-    private ERROR_CODES majorErrorCode;
+    private ERROR_CODES majorErrorCode = ERROR_CODES.OK;
     private long minorErrorCode;
     private Boolean malicious;
     private URL_STATE urlState;
@@ -64,7 +63,7 @@ public class Url extends Observable {
             SimpleDateFormat sf = new SimpleDateFormat("d/M/yyyy H:m:s.S");
             this.visitStartTime = sf.parse(visitStartTime);
         } catch (ParseException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace(System.out);
         }
     }
 
@@ -82,13 +81,16 @@ public class Url extends Observable {
             SimpleDateFormat sf = new SimpleDateFormat("d/M/yyyy H:m:s.S");
             this.visitFinishTime = sf.parse(visitFinishTime);
         } catch (ParseException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace(System.out);
         }
     }
 
     public String getVisitFinishTime() {
         SimpleDateFormat sf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss.S");
-        return sf.format(visitFinishTime);
+		if(visitFinishTime!=null) 
+			return sf.format(visitFinishTime);
+		else 
+			return sf.format(new Date());
     }
 
     private String getLogfileDate(long time) {
@@ -108,9 +110,9 @@ public class Url extends Observable {
             logFile.newLine();
             logFile.flush();
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         }
     }
 
@@ -158,7 +160,7 @@ public class Url extends Observable {
                     logFile.close();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                e.printStackTrace(System.out);
             }
         } else if (urlState == URL_STATE.ERROR) {
             if (this.malicious != null) {
@@ -170,15 +172,14 @@ public class Url extends Observable {
             }
 
             String date = getVisitFinishTime();
-            Logger.getInstance().writeToProgressLog("\"" + date + "\",\"error" + errorCount + ":" + majorErrorCode + "-" + minorErrorCode + "\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
+            Logger.getInstance().writeToProgressLog("\"" + date + "\",\"error" + ":" + majorErrorCode + "-" + minorErrorCode + "\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
             try {
                 if (logFile != null) {
                     logFile.close();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                e.printStackTrace(System.out);
             }
-            errorCount++;
         }
         this.setChanged();
         this.notifyObservers();
@@ -192,15 +193,11 @@ public class Url extends Observable {
         return clientProgram;
     }
 
-    public int getErrorCount() {
-        return errorCount;
-    }
-
     public String getEscapedUrl() {
         try {
             return URLEncoder.encode(url.toString(), "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
             return "";
         }
     }
@@ -237,10 +234,18 @@ public class Url extends Observable {
     }
 
     public void setMajorErrorCode(long majorErrorCode) {
+        boolean validErrorCode = false;
+
         for (ERROR_CODES e : ERROR_CODES.values()) {
             if (majorErrorCode == e.errorCode) {
+                validErrorCode = true;
                 this.majorErrorCode = e;
             }
+        }
+
+        if(!validErrorCode) {
+            System.out.println("Received invalid error code from client " + majorErrorCode);
+            this.majorErrorCode = ERROR_CODES.INVALID_ERROR_CODE_FROM_CLIENT;
         }
 
     }

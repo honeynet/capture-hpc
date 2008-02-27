@@ -6,7 +6,7 @@ public class VMwareServerExt {
             System.loadLibrary("VMwareServerExt");
             System.out.println("VIX library loaded");
         } catch (UnsatisfiedLinkError le) {
-            le.printStackTrace(System.err);
+            le.printStackTrace(System.out);
 
             System.out.println("\nMake sure VMwareServerExt.dll/libVMwareServerExt.so is in your LD_LIBRARY_PATH variable\n");
             System.out.println("Also make sure that the VMware VIX libraries are also available. " +
@@ -61,7 +61,7 @@ public class VMwareServerExt {
         }
 	} catch(Exception e) {
 	    System.out.println("Exception thrown" + e.toString());
-	    e.printStackTrace();
+	    e.printStackTrace(System.out);
             System.exit(1);
 	} 
     }

@@ -28,7 +28,7 @@ public class Logger {
 			progressLog = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("log"+File.separator+"progress.log"), "UTF-8"));
 			errorLog = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("log"+File.separator+"error.log"), "UTF-8"));
 		} catch (IOException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 	}
 	 
@@ -49,7 +49,7 @@ public class Logger {
 			maliciousLog.newLine();
 			maliciousLog.flush();
 		} catch (IOException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 	}
 	
@@ -60,7 +60,7 @@ public class Logger {
 			safeLog.newLine();
 			safeLog.flush();
 		} catch (IOException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 	}
 	
@@ -71,7 +71,7 @@ public class Logger {
 			progressLog.newLine();
 			progressLog.flush();
 		} catch (IOException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 	}
 	
@@ -82,7 +82,7 @@ public class Logger {
 			errorLog.newLine();
 			errorLog.flush();
 		} catch (IOException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 	}
 }

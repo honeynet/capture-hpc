@@ -53,7 +53,7 @@ public class UrlsController extends Observable implements EventObserver, Observe
             Url url = urlFactory.getUrl(event);
             this.addUrl(url);
         } catch (URISyntaxException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
 
     }
@@ -74,7 +74,7 @@ public class UrlsController extends Observable implements EventObserver, Observe
                 this.notifyObservers(url);
             }
         } catch (URISyntaxException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
 
     }
@@ -96,7 +96,6 @@ public class UrlsController extends Observable implements EventObserver, Observe
             String date = url.getVisitFinishTime();
             String urlString = url.getUrl();
             String clientProgram = url.getClientProgram();
-            int errorCount = url.getErrorCount();
             int visitTime = url.getVisitTime();
             ERROR_CODES majorErrorCode = url.getMajorErrorCode();
             long minorErrorCode = url.getMinorErrorCode();

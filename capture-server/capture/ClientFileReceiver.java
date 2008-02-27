@@ -28,7 +28,7 @@ public class ClientFileReceiver {
 			outputFile = new BufferedOutputStream(new FileOutputStream(new File(fileName)));
 			this.client.send("<file-accept name=\"" + fileName + "\" />");
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}	
 	}
 
@@ -45,14 +45,14 @@ public class ClientFileReceiver {
 				{
 					outputFile.write(buffer, 0, partSize);
 				} else {
-					System.err.println("ClientFileReceiver: ERROR part size != decoded size - " + partSize + " != " + buffer.length);
-					System.err.println(element.data);
+					System.out.println("ClientFileReceiver: ERROR part size != decoded size - " + partSize + " != " + buffer.length);
+					System.out.println(element.data);
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
+				e.printStackTrace(System.out);
 			}
 		} else {
-			System.err.println("ClientFileReceiver: encoding - " + encoding + " not supported");
+			System.out.println("ClientFileReceiver: encoding - " + encoding + " not supported");
 		}		
 	}
 
@@ -61,7 +61,7 @@ public class ClientFileReceiver {
 			outputFile.flush();
 			outputFile.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 	}
 

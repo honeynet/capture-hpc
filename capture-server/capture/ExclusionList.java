@@ -53,7 +53,7 @@ public class ExclusionList {
 			System.out.println("ExclusionList: " + monitor + " - " + file + ": File not found");
 			parsed = false;
 		} catch (IOException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 			parsed = false;
 		}
 		return parsed;

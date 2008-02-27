@@ -9,7 +9,8 @@ public class VirtualMachinesStateChecker extends TimerTask {
 
 	private LinkedList<VirtualMachineServer> virtualMachineServers;
 
-	public VirtualMachinesStateChecker(LinkedList<VirtualMachineServer> virtualMachineServers)
+
+    public VirtualMachinesStateChecker(LinkedList<VirtualMachineServer> virtualMachineServers)
 	{
 		this.virtualMachineServers = virtualMachineServers;
 	}
@@ -30,7 +31,8 @@ public class VirtualMachinesStateChecker extends TimerTask {
 		        		{
 		        			System.out.println("[" + vmServer.getAddress() + ":" + vmServer.getPort() + "-" + 
 		        					vm.getVmUniqueId() + "] Client inactivity, reverting VM");
-		        			vm.setState(VM_STATE.WAITING_TO_BE_REVERTED);
+                            setError(vm, ERROR_CODES.CAPTURE_CLIENT_INACTIVITY);
+                            vm.setState(VM_STATE.WAITING_TO_BE_REVERTED);
 		        		}
 					
 					diff = currentTime - vm.getTimeOfLastStateChange();
@@ -38,7 +40,8 @@ public class VirtualMachinesStateChecker extends TimerTask {
 			        	{
 			        		System.out.println("[" + vmServer.getAddress() + ":" + vmServer.getPort() + "-" +
 			    					vm.getVmUniqueId() + "] VM stalled during operation, reverting VM");
-			        		vm.setState(VM_STATE.WAITING_TO_BE_REVERTED);
+                            setError(vm, ERROR_CODES.VM_STALLED);
+                            vm.setState(VM_STATE.WAITING_TO_BE_REVERTED);
 			        	}
 		        	} else {
 		        		if(vm.getState() == VM_STATE.REVERTING)
@@ -50,13 +53,27 @@ public class VirtualMachinesStateChecker extends TimerTask {
 			        	{
 			        		System.out.println("[" + vmServer.getAddress() + ":" + vmServer.getPort() + "-" + 
 			    					vm.getVmUniqueId() + "] VM stalled, reverting VM");
-			        		vm.setState(VM_STATE.WAITING_TO_BE_REVERTED);
+                            setError(vm, ERROR_CODES.VM_STALLED);
+                            vm.setState(VM_STATE.WAITING_TO_BE_REVERTED);
 			        	}
 		        	}
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 	}
+
+    private void setError(VirtualMachine vm, ERROR_CODES error_codes) {
+        if(vm!=null) {
+            Client c = vm.getClient();
+            if(c!=null) {
+                UrlGroup group = c.getVisitingUrlGroup();
+                if(group!=null) {
+                    group.setMajorErrorCode(error_codes.errorCode);
+                    group.setUrlGroupState(URL_GROUP_STATE.ERROR);
+                }
+            }
+        }
+    }
 }

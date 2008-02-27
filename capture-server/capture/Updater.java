@@ -40,7 +40,7 @@ public class Updater implements Runnable {
 				fInput.close();
 			}
 		} catch (IOException e){
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		}
 	}
 }

@@ -4,6 +4,9 @@ import java.util.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.security.InvalidParameterException;
+import java.net.URLEncoder;
+import java.net.URLDecoder;
+import java.io.UnsupportedEncodingException;
 
 enum URL_GROUP_STATE {
     NONE,
@@ -24,9 +27,7 @@ public class UrlGroup extends Observable {
 
     private static Random generator = new Random();
     private boolean malicious;
-    private long minorErrorCode;
-    private long majorErrorCode;
-    private int errorCount = 0;
+    private ERROR_CODES majorErrorCode = ERROR_CODES.OK;
     private Date visitStartTime;
     private Date visitFinishTime;
 
@@ -36,7 +37,7 @@ public class UrlGroup extends Observable {
         this.initialGroup = initialGroup;
         this.urlList = urlList;
 
-        if(urlList.size()==0) {
+        if (urlList.size() == 0) {
             throw new InvalidParameterException("Cant create url group with size 0.");
         }
 
@@ -47,52 +48,63 @@ public class UrlGroup extends Observable {
             Url url = iterator.next();
             url.setGroupId(identifier);
             url.setInitialGroup(initialGroup);
-            if(!this.clientProgram.equals(url.getClientProgram())) {
+            if (!this.clientProgram.equals(url.getClientProgram())) {
                 System.out.println("Invalid url group. Different client program. Setting to " + this.clientProgram);
             }
-            if(this.visitTime!=url.getVisitTime()) {
+            if (this.visitTime != url.getVisitTime()) {
                 System.out.println("Invalid url group. Different visit times. Setting to " + this.visitTime);
             }
         }
     }
 
+    /**
+     * @param uri - url encoded URL. However, because encoding might have slight differences, we will decode and encode
+     */
     public Url getUrl(String uri) {
-        for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
-            Url url = iterator.next();
-            if(url.getEscapedUrl().equalsIgnoreCase(uri)) {
-                return url;
-            }
-        }
-        throw new NullPointerException("Unable to find Url " + uri + ".");
-    }
+        try {
+            String decodedURI = URLDecoder.decode(uri,"UTF-8");
+            String encodedURI = URLEncoder.encode(decodedURI, "UTF-8");
 
-    public int getErrorCount() {
-        return errorCount;
+
+            for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
+                Url url = iterator.next();
+                if (url.getEscapedUrl().equalsIgnoreCase(encodedURI)) {
+                    return url;
+                }
+            }
+
+            System.out.println("URL " + encodedURI + " not found. Looking through group.");
+            for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
+                Url url = iterator.next();
+                System.out.println("URL: " + url.getEscapedUrl());
+            }
+            throw new NullPointerException("Unable to find Url " + uri + ".");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace(System.out);
+            throw new NullPointerException("Unable to find Url " + uri + ".");
+        }
     }
 
     public void setUrlGroupState(URL_GROUP_STATE newState) {
         urlGroupState = newState;
 
-        if(urlGroupState==URL_GROUP_STATE.ERROR) {
-            errorCount++;
-        }
-
         for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
             Url url = iterator.next();
-            if(urlGroupState==URL_GROUP_STATE.VISITING) {
+            if (urlGroupState == URL_GROUP_STATE.VISITING) {
 
                 url.setUrlState(URL_STATE.VISITING);
-            } else if (urlGroupState==URL_GROUP_STATE.VISITED) {
-                if(url.getMajorErrorCode()==ERROR_CODES.OK) {
+            } else if (urlGroupState == URL_GROUP_STATE.VISITED) {
+                if (url.getMajorErrorCode() == ERROR_CODES.OK) {
                     url.setUrlState(URL_STATE.VISITED);
                 } else {
                     url.setUrlState(URL_STATE.ERROR);
                 }
-            } else if (urlGroupState==URL_GROUP_STATE.ERROR) {
-                if(url.getMajorErrorCode()==ERROR_CODES.OK) {
-                    url.setMajorErrorCode(this.majorErrorCode);
+            } else if (urlGroupState == URL_GROUP_STATE.ERROR) {
+                if (url.getMajorErrorCode() == ERROR_CODES.OK) {
+                    url.setMajorErrorCode(this.majorErrorCode.errorCode);
                 }
                 url.setUrlState(URL_STATE.ERROR);
+
             }
         }
 
@@ -105,25 +117,24 @@ public class UrlGroup extends Observable {
         return urlGroupState;
     }
 
-    public String toVisitEvent()
-	{
-		String urlGroupEvent = "<visit-event ";
+    public String toVisitEvent() {
+        String urlGroupEvent = "<visit-event ";
         urlGroupEvent += "identifier=\"" + identifier + "\" program=\"" + clientProgram + "\" time=\"" + visitTime + "\">";
-		for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
+        for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
             Url url = iterator.next();
             urlGroupEvent += "<item url=\"" + url.getEscapedUrl() + "\"/>";
         }
-		urlGroupEvent += "</visit-event>";
-		return urlGroupEvent;
-	}
+        urlGroupEvent += "</visit-event>";
+        return urlGroupEvent;
+    }
 
     public int size() {
         return urlList.size();
     }
 
-    
+
     public void writeEventToLog(String event) {
-        if(urlList.size()==1) {
+        if (urlList.size() == 1) {
             Url url = urlList.get(0);
             url.writeEventToLog(event);
         }
@@ -135,13 +146,13 @@ public class UrlGroup extends Observable {
 
     public void setMalicious(boolean malicious) {
         this.malicious = malicious;
-        if(!this.malicious) {
+        if (!this.malicious) {
             for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
                 Url url = iterator.next();
                 url.setMalicious(false);
             }
         } else {
-            if(size()==1) {
+            if (size() == 1) {
                 Url url = urlList.get(0);
                 url.setMalicious(true);
             }
@@ -154,19 +165,27 @@ public class UrlGroup extends Observable {
     }
 
     public void setMajorErrorCode(long majorErrorCode) {
-        this.majorErrorCode = majorErrorCode;
-    }
+        boolean validErrorCode = false;
 
-    public void setMinorErrorCode(long minorErrorCode) {
-        this.minorErrorCode = minorErrorCode;
+        for (ERROR_CODES e : ERROR_CODES.values()) {
+            if (majorErrorCode == e.errorCode) {
+                validErrorCode = true;
+                this.majorErrorCode = e;
+            }
+        }
+
+        if(!validErrorCode) {
+            System.out.println("Received invalid error code from client " + majorErrorCode);
+            this.majorErrorCode = ERROR_CODES.INVALID_ERROR_CODE_FROM_CLIENT;
+        }
     }
 
     public String getGroupAsFileName() {
-        if(size()==1) {
+        if (size() == 1) {
             Url url = urlList.get(0);
             return url.getUrlAsFileName();
         } else {
-            return identifier+"";
+            return identifier + "";
         }
     }
 
@@ -174,29 +193,29 @@ public class UrlGroup extends Observable {
         return urlList;
     }
 
-    public long getMinorErrorCode() {
-        return minorErrorCode;
-    }
 
-    public long getMajorErrorCode() {
-        return minorErrorCode;
+    public ERROR_CODES getMajorErrorCode() {
+        if (majorErrorCode == null) {
+            return ERROR_CODES.OK;
+        }
+        return majorErrorCode;
     }
 
     public void setVisitStartTime(String visitStartTime) {
         try {
             SimpleDateFormat sf = new SimpleDateFormat("d/M/yyyy H:m:s.S");
-            this.visitStartTime=sf.parse(visitStartTime);
+            this.visitStartTime = sf.parse(visitStartTime);
         } catch (ParseException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace(System.out);
         }
     }
 
     public void setVisitFinishTime(String visitFinishTime) {
         try {
             SimpleDateFormat sf = new SimpleDateFormat("d/M/yyyy H:m:s.S");
-            this.visitFinishTime=sf.parse(visitFinishTime);
+            this.visitFinishTime = sf.parse(visitFinishTime);
         } catch (ParseException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace(System.out);
         }
     }
 

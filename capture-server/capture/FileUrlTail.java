@@ -41,13 +41,13 @@ public class FileUrlTail implements Runnable {
 						} catch (InterruptedException e) {}
 					}
 				} catch (IOException e) {
-					e.printStackTrace();
+					e.printStackTrace(System.out);
 				}
 			}
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 		} catch (UnsupportedEncodingException e1) {
-			e1.printStackTrace();
+			e1.printStackTrace(System.out);
 		}
 	}
 	
