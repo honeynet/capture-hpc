@@ -182,7 +182,11 @@ public class Client extends Observable implements Runnable {
 
             this.setClientState(CLIENT_STATE.VISITING);
         } else if (type.equals("finish")) {
-            System.out.print(this.getVirtualMachine().getLogHeader() + " Visited ");
+            if(visitingUrlGroup.isMalicious()) { // can already determine this here because the first state change will flip the switch
+                System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
+            } else {
+                System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " BENIGN");
+            }
             visitingUrlGroup.setVisitFinishTime(element.attributes.get("time"));
 
             //iterate through url elements and set startvisitTime & visiting state
@@ -212,13 +216,11 @@ public class Client extends Observable implements Runnable {
 
                 String malicious = element.attributes.get("malicious");
                 if (malicious.equals("1")) {
-                    System.out.println("MALICIOUS " + visitingUrlGroup.getIdentifier());
                     visitingUrlGroup.setMalicious(true);
                     visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
                     visitingUrlGroup = null;
                     this.setClientState(CLIENT_STATE.DISCONNECTED);
                 } else {
-                    System.out.println("BENIGN " + visitingUrlGroup.getIdentifier());
                     visitingUrlGroup.setMalicious(false);
                     visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
                     visitingUrlGroup = null;
@@ -241,7 +243,7 @@ public class Client extends Observable implements Runnable {
                 }
             }
 
-            if (!(major.equals("268435731") || major.equals("268436224"))) {
+            if (!(major.equals("268435731") || major.equals("268436224") || major.equals("268435728"))) {
                 System.out.println(this.getVirtualMachine().getLogHeader() + " Visit error - Major: " + major + " ");
                 visitingUrlGroup.setMajorErrorCode(Long.parseLong(major));
                 visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);   //will set underlying url state

@@ -73,7 +73,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                     final String guestUsername = item.vm.getUsername();
                     final String guestPassword = item.vm.getPassword();
                     final String guestCmd = item.vm.getCaptureClientPath();
-                    final String cmdOptions = "-s " + (String) ConfigManager.getInstance().getConfigOption("server-listen-address") + " -a " + uniqueId + " -b " + item.vm.getVmUniqueId();
+                    final String cmdOptions = "-s " + (String) ConfigManager.getInstance().getConfigOption("server-listen-address") + " -p " + (String) ConfigManager.getInstance().getConfigOption("server-listen-port") + " -a " + uniqueId + " -b " + item.vm.getVmUniqueId();
                     final int timeout = 30;
 
                     final String[] revertCmd = {"java", "-cp", "CaptureServer.jar", "capture.VMwareServerExt", "nRevert", address, port + "", vmUniqueId + "", username, password, vmPath, guestUsername, guestPassword, guestCmd, cmdOptions, timeout + ""};

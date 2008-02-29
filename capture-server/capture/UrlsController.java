@@ -1,16 +1,11 @@
 package capture;
 
 import java.net.URISyntaxException;
-import java.util.LinkedList;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.util.*;
 
 public class UrlsController extends Observable implements EventObserver, Observer {
     private LinkedBlockingDeque<Url> urlQueue;
@@ -58,11 +53,23 @@ public class UrlsController extends Observable implements EventObserver, Observe
 
     }
 
+    private boolean inUrlQueue(Url url) {
+        for (Iterator<Url> urlIterator = urlQueue.iterator(); urlIterator.hasNext();) {
+            Url url1 = urlIterator.next();
+            if(url.getEscapedUrl().equalsIgnoreCase(url1.getEscapedUrl()) && url.getClientProgram().equals(url1.getClientProgram()) && url.getVisitTime()==url1.getVisitTime()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void addUrl(Url url) {
-        url.addObserver(this);
-        urlQueue.addLast(url);
-        this.setChanged();
-        this.notifyObservers(url);
+        if(!inUrlQueue(url)) {
+            url.addObserver(this);
+            urlQueue.addLast(url);
+            this.setChanged();
+            this.notifyObservers(url);
+        }
     }
 
     private void removeUrlEvent(Element event) {
