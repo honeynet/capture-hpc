@@ -1,6 +1,7 @@
 #include <iostream>
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
 #include <tchar.h>
 #include "Server.h"
 #include "Visitor.h"
@@ -52,7 +53,9 @@ public:
 
 		hStopRunning = CreateEvent(NULL, FALSE, FALSE, NULL);
 		std::wstring serverIp = OptionsManager::getInstance()->getOption(L"server");
-		server = new Server(serverIp, 7070);
+		std::wstring serverPort = OptionsManager::getInstance()->getOption(L"port");
+		int serverPortInt = boost::lexical_cast< int >(serverPort); 
+		server = new Server(serverIp, serverPortInt);
 		server->onConnectionStatusChanged(boost::bind(&CaptureClient::onConnectionStatusChanged, this, _1));
 
 		/* Listen for events from the EventController. These are messages passed from the server */
@@ -283,6 +286,7 @@ int _tmain(int argc, WCHAR* argv[])
 	delete [] szFullPath;
 	
 	std::wstring serverIp = L"";
+	std::wstring serverPort = L"7070";
 	std::wstring vmServerId = L"";
 	std::wstring vmId = L"";
 	std::wstring logSystemEventsFile = L"";
@@ -314,6 +318,7 @@ int _tmain(int argc, WCHAR* argv[])
 			printf("\n\nUsage: CaptureClient.exe [-chn] [-s server address -a vm server id -b vm id] [-l file]\n");
 			printf("\n  -h\t\tPrint this help message");
 			printf("\n  -s address\tAddress of the server the client connects up to. NOTE -a & -b\n\t\tmust be defined when using this option");
+			printf("\n  -p port\tPort the server user the client connects up to. NOTE -a & -b\n\t\tmust be defined when using this option");
 			printf("\n  -a server id\tUnique id of the virtual machine server that hosts the client");
 			printf("\n  -b vm id\tUnique id of the virtual machine that this client is run on");
 			printf("\n  -l file\tOutput system events to a file rather than stdout\n");
@@ -324,7 +329,12 @@ int _tmain(int argc, WCHAR* argv[])
 		} else if(option == L"-s") {
 			if((i+1 < argc) && (argv[i+1][0] != '-')) {
 				serverIp = argv[++i];
-				printf("Option: Connect to server: %ls\n", serverIp.c_str());
+				printf("Option: Connect to server ip: %ls\n", serverIp.c_str());
+			}
+		} else if(option == L"-p") {
+			if((i+1 < argc) && (argv[i+1][0] != '-')) {
+				serverPort = argv[++i];
+				printf("Option: Connect to server port: %ls\n", serverPort.c_str());
 			}
 		} else if(option == L"-a") {
 			if((i+1 < argc) && (argv[i+1][0] != '-')) {
@@ -366,6 +376,7 @@ int _tmain(int argc, WCHAR* argv[])
 	}
 
 	OptionsManager::getInstance()->addOption(L"server", serverIp);
+	OptionsManager::getInstance()->addOption(L"port", serverPort);
 	OptionsManager::getInstance()->addOption(L"vm-server-id", vmServerId);
 	OptionsManager::getInstance()->addOption(L"vm-id", vmId);
 	OptionsManager::getInstance()->addOption(L"log-system-events-file", logSystemEventsFile);
