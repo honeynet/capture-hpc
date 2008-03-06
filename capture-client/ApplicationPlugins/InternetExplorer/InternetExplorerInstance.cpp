@@ -6,19 +6,25 @@
 
 InternetExplorerInstance::InternetExplorerInstance(IClassFactory* ie_factory)
 {
+	DebugPrintTrace(L"InternetExplorerInstance::InternetExplorerInstance(IClassFactory* ie_factory) start\n");
 	internet_explorer_factory = ie_factory;
 	major = 0;
 	minor = 0;
+	DebugPrintTrace(L"InternetExplorerInstance::InternetExplorerInstance(IClassFactory* ie_factory) end\n");
 }
 
 InternetExplorerInstance::~InternetExplorerInstance(void)
 {
+	DebugPrintTrace(L"InternetExplorerInstance::~InternetExplorerInstance(void) start\n");
 
+	DebugPrintTrace(L"InternetExplorerInstance::~InternetExplorerInstance(void) end\n");
 }
+
 
 void 
 InternetExplorerInstance::visitUrl(Url* url)
 {
+	DebugPrintTrace(L"InternetExplorerInstance::visitUrl(Url* url) start\n");
 	HRESULT hr;
 	hVisiting = CreateEvent(NULL, false, NULL, NULL);
 	dwNetworkErrorCode = 0;
@@ -105,11 +111,13 @@ InternetExplorerInstance::visitUrl(Url* url)
 		url->setMajorErrorCode( CAPTURE_VISITATION_WARNING );
 		url->setMinorErrorCode( CAPTURE_PE_PROCESS_ALREADY_TERMINATED );
 	}
+	DebugPrintTrace(L"InternetExplorerInstance::visitUrl(Url* url) end\n");
 }
 
 bool
 InternetExplorerInstance::Close()
 {
+	DebugPrintTrace(L"InternetExplorerInstance::Close() start\n");
 	// Closes the IE window, except for the last one
 	HRESULT hr = pInternetExplorer->Quit();
 
@@ -118,7 +126,9 @@ InternetExplorerInstance::Close()
 	CloseHandle(hVisiting);
 	CoUninitialize();
 
+	DebugPrintTrace(L"InternetExplorerInstance::Close() end\n");
 	return (hr == S_OK);
+	
 	
 }
 
@@ -133,6 +143,7 @@ InternetExplorerInstance::Invoke(
 									 EXCEPINFO *pExcepInfo,
 									 UINT *puArgErr)
  {
+	DebugPrintTrace(L"IInternetExplorerInstance::Invoke(...) start\n");
 	VARIANT * vt_statuscode;
 	VARIANT * url;
     switch (dispIdMember)
@@ -172,5 +183,6 @@ InternetExplorerInstance::Invoke(
 	default:
 		break;
 	}
+	DebugPrintTrace(L"IInternetExplorerInstance::Invoke(...) end\n");
 	return(DISP_E_UNKNOWNINTERFACE);
  }

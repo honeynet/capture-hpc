@@ -34,6 +34,8 @@
 #include <windows.h>
 #include <string>
 
+
+
 class OptionsManager;
 class Logger;
 class EventController;
@@ -74,5 +76,7 @@ public:
 extern "C" {
 
 void DebugPrint(LPCTSTR pszFormat, ... );
+void DebugPrintTrace(LPCTSTR pszFormat, ... );
+void Warn(LPCTSTR pszFormat, ... );
 
 };

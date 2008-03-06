@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 9.00
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaptureClient", "CaptureClient.vcproj", "{4A258E9F-0B4B-40EF-B6C6-E69C630E5CAC}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Application_InternetExplorer", "ApplicationPlugins\InternetExplorer\Application_InternetExplorer.vcproj", "{AE2C8E80-7D21-47AD-987B-43E0708AE549}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4A258E9F-0B4B-40EF-B6C6-E69C630E5CAC} = {4A258E9F-0B4B-40EF-B6C6-E69C630E5CAC}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaptureKernelDrivers", "KernelDrivers\CaptureKernelDrivers\CaptureKernelDrivers.vcproj", "{4EF34E6D-B30C-46E5-9FC5-967ECEADE2CD}"
 EndProject

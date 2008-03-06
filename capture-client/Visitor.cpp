@@ -4,6 +4,7 @@
 #include "ApplicationPlugin.h"
 #include "EventController.h"
 #include "VisitEvent.h"
+#include "Debug.h"
 #include <exception>
 #include <iostream>
 #include <fstream>
@@ -20,7 +21,9 @@
 
 Visitor::Visitor(void)
 {
-	DebugPrint(L"Visitor Created\n");
+	printf("here");
+	DebugPrintTrace(L"Visitor::Visitor(void) start\n");
+	
 	visiting = false;
 
 	hQueueNotEmpty = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -32,20 +35,23 @@ Visitor::Visitor(void)
 
 	visitorThread = new Thread(this);
 	visitorThread->start("Visitor");
+	DebugPrintTrace(L"Visitor::Visitor(void) end\n");
 }
 
 Visitor::~Visitor(void)
 {
+	DebugPrintTrace(L"Visitor::~Visitor(void) start\n");
 	CloseHandle(hQueueNotEmpty);
 	unloadClientPlugins();
 
-	DebugPrint(L"Visitor Destroyed\n");
+	DebugPrintTrace(L"Visitor::~Visitor(void) end\n");
 	// TODO free items in toVisit queue
 }
 
 void
 Visitor::run()
 {
+	DebugPrintTrace(L"Visitor::run() start\n");
 	while(true)
 	{
 		WaitForSingleObject(hQueueNotEmpty, INFINITE);
@@ -63,18 +69,17 @@ Visitor::run()
 			notify(CAPTURE_VISITATION_START, *visitEvent);
 
 			// Send the group of urls to the appropiate application plugin
-#ifdef _DEBUG
-			applicationPlugin->visitGroup(visitEvent);
-#else
+
 			try
 			{
 				applicationPlugin->visitGroup(visitEvent);
 			} 
 			catch (...)
 			{
+				Warn(L"Visitor::run() method caught exception from visitGroup call.\n");
 				notify(CAPTURE_VISITATION_EXCEPTION, *visitEvent);
 			}
-#endif
+
 			// If there are errors report it else finish visitation
 			if(visitEvent->isError())
 			{
@@ -88,12 +93,15 @@ Visitor::run()
 
 		delete visitEvent;
 		visiting = false;
+		DebugPrintTrace(L"Visitor::run() end\n");
 	}
 }
 
 void
 Visitor::loadClientPlugins()
 {
+	DebugPrintTrace(L"Visitor::loadClientPlugins() start\n");
+
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	wchar_t pluginDirectoryPath[1024];
@@ -151,24 +159,28 @@ Visitor::loadClientPlugins()
 		} while(FindNextFile(hFind, &FindFileData) != 0);
 		FindClose(hFind);
 	}
-	
+	DebugPrintTrace(L"Visitor::loadClientPlugins() end\n");
 }
 
 ApplicationPlugin*
 Visitor::getApplicationPlugin(const std::wstring& applicationName)
 {
+	DebugPrintTrace(L"Visitor::getApplicationPlugin(const std::wstring& applicationName) start\n");
 	stdext::hash_map<std::wstring, ApplicationPlugin*>::iterator it;
 	it = applicationMap.find(applicationName);
 	if(it != applicationMap.end())
 	{
+		DebugPrintTrace(L"Visitor::getApplicationPlugin(const std::wstring& applicationName) end\n");
 		return it->second;
 	}
+	DebugPrintTrace(L"Visitor::getApplicationPlugin(const std::wstring& applicationName) end\n");
 	return NULL;
 }
 
 ApplicationPlugin*
 Visitor::createApplicationPluginObject(HMODULE hPlugin)
 {
+	DebugPrintTrace(L"Visitor::createApplicationPluginObject(HMODULE hPlugin) start\n");
 	typedef void (*PluginExportInterface)(void*);
 	PluginExportInterface pluginCreateInstance = NULL;
 	ApplicationPlugin* applicationPlugin = NULL;
@@ -187,12 +199,14 @@ Visitor::createApplicationPluginObject(HMODULE hPlugin)
 			apps->push_back(applicationPlugin);
 		}
 	}
+	DebugPrintTrace(L"Visitor::createApplicationPluginObject(HMODULE hPlugin) end\n");
 	return applicationPlugin;
 }
 
 void
 Visitor::unloadClientPlugins()
 {
+	DebugPrintTrace(L"Visitor::unloadClientPlugins() start\n");
 	typedef void (*PluginExportInterface)(void*);
 	stdext::hash_map<HMODULE, std::list<ApplicationPlugin*>*>::iterator it;
 	for(it = applicationPlugins.begin(); it != applicationPlugins.end(); it++)
@@ -207,11 +221,13 @@ Visitor::unloadClientPlugins()
 		delete apps;
 		FreeLibrary(it->first);
 	}
+	DebugPrintTrace(L"Visitor::unloadClientPlugins() end\n");
 }
 
 Url*
 Visitor::createUrl(const std::vector<Attribute>& attributes)
 {
+	DebugPrintTrace(L"Visitor::createUrl(const std::vector<Attribute>& attributes) start\n");
 	std::wstring url;
 	std::wstring program;
 	int time = 0;
@@ -225,12 +241,14 @@ Visitor::createUrl(const std::vector<Attribute>& attributes)
 			time = boost::lexical_cast<int>(attribute.getValue());
 		}
 	}
+	DebugPrintTrace(L"Visitor::createUrl(const std::vector<Attribute>& attributes) end\n");
 	return new Url(Url::decode(url), program, time);
 }
 
 void
 Visitor::onServerEvent(const Element& element)
 {
+	DebugPrintTrace(L"Visitor::onServerEvent(const Element& element) start\n");
 	VisitEvent* visitEvent = new VisitEvent();
 
 	if(element.getName() == L"visit-event") {
@@ -264,4 +282,5 @@ Visitor::onServerEvent(const Element& element)
 		printf("Visitor-onServerEvent: ERROR no url specified for visit event\n");
 		delete visitEvent;
 	}
+	DebugPrintTrace(L"Visitor::onServerEvent(const Element& element) end\n");
 }

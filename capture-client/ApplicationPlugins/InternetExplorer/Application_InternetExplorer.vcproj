@@ -40,8 +40,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;D:\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;CLIENT_INTERNETEXPLORER_EXPORTS"
+				AdditionalIncludeDirectories="&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;CLIENT_INTERNETEXPLORER_EXPORTS;_WIN32_DCOM"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="1"
 				RuntimeLibrary="3"
@@ -62,9 +62,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="comsuppw.lib Version.lib Advapi32.lib"
+				AdditionalDependencies="comsuppw.lib Version.lib Advapi32.lib CaptureGlobal.obj"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;D:\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\workingDir\capture-hpc\capture-hpc\trunk\capture-client\Debug&quot;;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;&quot;C:\Program Files\boost\boost_1_34_0\lib&quot;;&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				ResourceOnlyDLL="false"
@@ -120,8 +120,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;D:\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CLIENT_INTERNETEXPLORER_EXPORTS"
+				AdditionalIncludeDirectories="&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CLIENT_INTERNETEXPLORER_EXPORTS;_WIN32_DCOM;CAPTURE_DEBUG"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -139,9 +139,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="comsuppw.lib Version.lib Advapi32.lib"
+				AdditionalDependencies="comsuppw.lib Version.lib Advapi32.lib CaptureGlobal.obj"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;D:\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\workingDir\capture-hpc\capture-hpc\trunk\capture-client\Release&quot;;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;&quot;C:\Program Files\boost\boost_1_34_0\lib&quot;;&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -185,6 +185,10 @@
 			>
 			<File
 				RelativePath=".\Application_InternetExplorer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\CaptureGlobal.h"
 				>
 			</File>
 			<File

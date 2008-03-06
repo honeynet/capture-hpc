@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="D:\boost\boost_1_34_0;&quot;D:\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
+				AdditionalIncludeDirectories="C:\program files\boost\boost_1_34_0;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -65,7 +65,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="kernel32.lib User32.lib Urlmon.lib $(NOINHERIT)"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;D:\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -120,8 +120,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="D:\boost\boost_1_34_0;&quot;D:\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="c:\program files\boost\boost_1_34_0;&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;CAPTURE_DEBUG"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -141,7 +141,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="kernel32.lib User32.lib Urlmon.lib $(NOINHERIT)"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="D:\boost\boost_1_34_0\lib;&quot;D:\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
+				AdditionalLibraryDirectories="&quot;c:\program files\boost\boost_1_34_0\lib&quot;;&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"

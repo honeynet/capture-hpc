@@ -2,6 +2,12 @@
 #include <strsafe.h>
 #include <boost/lexical_cast.hpp>
 
+#define WARN
+
+#ifdef CAPTURE_DEBUG
+#define FUNCTION_TRACE
+#endif
+
 #define XX 100
 
 const char Base64::b64_list[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -28,17 +34,44 @@ const int Base64::b64_index[256] = {
 
 void DebugPrint(LPCTSTR pszFormat, ... )
 {
-//#ifdef _DEBUG
+	#ifdef CAPTURE_DEBUG
+		wchar_t szOutput[MAX_PATH * 2];
+		va_list argList;
+		va_start(argList, pszFormat);
+		StringCchVPrintf(szOutput, MAX_PATH*2, pszFormat, argList);
+		va_end(argList);
+		printf("%ls\n", szOutput);
+		//OutputDebugString(szOutput);
 	
-    wchar_t szOutput[MAX_PATH * 2];
-	va_list argList;
-	va_start(argList, pszFormat);
-	StringCchVPrintf(szOutput, MAX_PATH*2, pszFormat, argList);
-	va_end(argList);
-	//printf("%ls\n", szOutput);
-	OutputDebugString(szOutput);
+	#endif
+}
+
+void DebugPrintTrace(LPCTSTR pszFormat, ... )
+{
+	#ifdef FUNCTION_TRACE
+		wchar_t szOutput[MAX_PATH * 2];
+		va_list argList;
+		va_start(argList, pszFormat);
+		StringCchVPrintf(szOutput, MAX_PATH*2, pszFormat, argList);
+		va_end(argList);
+		printf("%ls\n", szOutput);
+		//OutputDebugString(szOutput);
 	
-//#endif
+	#endif
+}
+
+void Warn(LPCTSTR pszFormat, ... )
+{
+	#ifdef WARN
+		wchar_t szOutput[MAX_PATH * 2];
+		va_list argList;
+		va_start(argList, pszFormat);
+		StringCchVPrintf(szOutput, MAX_PATH*2, pszFormat, argList);
+		va_end(argList);
+		printf("%ls\n", szOutput);
+		//OutputDebugString(szOutput);
+	
+	#endif
 }
 
 char*

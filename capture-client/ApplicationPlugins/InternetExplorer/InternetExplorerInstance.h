@@ -2,6 +2,7 @@
 #define _WIN32_WINNT 0x0501
 #define _WIN32_DCOM
 #include "..\..\ApplicationPlugin.h"
+#include "..\..\CaptureGlobal.h"
 //#include "..\ComHelper.h"
 #include <Exdisp.h>
 #include <comutil.h>

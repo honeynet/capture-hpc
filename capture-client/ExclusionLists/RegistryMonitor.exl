@@ -31,6 +31,7 @@
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SYSTEM\\ControlSet001\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\services.exe	HKLM\\SYSTEM\\ControlSet001\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\lsass.exe	HKLM\\SECURITY\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\lsass.exe	HKLM\\SYSTEM\\ControlSet001\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\lsass.exe	HKCU\\Software\\Microsoft\\Protected Storage System Provider\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\wbem\\wmiadap.exe	HKLM\\SOFTWARE\\Microsoft\\WBEM\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\wbem\\wmiadap.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\WmiApRpl\\Performance\\.+

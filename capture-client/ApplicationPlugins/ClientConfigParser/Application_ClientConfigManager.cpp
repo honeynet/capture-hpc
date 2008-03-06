@@ -92,6 +92,12 @@ Application_ClientConfigManager::visitGroup(VisitEvent* visitEvent)
 				url->setMajorErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
 				url->setMinorErrorCode(GetLastError());
 			}
+
+			if(i==0) 
+			{
+				Sleep(2000);
+			}
+
 		}
 
 		bool sleep = true;
@@ -191,7 +197,7 @@ Application_ClientConfigManager::loadApplicationsList()
 bool 
 Application_ClientConfigManager::closeProcess(const PROCESS_INFORMATION& processInfo, DWORD* error)
 {
-	//HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS,TRUE, processId);
+	
 	if(processInfo.hProcess == NULL)
 	{
 		*error = GetLastError();
@@ -202,8 +208,10 @@ Application_ClientConfigManager::closeProcess(const PROCESS_INFORMATION& process
 	} else {
 		EnumWindows(Application_ClientConfigManager::EnumWindowsProc, (LPARAM)processInfo.dwProcessId);
 
-		DWORD tempProcessId = GetProcessId(processInfo.hProcess);
-		if(tempProcessId == 0 || tempProcessId == processInfo.dwProcessId)
+		
+		HANDLE hPro = OpenProcess(PROCESS_TERMINATE,TRUE, processInfo.dwProcessId);
+		DWORD tempProcessId = GetProcessId(hPro);
+		if(tempProcessId == processInfo.dwProcessId)
 		{
 			if(!TerminateProcess(processInfo.hProcess, 0))
 			{

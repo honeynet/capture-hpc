@@ -5,8 +5,11 @@
 +	Read	.*	.*
 +	Create	.*	.*
 +	Open	.*	.*
-+	Write	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\.*
-+	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\.*
++	Write	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\logs\\.+
++	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\.+\.zip
++	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\logs
++	Write	C:\\program Files\\capture\\7za\.exe	C:\\program files\\capture\\.+\.zip
++	Delete	C:\\program Files\\capture\\7za\.exe	C:\\program files\\capture\\.+\.zip
 #Prefetch
 +	Write	C:\\WINDOWS\\system32\\svchost\.exe	C:\\WINDOWS\\Prefetch\\.+
 +	Write	System	C:\\WINDOWS\\Prefetch\\.+
@@ -38,12 +41,16 @@
 +	Write	C:\\WINDOWS\\system32\\svchost\.exe	C:\\WINDOWS\\.+\.log
 +	Write	C:\\WINDOWS\\system32\\lsass\.exe	C:\\WINDOWS\\system32\\config\\.+\.LOG
 +	Write	C:\\WINDOWS\\system32\\lsass\.exe	C:\\WINDOWS\\system32\\config\\SAM
++	Write	C:\\WINDOWS\\system32\\lsass\.exe	C:\\WINDOWS\\system32\\config\\system
++	Write	C:\\WINDOWS\\system32\\lsass\.exe	C:\\WINDOWS\\system32\\config\\SECURITY
 +	Write	C:\\WINDOWS\\system32\\wbem\\wmiprvse\.exe	C:\\WINDOWS\\system32\\wbem\\Logs\\wmiprov\.log
 #Windows update
-+	Write	C:\\WINDOWS\\system32\\wuauclt\.exe	C:\\WINDOWS\\WindowsUpdate\.log
 +	Write	C:\\WINDOWS\\system32\\wuauclt\.exe	C:\\WINDOWS\\SoftwareDistribution\\DataStore\\Logs\\.+
++	Write	C:\\WINDOWS\\system32\\wuauclt\.exe	C:\\WINDOWS\\WindowsUpdate\.log
 +	Write	C:\\WINDOWS\\system32\\wuauclt\.exe	C:\\WINDOWS\\SoftwareDistribution\\DataStore\\DataStore\.edb
-+	Write	C:\\WINDOWS\\system32\\wuauclt\.exe	C:\\WINDOWS\\SoftwareDistribution\\DataStore\\DataStore\.edb
++	Delete	C:\\WINDOWS\\system32\\wuauclt\.exe	C:\\WINDOWS\\SoftwareDistribution\\DataStore\\Logs\\.+
++	Delete	C:\\WINDOWS\\system32\\wuauclt\.exe	C:\\WINDOWS\\WindowsUpdate\.log
++	Delete	C:\\WINDOWS\\system32\\wuauclt\.exe	C:\\WINDOWS\\SoftwareDistribution\\DataStore\\DataStore\.edb
 #System Events
 +	Write	C:\\WINDOWS\\system32\\services\.exe	C:\\WINDOWS\\system32\\config\\AppEvent\.Evt
 +	Write	C:\\WINDOWS\\system32\\services\.exe	C:\\WINDOWS\\system32\\config\\SysEvent\.Evt

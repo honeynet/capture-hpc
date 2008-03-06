@@ -39,33 +39,51 @@ struct VISIT_INFO
 DWORD WINAPI 
 Application_InternetExplorer::InternetExplorerWorker(LPVOID data)
 {
-	int worker_id = (int)data;
-	while(true)
-	{
-		
-		WaitForSingleObject(worker_has_data[worker_id], INFINITE);
-		
-
-		VISIT_INFO* visit_information = (VISIT_INFO*)worker_thread_data[worker_id];
-
-		_ASSERT(visit_information);
-
-		if(visit_information)
+	DebugPrintTrace(L"Application_InternetExplorer::InternetExplorerWorker start\n");
+	try {
+		int worker_id = (int)data;
+		DebugPrint(L"IE Worker Start\n.");
+		while(true)
 		{
-			// Get the visit information
-			Url* url = visit_information->url;
-			InternetExplorerInstance* internet_explorer_instance = visit_information->internet_explorer_instance;
+			DebugPrint(L"IE Worker Visit Start.\n");
 			
-			// Visit the actual url
-			internet_explorer_instance->visitUrl(url);
-			worker_thread_busy[worker_id] = false;
-			SetEvent(worker_finished[worker_id]);
+			WaitForSingleObject(worker_has_data[worker_id], INFINITE);
+			
+
+			VISIT_INFO* visit_information = (VISIT_INFO*)worker_thread_data[worker_id];
+
+			_ASSERT(visit_information);
+
+			if(visit_information)
+			{
+				// Get the visit information
+				Url* url = visit_information->url;
+				InternetExplorerInstance* internet_explorer_instance = visit_information->internet_explorer_instance;
+				
+				// Visit the actual url
+				internet_explorer_instance->visitUrl(url);
+				worker_thread_busy[worker_id] = false;
+				SetEvent(worker_finished[worker_id]);
+			}
+			DebugPrint(L"IE Worker Visit End.\n");
 		}
+		DebugPrint(L"IE Worker End\n.");
+	} catch(char * exception) {
+		Warn(L"IE Worker caught exception ");
+		Warn(L"...rethrowing\n.");
+		throw exception;
+	} catch(...) {
+		Warn(L"IE Worker caught exception...rethrowing\n.");
+		throw;
 	}
+	
+	DebugPrintTrace(L"Application_InternetExplorer::InternetExplorerWorker end\n");
 }
 
 Application_InternetExplorer::Application_InternetExplorer()
 {
+	DebugPrintTrace(L"Application_InternetExplorer::Application_InternetExplorer() start\n");
+	
 	// Start the COM interface
 	CoInitializeEx(NULL,COINIT_MULTITHREADED);
 
@@ -78,10 +96,13 @@ Application_InternetExplorer::Application_InternetExplorer()
 		worker_finished[i] = CreateEvent(NULL, false, NULL, NULL); 
 		worker_threads[i] = CreateThread(NULL, 0, &Application_InternetExplorer::InternetExplorerWorker, (LPVOID)i, 0, NULL);
 	}
+	DebugPrintTrace(L"Application_InternetExplorer::Application_InternetExplorer() end\n");
 }
 
 Application_InternetExplorer::~Application_InternetExplorer(void)
 {
+	DebugPrintTrace(L"Application_InternetExplorer::~Application_InternetExplorer(void) start\n");
+		
 	for(unsigned int i = 0; i < MAX_WORKER_THREADS; i++)
 	{
 		CloseHandle(worker_has_data[i]);
@@ -90,12 +111,19 @@ Application_InternetExplorer::~Application_InternetExplorer(void)
 	}
 
 	CoUninitialize();
+	DebugPrintTrace(L"Application_InternetExplorer::~Application_InternetExplorer(void) end\n");
+	
+
 }
 
 
 void
 Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 {	
+	DebugPrintTrace(L"Application_InternetExplorer::visitGroup(VisitEvent* visitEvent) start\n");
+
+	DWORD *error = NULL;
+	
 	unsigned int n_visited_urls = 0;
 	unsigned int to_visit = 0;
 	unsigned int n_visiting = 0;
@@ -140,6 +168,7 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 
 		// Wait for one of the workers threads to finish
 		DWORD dwWait = WaitForMultipleObjects(MAX_WORKER_THREADS, worker_finished, false, 60*1000);
+		DebugPrint(L"IE Visit Group Worker Threads Finished.\n");
 
 		// If one has finished then a url has been visited
 		int index = dwWait - WAIT_OBJECT_0;
@@ -148,6 +177,7 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 			n_visited_urls++;
 		}
 	}
+	DebugPrint(L"IE: Finished visiting %i URLs\n", n_visited_urls);		
 
 	// Give the visit event a success or error code based on the visitaion of each url
 	for(unsigned int i = 0; i < n_urls; i++)
@@ -155,35 +185,42 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 		Url* url = visitEvent->getUrls().at(i);
 		visitEvent->setErrorCode(url->getMajorErrorCode());
 	}
+	DebugPrint(L"IE Visit Group set errors on urls.\n");
 
 	// Create another fake IE instance so that we can close the process
 	IWebBrowser2* pInternetExplorer;
 	hr = internet_explorer_factory->CreateInstance(NULL, IID_IWebBrowser2, 
 							(void**)&pInternetExplorer);
+	
 	if( hr == S_OK )
 	{
+		DebugPrint(L"IE Visit Group created fake IE instance.\n");
 		HWND hwndIE;
 		DWORD dProcessID;
 		pInternetExplorer->get_HWND((SHANDLE_PTR*)&hwndIE);
 		GetWindowThreadProcessId(hwndIE, &dProcessID);
-
-		// Close the IE process
+		// Close the IE process - try 1
+		EnumWindows(Application_InternetExplorer::EnumWindowsProc, (LPARAM)dProcessID);
+	
+		// Close the IE process - try 2
 		HANDLE hProc = OpenProcess(PROCESS_TERMINATE, FALSE, dProcessID);
-		if(hProc != NULL)
+		DWORD tempProcessId = GetProcessId(hProc);
+		if(tempProcessId == dProcessID)
 		{
 			if(!TerminateProcess(hProc, 0))
 			{
+				DebugPrint(L"IE: Unable to terminate IE process.\n");		
 				visitEvent->setErrorCode( CAPTURE_VISITATION_PROCESS_ERROR );
 			}
-		} else {
-			visitEvent->setErrorCode( CAPTURE_VISITATION_PROCESS_ERROR );
-		}
+		} 
 		pInternetExplorer->Release();
 	}
 	else
 	{
+		DebugPrint(L"IE Visit Group failed to created fake IE instanc\n");
 		visitEvent->setErrorCode( CAPTURE_VISITATION_WARNING );
 	}
+	DebugPrint(L"IE Visit Group created fake IE instance - done\n");
 
 	//Delete all IE instance objects
 	delete [] visit_information;
@@ -192,13 +229,42 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 		delete iexplore_instances[i];
 	}
 	free(iexplore_instances);
+	DebugPrint(L"IE Visit Group delete IE instances\n");
 
 	// Free the COM interface stuff
 	ULONG num_references = internet_explorer_factory->Release();
+
+	DebugPrintTrace(L"Application_InternetExplorer::visitGroup(VisitEvent* visitEvent) end\n");
 }
 
 wchar_t**
 Application_InternetExplorer::getSupportedApplicationNames()
 {
+	DebugPrintTrace(L"Application_InternetExplorer::getSupportedApplicationNames() start\n");
+	DebugPrintTrace(L"Application_InternetExplorer::getSupportedApplicationNames() end\n");
 	return supportedApplications;
 }
+
+BOOL CALLBACK 
+Application_InternetExplorer::EnumWindowsProc(HWND hwnd,LPARAM lParam)
+{
+	DebugPrintTrace(L"Application_InternetExplorer::EnumWindowsProc(HWND hwnd,LPARAM lParam) start\n");
+
+	DWORD processId = (DWORD)lParam;
+	if (GetWindowLong(hwnd,GWL_STYLE) & WS_VISIBLE) {
+		DWORD windowsProcessId;
+		GetWindowThreadProcessId(hwnd, &windowsProcessId);
+		if (windowsProcessId == processId) 
+		{
+			WCHAR classname[256];
+			GetClassName(hwnd, classname, sizeof(classname));
+			HWND mainWindow = FindWindow(classname, NULL);
+			SendMessage(mainWindow, WM_CLOSE, 1, 0);
+		}
+	}
+
+	DebugPrintTrace(L"Application_InternetExplorer::EnumWindowsProc(HWND hwnd,LPARAM lParam) end\n");
+
+	return TRUE;
+}
+
