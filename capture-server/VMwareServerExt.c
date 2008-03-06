@@ -27,7 +27,7 @@
 #include "vix.h"
 
 JNIEXPORT jint JNICALL Java_capture_VMwareServerExt_nConnect
-(JNIEnv *env, jobject obj, jstring serverAddress, jstring user, jstring pass)
+(JNIEnv *env, jobject obj, jstring serverAddress, jint port, jstring user, jstring pass)
 {	
 	VixError err;
 	VixHandle hostHandle = VIX_INVALID_HANDLE;	
@@ -40,7 +40,7 @@ JNIEXPORT jint JNICALL Java_capture_VMwareServerExt_nConnect
     jobHandle = VixHost_Connect(VIX_API_VERSION,
                                 VIX_SERVICEPROVIDER_VMWARE_SERVER,
                                 hostname, // *hostName,
-                                902, // hostPort,
+                                port, // hostPort,
                                 username, // *userName,
                                 password, // *password,
                                 0, // options,

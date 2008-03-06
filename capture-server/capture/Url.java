@@ -87,10 +87,10 @@ public class Url extends Observable {
 
     public String getVisitFinishTime() {
         SimpleDateFormat sf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss.S");
-		if(visitFinishTime!=null) 
-			return sf.format(visitFinishTime);
-		else 
-			return sf.format(new Date());
+        if (visitFinishTime != null)
+            return sf.format(visitFinishTime);
+        else
+            return sf.format(new Date());
     }
 
     private String getLogfileDate(long time) {
@@ -146,14 +146,13 @@ public class Url extends Observable {
         } else if (urlState == URL_STATE.VISITED) {
             String date = getVisitFinishTime();
             Logger.getInstance().writeToProgressLog("\"" + date + "\",\"visited\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
-            if (this.malicious != null) {
-                if (this.malicious) {
-                    Logger.getInstance().writeToMaliciousUrlLog("\"" + date + "\",\"malicious\",\"" + groupID + "\",\"" + url +
-                            "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
-                } else {
-                    Logger.getInstance().writeToSafeUrlLog("\"" + date + "\",\"benign\",\"" + groupID + "\",\"" + url +
-                            "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
-                }
+            //todo - take into account groups size
+            if (this.malicious != null && this.malicious) {
+                Logger.getInstance().writeToMaliciousUrlLog("\"" + date + "\",\"malicious\",\"" + groupID + "\",\"" + url +
+                        "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
+            } else {
+                Logger.getInstance().writeToSafeUrlLog("\"" + date + "\",\"benign\",\"" + groupID + "\",\"" + url +
+                        "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
             }
             try {
                 if (logFile != null) {
@@ -243,7 +242,7 @@ public class Url extends Observable {
             }
         }
 
-        if(!validErrorCode) {
+        if (!validErrorCode) {
             System.out.println("Received invalid error code from client " + majorErrorCode);
             this.majorErrorCode = ERROR_CODES.INVALID_ERROR_CODE_FROM_CLIENT;
         }

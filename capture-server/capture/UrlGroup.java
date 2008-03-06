@@ -88,6 +88,13 @@ public class UrlGroup extends Observable {
     public void setUrlGroupState(URL_GROUP_STATE newState) {
         urlGroupState = newState;
 
+        //todo write to logs here
+        //remove from URL
+        //if benign
+        //write all urls to safe log
+        //if malicious & size is 1 write to malicious log
+        
+
         for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
             Url url = iterator.next();
             if (urlGroupState == URL_GROUP_STATE.VISITING) {

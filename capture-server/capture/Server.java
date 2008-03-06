@@ -31,6 +31,10 @@ public class Server
 			    if(((i+1) < args.length) && !args[i+1].startsWith("-")) {
 				ConfigManager.getInstance().addConfigOption("input_urls", args[++i]);
 			    }
+            } else if(args[i].equals("-r")) {
+                if(((i+1) < args.length) && !args[i+1].startsWith("-")) {
+                ConfigManager.getInstance().addConfigOption("halt_on_revert", args[++i]);
+                }
 			}
 		}
 

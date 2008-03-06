@@ -77,7 +77,7 @@ public class Client extends Observable implements Runnable {
             urlRetriever.start();
         } catch (IOException e) {
             e.printStackTrace(System.out);
-            if(visitingUrlGroup!=null) {
+            if (visitingUrlGroup != null) {
                 visitingUrlGroup.setMajorErrorCode(ERROR_CODES.CAPTURE_CLIENT_CONNECTION_RESET.errorCode);
                 visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);
             }
@@ -160,6 +160,22 @@ public class Client extends Observable implements Runnable {
             visitingUrlGroup.writeEventToLog("\"" + type + "\",\"" + time +
                     "\",\"" + process + "\",\"" + action + "\",\"" +
                     object + "\"");
+
+            //if we are visiting a group, we can reset right now,
+            // because we will revisit URLs later to get more detail info about state changes
+            if(visitingUrlGroup.size()>1) {
+                System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
+                visitingUrlGroup.setVisitFinishTime(element.attributes.get("time"));
+
+                List<Url> urls = visitingUrlGroup.getUrlList();
+                for (Iterator<Url> urlIterator = urls.iterator(); urlIterator.hasNext();) {
+                    Url url = urlIterator.next();
+                    url.setVisitFinishTime(element.attributes.get("time"));
+                }
+                visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
+                visitingUrlGroup = null;
+                this.setClientState(CLIENT_STATE.DISCONNECTED);
+            }
         }
     }
 
@@ -182,7 +198,7 @@ public class Client extends Observable implements Runnable {
 
             this.setClientState(CLIENT_STATE.VISITING);
         } else if (type.equals("finish")) {
-            if(visitingUrlGroup.isMalicious()) { // can already determine this here because the first state change will flip the switch
+            if (visitingUrlGroup.isMalicious()) { // can already determine this here because the first state change will flip the switch
                 System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
             } else {
                 System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " BENIGN");
@@ -191,7 +207,6 @@ public class Client extends Observable implements Runnable {
 
             //iterate through url elements and set startvisitTime & visiting state
             List<Element> items = element.childElements;
-            int errorCount = 0;
             for (Iterator<Element> iterator = items.iterator(); iterator.hasNext();) {
                 Element item = iterator.next();
                 String uri = item.attributes.get("url");
@@ -200,32 +215,21 @@ public class Client extends Observable implements Runnable {
                 String urlMajorErrorCode = item.attributes.get("major-error-code");
                 String urlMinorErrorCode = item.attributes.get("minor-error-code");
                 if (!(urlMajorErrorCode.equals("0") || urlMajorErrorCode.equals(""))) {
-                    errorCount++;
                     url.setMajorErrorCode(Long.parseLong(urlMajorErrorCode));
                     url.setMinorErrorCode(Long.parseLong(urlMinorErrorCode));
                 }
             }
-            if (errorCount == items.size()) { //all URLs contained errors
-                long major = ERROR_CODES.PROCESS_ERROR.errorCode;
-                System.out.println(this.getVirtualMachine().getLogHeader() + " Visit error - Major: " + errorCodeToString(major) + " ");
-                visitingUrlGroup.setMajorErrorCode(major);
-                visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);   //will set underlying url state
-                this.setClientState(CLIENT_STATE.DISCONNECTED);
+            String malicious = element.attributes.get("malicious");
+            if (malicious.equals("1")) {
+                visitingUrlGroup.setMalicious(true);
+                visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
                 visitingUrlGroup = null;
+                this.setClientState(CLIENT_STATE.DISCONNECTED);
             } else {
-
-                String malicious = element.attributes.get("malicious");
-                if (malicious.equals("1")) {
-                    visitingUrlGroup.setMalicious(true);
-                    visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
-                    visitingUrlGroup = null;
-                    this.setClientState(CLIENT_STATE.DISCONNECTED);
-                } else {
-                    visitingUrlGroup.setMalicious(false);
-                    visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
-                    visitingUrlGroup = null;
-                    this.setClientState(CLIENT_STATE.WAITING);
-                }
+                visitingUrlGroup.setMalicious(false);
+                visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
+                visitingUrlGroup = null;
+                this.setClientState(CLIENT_STATE.WAITING);
             }
         } else if (type.equals("error")) {
             String major = element.attributes.get("error-code");
@@ -245,6 +249,13 @@ public class Client extends Observable implements Runnable {
 
             if (!(major.equals("268435731") || major.equals("268436224") || major.equals("268435728"))) {
                 System.out.println(this.getVirtualMachine().getLogHeader() + " Visit error - Major: " + major + " ");
+
+                if(ConfigManager.getInstance().getConfigOption("halt_on_revert")!=null && ConfigManager.getInstance().getConfigOption("halt_on_revert").equals("true")) { //if option is set, vm is not reverted, but rather server is halted.
+                    System.out.println("Halt on revert set.");
+                    System.out.println("Revert called - exiting with code -20.");
+                    System.exit(-20);
+                }
+
                 visitingUrlGroup.setMajorErrorCode(Long.parseLong(major));
                 visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);   //will set underlying url state
                 this.setClientState(CLIENT_STATE.DISCONNECTED);

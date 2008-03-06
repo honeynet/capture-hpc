@@ -25,6 +25,16 @@ public class VirtualMachineServerFactory {
 
 			MockVirtualMachineServer mockVirtualMachineServer = new MockVirtualMachineServer(address, port, username, password);
 			return mockVirtualMachineServer;
+        } else if(type.equals("no-vm-server"))
+        {
+            String address = attributes.get("address");
+            int port = Integer.parseInt(attributes.get("port"));
+            String username = attributes.get("username");
+            String password = attributes.get("password");
+
+            NoVirtualMachineServer noVirtualMachineServer = new NoVirtualMachineServer(address, port, username, password);
+            return noVirtualMachineServer;
+
 		}
 
 		return null;
