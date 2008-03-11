@@ -80,7 +80,7 @@ InternetExplorerInstance::visitUrl(Url* url)
 	hr = pInternetExplorer->Navigate2(&URL,&Flag,&TargetFrameName,&PostData,&Headers);
 	
 	// Wait for the IE instance to visit the url
-	DWORD dwWait = WaitForSingleObject(hVisiting, 600000);
+	DWORD dwWait = WaitForSingleObject(hVisiting, 60*1000);
 	
 	if(dwWait == WAIT_TIMEOUT)
 	{
