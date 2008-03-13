@@ -6,10 +6,37 @@ Version 2.1
 -----------
 Changes
 -------
++ fixed bug 696, 655, 657, 613, 706, 689
++ Implemented divide & conquer algorithm on IE plugin that allows to visit URLs faster (685)
++ Adjusted error handling. Now errors are only logged in the error.log file. The operator needs to decide on how to handle these errors.
++ Redirect client output to log file for debugging purposes. 
++ Added option -r to server parameters that can instruct the server to exit upon encountering an error (turn on by setting "-r true"). For debugging purposes.
++ Logs that capture state changes are now only created if state changes are detected.
++ A malicious classification is now reported even if the client machine crashes.
++ The process,malicious,safe and eror log format now includes a new column that is related to the divide & conquer functionality . It shows the group ID number.
++ Added Safari plugin (693)
++ Added stats log to for tuning capture and troubleshoot issues.
++ Network traffic collection can now be configured to occur on malicious as well as benign URLs. Previously only network traffic on malicious URLs was pushed to the server. (707)
++ Because of the new features, the config file format has changed.
+
+Known Issues
+------------
+615	Registry monitoring can't handle a key named 
+690 Capture is not able to detect file renames
+695 Opening and closing ProcessExplorer crashes Capture
+676 Empty password on the user of the guest vm in the config.xml causes the capture server to crash (Windows only).
+681	Error found When uninsall the CaptureClient
+689 Capture doesnt seem to work on port other than 7070
+706 Capture seems to ignore the VM server port.
+
+Version 2.0.1
+-----------
+Changes
+-------
++ fixed bug 699, 666, 673
++ increased some timeouts on the server that trigger upon the client connecting to the server. Should allow to use more client instances with one server.
 + Capture-HPC is now compiled with Visual C++ SP1. As a result, the Visual C++ Redist Libraries SP1 are required to run Capture-HPC. One can still compile Capture-HPC without the service pack. However, we only destribute the version with service pack.
-+ Added Safari plugin
-+ Network traffic collection can now be configured to occur on malicious as well as benign URLs. Previously only network traffic on malicious URLs was pushed to the server.
-+ Capture supports only VMware Server 1.0.4. VMware Server 1.0.3 is unsupported.
++ compiled vix libs are compatible with vmware server 1.0.4
 
 Version 2.0
 -----------
