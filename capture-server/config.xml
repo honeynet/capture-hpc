@@ -23,7 +23,7 @@
 	<virtual-machine-server type="vmware-server" address="192.168.1.10" port="902"
 		username="User" password="Password">
 		<virtual-machine vm-path="C:\Virtual Machines\winxpsp2\winxpsp2.vmx"
-						 client-path="C:\Program Files\capture\CaptureClient.exe"
+						 client-path="C:\Progra~1\capture\CaptureClient.bat"
 						 username="Administrator"
 						 password="password"/>
 	</virtual-machine-server>
