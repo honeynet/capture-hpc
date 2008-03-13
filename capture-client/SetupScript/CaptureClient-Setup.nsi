@@ -39,6 +39,7 @@ Section ""
   File CaptureClient.exe
   File Readme.txt
   File COPYING
+  File CaptureClient.bat
   File *.exl
   File *.sys
   File *.conf
@@ -73,6 +74,7 @@ Section "Uninstall"
   RMDir "$INSTDIR\plugins"
   Delete $INSTDIR\7za.exe
   Delete $INSTDIR\CaptureClient.exe
+  Delete $INSTDIR\CaptureClient.bat
   Delete $INSTDIR\COPYING
   Delete $INSTDIR\*.exl
   Delete $INSTDIR\*.sys
