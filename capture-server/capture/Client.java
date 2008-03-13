@@ -247,7 +247,7 @@ public class Client extends Observable implements Runnable {
                 }
             }
 
-            if (!(major.equals("268435731") || major.equals("268436224") || major.equals("268435728"))) {
+            if (!(major.equals("268435730") || major.equals("268435731") || major.equals("268436224") || major.equals("268435728"))) {
                 System.out.println(this.getVirtualMachine().getLogHeader() + " Visit error - Major: " + major + " ");
 
                 if(ConfigManager.getInstance().getConfigOption("halt_on_revert")!=null && ConfigManager.getInstance().getConfigOption("halt_on_revert").equals("true")) { //if option is set, vm is not reverted, but rather server is halted.
@@ -265,11 +265,11 @@ public class Client extends Observable implements Runnable {
                 visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);   //will set underlying url state
 
                 if (visitingUrlGroup.isMalicious()) {
-                    System.out.println("MALICIOUS " + visitingUrlGroup.getIdentifier());
+                    System.out.println(this.getVirtualMachine().getLogHeader() + " MALICIOUS " + visitingUrlGroup.getIdentifier());
 
                     this.setClientState(CLIENT_STATE.DISCONNECTED);
                 } else {
-                    System.out.println("BENIGN " + visitingUrlGroup.getIdentifier());
+                    System.out.println(this.getVirtualMachine().getLogHeader() + " BENIGN " + visitingUrlGroup.getIdentifier());
                     this.setClientState(CLIENT_STATE.WAITING);
                 }
                 visitingUrlGroup = null;
@@ -290,6 +290,7 @@ public class Client extends Observable implements Runnable {
 
                     virtualMachine = vm;
                     virtualMachine.setClient(this);
+
                     this.setClientState(CLIENT_STATE.CONNECTED);
                     this.setClientState(CLIENT_STATE.WAITING);
                     break;

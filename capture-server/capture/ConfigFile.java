@@ -98,7 +98,6 @@ public class ConfigFile implements Observer, ErrorHandler {
 			{
 				String option = attributesMap.item(k).getNodeName();
 				String value = attributesMap.item(k).getNodeValue();
-				System.out.println("Option: " + option + " => " + value);
 				ConfigManager.getInstance().addConfigOption(option, value);
 			}
 		}

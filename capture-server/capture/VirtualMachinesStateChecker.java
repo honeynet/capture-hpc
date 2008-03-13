@@ -22,6 +22,7 @@ public class VirtualMachinesStateChecker extends TimerTask {
                     if (vm.getState() == VM_STATE.RUNNING) {
                         long diff = currentTime - vm.getLastContact();
                         if (diff >= 60000) {
+                            Stats.clientInactivity++;
                             System.out.println("[" + vmServer.getAddress() + ":" + vmServer.getPort() + "-" +
                                     vm.getVmUniqueId() + "] Client inactivity, reverting VM");
                             setError(vm, ERROR_CODES.CAPTURE_CLIENT_INACTIVITY);
@@ -37,8 +38,8 @@ public class VirtualMachinesStateChecker extends TimerTask {
 
                         diff = currentTime - vm.getTimeOfLastStateChange();
                         if (diff >= 300000) {
-                            System.out.println("[" + vmServer.getAddress() + ":" + vmServer.getPort() + "-" +
-                                    vm.getVmUniqueId() + "] VM stalled during operation, reverting VM");
+                            Stats.vmStalled++;
+                            System.out.println(vm.getLogHeader() + " VM stalled during operation, reverting VM");
                             setError(vm, ERROR_CODES.VM_STALLED);
 
                             if (ConfigManager.getInstance().getConfigOption("halt_on_revert") != null && ConfigManager.getInstance().getConfigOption("halt_on_revert").equals("true")) { //if option is set, vm is not reverted, but rather server is halted.
@@ -55,8 +56,8 @@ public class VirtualMachinesStateChecker extends TimerTask {
                         }
                         long diff = currentTime - vm.getTimeOfLastStateChange();
                         if (diff >= 300000) {
-                            System.out.println("[" + vmServer.getAddress() + ":" + vmServer.getPort() + "-" +
-                                    vm.getVmUniqueId() + "] VM stalled, reverting VM");
+                            Stats.vmStalled++;
+                            System.out.println(vm.getLogHeader() + " VM stalled, reverting VM");
                             setError(vm, ERROR_CODES.VM_STALLED);
 
                             if (ConfigManager.getInstance().getConfigOption("halt_on_revert") != null && ConfigManager.getInstance().getConfigOption("halt_on_revert").equals("true")) { //if option is set, vm is not reverted, but rather server is halted.

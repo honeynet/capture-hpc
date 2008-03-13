@@ -117,7 +117,6 @@ public class ClientsController extends Observable implements Observer, Runnable,
 					String monitor = event.attributes.get("monitor");					
 					if(event.attributes.containsKey("file")) {					
 						String file = event.attributes.get("file");	
-						System.out.println("File: " + file);
 						ExclusionList ex = new ExclusionList(monitor, file);
 						if(ex.parseExclusionList()) {
 							exclusionLists.put(monitor, ex);

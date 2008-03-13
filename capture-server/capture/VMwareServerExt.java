@@ -1,10 +1,14 @@
 package capture;
 
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
 public class VMwareServerExt {
     static {
         try {
             System.loadLibrary("VMwareServerExt");
             System.out.println("VIX library loaded");
+
         } catch (UnsatisfiedLinkError le) {
             le.printStackTrace(System.out);
 
@@ -14,13 +18,15 @@ public class VMwareServerExt {
                     "from http://register.vmware.com/content/download.html and are called " +
                     "the \"Programming API\". Copy these into your Capture Server directory if you " +
                     "aren't sure of what to do");
-            System.exit(1);
+            System.exit(4);
         }
     }
 
     public static void main(String args[]) {
         try {
             VMwareServerExt vmwareServerExt = new VMwareServerExt();
+
+            System.out.println("VMwareServerExt called");
 
             String command = args[0];
             if (command.equalsIgnoreCase("nRevert")) {
@@ -35,6 +41,7 @@ public class VMwareServerExt {
                 String guestCmd = args[9];
                 String guestCmdOptions = args[10];
                 int timeout = Integer.parseInt(args[11]);
+                int pid = Integer.parseInt(args[12]);
 
                 /*System.out.println("Address " + address);
                 System.out.println("Port " + port);
@@ -47,9 +54,10 @@ public class VMwareServerExt {
                 System.out.println("guestCmd " + guestCmd);
                 System.out.println("guestCmdOptions " + guestCmdOptions);
                 System.out.println("timeout " + timeout);
-                */
+                System.out.println("pid " + pid);*/
 
-                int returnCode = vmwareServerExt.revertWorkItem(address, port, vmUniqueId, username, password, vmPath, guestUsername, guestPassword, guestCmd, guestCmdOptions, timeout);
+
+                int returnCode = vmwareServerExt.revertWorkItem(address, port, vmUniqueId, username, password, vmPath, guestUsername, guestPassword, guestCmd, guestCmdOptions, timeout, pid);
                 System.exit(returnCode);
             } else {
                 System.out.println("received non-nRevert command");
@@ -62,7 +70,7 @@ public class VMwareServerExt {
         } catch (Exception e) {
             System.out.println("Exception thrown" + e.toString());
             e.printStackTrace(System.out);
-            System.exit(1);
+            System.exit(2);
         }
     }
 
@@ -80,45 +88,57 @@ public class VMwareServerExt {
                     guestUsername, String
                     guestPassword, String
                     guestCmd, String
-                    guestCmdOptions, int timeout) {
+                    guestCmdOptions,
+                    int timeout,
+                    int pid) {
         int error = 0;
 
-        System.out.println("[" + address + ":" + port + "] Connecting");
+        System.out.println("[" + currentTime() + " " + address + ":" + port + "] Ext-" + pid + " Connecting");
         error = nConnect(address, Integer.parseInt(port), username, password);
         if (error != 0) {
-            System.out.println("[" + address + ":" + port + "] ERROR - Connect: " + errorCodeToString(error));
-        } else {
-            System.out.println("[" + address + ":" + port + "] Connected");
-            System.out.println("[" + address + ":" + port + "-" + vmUniqueId + "] Resetting VM");
+            System.out.println("[" + currentTime() + " " + address + ":" + port + "] Ext-" + pid + " ERROR - Connect: " + errorCodeToString(error));
+        }
+        else {
+            System.out.println("[" + currentTime() + " " + address + ":" + port + "] Ext-" + pid + " Connected");
+            System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] Ext-" + pid + " Resetting VM");
             error = nRevertVM(vmPath);
             if (error == 0) {
-                System.out.println("[" + address + ":" + port + "-" + vmUniqueId + "] waitForToolsInGuest");
+                System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId +"] Ext-" + pid + " waitForToolsInGuest");
                 error = nWaitForToolsInGuest(vmPath, timeout);
                 if (error == 0) {
-                    System.out.println("[" + address + ":" + port + "-" + vmUniqueId + "] runProgramInGuest.");
+                    System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId +"] Ext-" + pid + " runProgramInGuest.");
                     if (guestPassword.equals("")) {
                         guestPassword = null;
                     }
                     error = nRunProgramInGuest(vmPath, guestUsername, guestPassword, guestCmd, guestCmdOptions);
                     if (error == 0) {
-                        System.out.println("[" + address + ":" + port + "-" + vmUniqueId + "] VM Resetted");
+                        System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] Ext-" + pid  + " VM Resetted");
                         error = nDisconnect();
                         if (error == 0) {
-                            System.out.println("[" + address + ":" + port + "-" + vmUniqueId + "] VM Disconnected - we dont need it anymore at this point.");
+                            System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId +"] Ext-" + pid + " VM Disconnected - we dont need it anymore at this point.");
                         } else {
-                            System.out.println("[" + address + ":" + port + "-" + vmUniqueId + "] ERROR - Unable to disconnect");
+                            System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] Ext-" + pid + " ERROR - Unable to disconnect");
                         }
                     } else {
-                        System.out.println("[" + address + ":" + port + "-" + vmUniqueId + "] ERROR - Unable to start " + guestCmd + ".");
+                        System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] Ext-" + pid + " ERROR - Unable to start " + guestCmd + ".");
                     }
                 } else {
-                    System.out.println("[" + address + ":" + port + "-" + vmUniqueId + "] ERROR - Unable to detect VMware Tools.");
+                    System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] Ext-" + pid + " ERROR - Unable to detect VMware Tools.");
                 }
             } else {
-                System.out.println("[" + address + ":" + port + "-" + vmUniqueId + "] ERROR - Revert failed - not connected to server");
+                System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] Ext-" + pid + " ERROR - Revert failed - not connected to server");
             }
-        }
+        } 
+        System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] Ext-" + pid + " Returning - error code: " + error);
         return error;
+    }
+
+    public String currentTime() {
+        long current = System.currentTimeMillis();
+        Date currentDate = new Date(current);
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy h:mm:ss a");
+        String strDate = sdf.format(currentDate);
+        return strDate;
     }
 
     public static String errorCodeToString
