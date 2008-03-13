@@ -167,15 +167,15 @@ JNIEXPORT jint JNICALL Java_capture_VMwareServerExt_nRunProgramInGuest
 			Vix_ReleaseHandle(jobHandle);
 		
 			// Run the target program.
-	
-			jobHandle = VixVM_RunProgramInGuest(vmHandle,
+	        //printf(gcmd);
+	        jobHandle = VixVM_RunProgramInGuest(vmHandle,
 						gcmd,
 						gcmdoptions,
 						VIX_RUNPROGRAM_RETURN_IMMEDIATELY, // options,
 						VIX_INVALID_HANDLE, // propertyListHandle,
 						NULL, // callbackProc,
 						NULL); // clientData
-	
+
 			err = VixJob_Wait(jobHandle, VIX_PROPERTY_NONE);
 			if(err != VIX_OK) {
 			  printf("Error on runProgramInGuest in runProgramInGuest " + err);
