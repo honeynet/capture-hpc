@@ -57,6 +57,7 @@ copy-hpc :
 	copy $(MAKEDIR)\Readme-HPC.txt $(INSTALL_DIR)\Readme.txt
 	copy $(MAKEDIR)\COPYING $(INSTALL_DIR)
 	copy $(MAKEDIR)\7za.exe $(INSTALL_DIR)
+	copy $(MAKEDIR)\CaptureClient.bat $(INSTALL_DIR)
 	copy $(MAKEDIR)\ApplicationConfig\Applications.conf $(INSTALL_DIR)
 	copy $(MAKEDIR)\ExclusionLists\*exl $(INSTALL_DIR)
 	copy $(MAKEDIR)\Release\CaptureClient.exe $(INSTALL_DIR)

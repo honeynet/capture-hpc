@@ -75,21 +75,27 @@ Server::connectToServer(bool startSenderAndReciever)
 		
 			serverSocket = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 			
-			if(connect(serverSocket, (struct sockaddr *)sa, static_cast<int>(ai->ai_addrlen) ) != SOCKET_ERROR )
-			{
-				u_long iMode = 1;
-				//ioctlsocket(serverSocket, FIONBIO, &iMode);
-				printf("Connected to server at %s\n", szServerAddress);
-				setConnected(true);
-				if(startSenderAndReciever)
+			int count = 0;
+			while(count < 10) {
+				if(connect(serverSocket, (struct sockaddr *)sa, static_cast<int>(ai->ai_addrlen) ) != SOCKET_ERROR )
 				{
-					serverReceive->start();
+					u_long iMode = 1;
+					//ioctlsocket(serverSocket, FIONBIO, &iMode);
+					printf("Connected to server at %s\n", szServerAddress);
+					setConnected(true);
+					if(startSenderAndReciever)
+					{
+						serverReceive->start();
+					}
+					freeaddrinfo(aiList);
+					return true;
+				} else {
+					printf("Could not connect to server\n");
+					printf("\tSocket error: %i\n", WSAGetLastError());
+					printf("Retrying...\n");
+					Sleep(1000);
+					count++;
 				}
-				freeaddrinfo(aiList);
-				return true;
-			} else {
-				printf("Could not connect to server\n");
-				printf("\tSocket error: %i\n", WSAGetLastError());
 			}
 			freeaddrinfo(aiList);
 		}	
