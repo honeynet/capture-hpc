@@ -117,9 +117,11 @@ public class UrlGroupsController extends Observable implements Observer {
                 int b = urls.size() / 2;
                 for (int i = 0; i < urls.size(); i++) {
                     if (i < b) {
-                        urls1.add(urls.get(i));
+                        Url url = urls.get(i);
+                        urls1.add(url);
                     } else {
-                        urls2.add(urls.get(i));
+                        Url url = urls.get(i);
+                        urls2.add(url);
                     }
                 }
 

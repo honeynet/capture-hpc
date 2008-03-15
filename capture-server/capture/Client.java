@@ -248,7 +248,7 @@ public class Client extends Observable implements Runnable {
             }
 
             if (!(major.equals("268435730") || major.equals("268435731") || major.equals("268436224") || major.equals("268435728"))) {
-                System.out.println(this.getVirtualMachine().getLogHeader() + " Visit error - Major: " + major + " ");
+                System.out.println(this.getVirtualMachine().getLogHeader() + " ERROR " + visitingUrlGroup.getIdentifier());
 
                 if(ConfigManager.getInstance().getConfigOption("halt_on_revert")!=null && ConfigManager.getInstance().getConfigOption("halt_on_revert").equals("true")) { //if option is set, vm is not reverted, but rather server is halted.
                     System.out.println("Halt on revert set.");
@@ -256,19 +256,28 @@ public class Client extends Observable implements Runnable {
                     System.exit(-20);
                 }
 
+                String malicious = element.attributes.get("malicious");
+                if (malicious.equals("1")) {
+                    visitingUrlGroup.setMalicious(true);
+                } else {
+                    visitingUrlGroup.setMalicious(false);
+                }
                 visitingUrlGroup.setMajorErrorCode(Long.parseLong(major));
-                visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);   //will set underlying url state
+                visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);   //will set underlying url state and cause reset vm
+
                 this.setClientState(CLIENT_STATE.DISCONNECTED);
                 visitingUrlGroup = null;
             } else {
                 System.out.print(this.getVirtualMachine().getLogHeader() + " Visited ");
-                visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);   //will set underlying url state
-
-                if (visitingUrlGroup.isMalicious()) {
+                String malicious = element.attributes.get("malicious");
+                if (malicious.equals("1")) {
+                    visitingUrlGroup.setMalicious(true);
+                    visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);   //will set underlying url state
                     System.out.println(this.getVirtualMachine().getLogHeader() + " MALICIOUS " + visitingUrlGroup.getIdentifier());
-
                     this.setClientState(CLIENT_STATE.DISCONNECTED);
                 } else {
+                    visitingUrlGroup.setMalicious(false);
+                    visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);   //will set underlying url state and not cause reset vm
                     System.out.println(this.getVirtualMachine().getLogHeader() + " BENIGN " + visitingUrlGroup.getIdentifier());
                     this.setClientState(CLIENT_STATE.WAITING);
                 }

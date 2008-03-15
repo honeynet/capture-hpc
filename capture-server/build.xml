@@ -60,7 +60,7 @@
 			<copy file="${env.VIX_HOME}/libeay32.dll" todir="${release}"/>
 			<copy file="${env.VIX_HOME}/ssleay32.dll" todir="${release}"/>
 			<copy file="${env.VIX_HOME}/vix.dll" todir="${release}"/>
-			<copy file="./VMwareServerExt.dll" todir="${release}"/>
+			<copy file="./revert.exe" todir="${release}"/>
 		   </then>
 		  <else>
 		    <copy file="./libVMwareServerExt.so" todir="${release}"/>
@@ -74,7 +74,7 @@
         <delete dir="${build}"/>
 		<delete dir="${release}"/>
 		<delete>
-			<fileset dir="." includes="VMwareServerExt.???"/>
+			<fileset dir="." includes="revert.exe"/>
 			<fileset dir="." includes="CaptureServer-Release.zip"/>
 		</delete>
     </target>

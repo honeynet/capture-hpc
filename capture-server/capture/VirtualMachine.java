@@ -143,6 +143,17 @@ public class VirtualMachine extends Observable implements Observer {
     public String getLogHeader() {
         return "[" + currentTime() + "-" + server.getAddress() + ":" + server.getPort() + "-" + this.getVmUniqueId() + "]";
     }
+
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof VirtualMachine)) return false;
+
+        VirtualMachine that = (VirtualMachine) o;
+
+        if (vmUniqueId != that.vmUniqueId) return false;
+
+        return true;
+    }    
 }
 
 /**

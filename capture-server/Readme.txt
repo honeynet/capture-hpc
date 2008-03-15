@@ -23,20 +23,22 @@ Unpack the capture-server zip file.
 Configuring the server component requires editing the config.xml file that was distributed with the capture-server release.
 
 * Open up the config.xml
-* Configure the global options, such as the time that is allowed to pass to retrieve a URL, the option to automatically retrieve malware or network captures, and the directive to push the local exclusion list to the clients.
+* Configure the global options, such as the time that is allowed to pass to retrieve a URL, the option to automatically retrieve malware or network captures (on benign and malicious URLs), and the directive to push the local exclusion list to the clients. The value p determines how many instances of the client application are opened at the same time. The lower the value, the more instances are opened. A value of 1 will cause only 1 instance to be opened (just like Capture-HPC v 2.01 and prior). A value of 0.004 will cause 60 (max) instances to be opened.
 * Add the local exclusion lists that would be pushed to the clients if that option is enabled 
 * Add vmware servers
 	Specify the ip address, port, username, and password of the vmware server that hosts capture clients.
 * For each vmware server, add virtual machines that run a Capture Client.
-	Specify the path to the virtual machine vmx file as well as the administrator account and password.
+	Specify the path to the virtual machine vmx file as well as the administrator account and password and path the capture bat file exists (needs to be a bat file).
 
 Example:
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
         xsi:noNamespaceSchemaLocation="config.xsd">
-	<global collect-modified-files="true" 
-			client-default-visit-time="30"
-			capture-network-packets="true"
+	<global collect-modified-files="false" 
+			client-default-visit-time="10"
+			capture-network-packets-malicious="false"
+			capture-network-packets-benign="false"
 			send-exclusion-lists="false"
+        	p_m="0.0012"
 	/>
 
         <exclusion-list monitor="file" file="FileMonitor.exl" />
@@ -46,7 +48,7 @@ Example:
 	<virtual-machine-server type="vmware-server" address="192.168.1.1" port="902" 
 		username="Username" password="password">
 		<virtual-machine vm-path="C:\Virtual Machines\winxp\winxp.vmx" 
-						 client-path="C:\Program Files\capture\CaptureClient.exe" 
+						 client-path="C:\Progra~1\capture\CaptureClient.bat" 
 						 username="Administrator" 
 						 password="admin_pw"/>
 	</virtual-machine-server>
@@ -71,7 +73,8 @@ As the Capture clients interact with potentially malicious servers, log files/di
 
 * safe.log - safe.log contains the list of uris that have been visited and are deemed benign. 
 * progress.log - progress.log contains information about which URIs are currently being visited or have been visited. If an error occurs during visitation of URI, it will be logged in this log file as well. The server will attempt to visit a URI 5 times before it gives up. Once this occurs, an error is logged in the error.log
-* error.log - error.log contains information about URIs that could not be visited (ie failed 5 times) as well as information when the communication between client/server fails.
+* error.log - error.log contains information about URIs that could not be visited.
+* stats.log - contains information about the performance of the capture system (ie how many URLs are visited, how many reverts took place, how long does a revert take on avg, etc.) This can be used to fine tune capture and select the appropriate hardware for the capture system.
 * malicious.log - malicious.log contains the list of uris that have been visited and are deemed malicious. 
 * server_timestamp.log - server_timestamp.log (e.g. http%3A%2F%2Fwww.google.com_20070101_180000.log) is created for each URI that is deemed malcious. It contains a list of the state changes that occured. 
 * server_timestamp.zip - this is the file that contains the files that have been modified or deleted off the client machine during the interaction with a malicious servers. It also contains (if enabled) the network dump recorded on the machine.

@@ -67,7 +67,7 @@ public class ClientsController extends Observable implements Observer, Runnable,
         clients.add(client);
         clientsLock.writeLock().unlock();
         //this.sendExclusionLists(client);
-        client.send("<connect server=\"2.0\" />");
+        client.send("<connect server=\"2.1\" />");
     	this.setChanged();
     	this.notifyObservers(client);
 	}

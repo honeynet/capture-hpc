@@ -23,7 +23,7 @@ Ensure that the following directories are in the PATH:
 --------------
 Open a Visual Studio 2005 Command Prompt on Windows/ regular terminal windows on Linux and cd into directory of the Capture Server source. Type ant and press enter. This script will:
 	- compile the java source and package the class files into a jar
-	- compile the jni wrapper
+	- compile the revert application
 	- copy the relevant files into the release directory.
 	- package the compiled server files into CaptureServer-Release.zip
 

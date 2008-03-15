@@ -2,9 +2,6 @@ package capture;
 
 import java.net.URISyntaxException;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.text.DateFormat;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class UrlsController extends Observable implements EventObserver, Observer {
@@ -106,7 +103,7 @@ public class UrlsController extends Observable implements EventObserver, Observe
             int visitTime = url.getVisitTime();
             ERROR_CODES majorErrorCode = url.getMajorErrorCode();
             long minorErrorCode = url.getMinorErrorCode();
-            if(url.getInitialGroup()) {
+            if(!errorUrlList.contains(url)) {
                 Logger.getInstance().writeToErrorLog("\"" + date + "\",\"error:" + majorErrorCode + "-" + minorErrorCode + "\",\"" + url.getGroupID() + "\",\"" + urlString + "\",\""  + clientProgram + "\",\"" + visitTime + "\"");
                 errorUrlList.add(url);
             }

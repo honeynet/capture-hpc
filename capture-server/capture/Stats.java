@@ -41,16 +41,17 @@ public class Stats {
     public static int vmStalled = 0;
     private static List<Long> visitingTimes = new ArrayList<Long>();
     private static List<Long> firstStateChanges = new ArrayList<Long>();
+    private static List<Long> revertTimes = new ArrayList<Long>();
 
     private static Date instantiationTime = new Date(System.currentTimeMillis());
 
 
     public static String getHeader() {
-        return "\"time\",\"visiting\",\"visited\",\"safe\",\"malicious\",\"urlError\",\"vmRevert\",\"clientInactivity\",\"vmStalled\",\"avgVisitingTime\",\"avgFirstStateChangeTime\",\"visitedUrlsPerDay\"";
+        return "\"time\",\"visiting\",\"visited\",\"safe\",\"malicious\",\"urlError\",\"vmRevert\",\"clientInactivity\",\"vmStalled\",\"avgRevertTime\",\"avgVisitingTime\",\"avgFirstStateChangeTime\",\"visitedUrlsPerDay\"";
     }
 
     public static String getStats() {
-        return "\"" + currentTime() + "\",\"" + visiting + "\",\"" + visited + "\",\"" + safe + "\",\"" + malicious + "\",\"" + urlError + "\",\"" + vmRevert + "\",\"" + clientInactivity + "\",\"" + vmStalled + "\",\"" + getAvgUrlVisitingTime() + "\",\"" + getAvgFirstStateChangeTime() + "\",\"" + getVisitedUrlsPerDay() +"\"";
+        return "\"" + currentTime() + "\",\"" + visiting + "\",\"" + visited + "\",\"" + safe + "\",\"" + malicious + "\",\"" + urlError + "\",\"" + vmRevert + "\",\"" + clientInactivity + "\",\"" + vmStalled + "\",\"" + getAvgRevertTime() +"\",\"" + getAvgUrlVisitingTime() + "\",\"" + getAvgFirstStateChangeTime() + "\",\"" + getVisitedUrlsPerDay() +"\"";
     }
 
     public static String currentTime() {
@@ -67,6 +68,10 @@ public class Stats {
         visitingTimes.add(visitingTime);
     }
 
+    public static void addRevertTimeTime(Date start, Date end) {
+        long revertTime = (end.getTime() - start.getTime()) / 1000;
+        revertTimes.add(revertTime);
+    }
 
     public static void addFirstStateChangeTime(Date firstStateChange, Date end, int classificationDelay) {
         long classificationDelayInMillis = classificationDelay * 1000;
@@ -86,6 +91,18 @@ public class Stats {
         }
     }
 
+    public static double getAvgRevertTime() {
+        if (revertTimes.size() > 0) {
+            long totalRevertTime = 0;
+            for (Iterator<Long> revertTimeIt = revertTimes.iterator(); revertTimeIt.hasNext();) {
+                totalRevertTime  = totalRevertTime  + revertTimeIt.next();
+            }
+            return totalRevertTime  / (1.0*revertTimes.size());
+        } else {
+            return 0;
+        }
+    }
+    
     public static double getAvgFirstStateChangeTime() {
         if (firstStateChanges.size() > 0) {
 

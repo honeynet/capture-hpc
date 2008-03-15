@@ -47,6 +47,7 @@ public class Url extends Observable {
     private long groupID;
     private boolean initialGroup;
 
+
     public Url(String u, String cProgram, int vTime) throws URISyntaxException {
         url = new URI(u);
         malicious = null;
@@ -106,8 +107,8 @@ public class Url extends Observable {
                 logFile = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("log" + File.separator + logFileName + ".log"), "UTF-8"));
             }
 
-            if(firstStateChange==null) {
-                String[] result = event.split( "\",\"");
+            if (firstStateChange == null) {
+                String[] result = event.split("\",\"");
                 String firstStateChangeStr = result[1];
                 SimpleDateFormat sf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss.S");
                 firstStateChange = sf.parse(firstStateChangeStr);
@@ -122,10 +123,19 @@ public class Url extends Observable {
         } catch (IOException e) {
             e.printStackTrace(System.out);
         } catch (ParseException e) {
-            e.printStackTrace(System.out); 
+            e.printStackTrace(System.out);
         }
     }
 
+    public void closeEventLog() {
+        try {
+            if (logFile != null) {
+                logFile.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace(System.out);
+        }
+    }
 
     public boolean isMalicious() {
         return malicious;
@@ -140,10 +150,6 @@ public class Url extends Observable {
     }
 
     public void setUrlState(URL_STATE newState) {
-        File f = new File("log");
-        if (!f.isDirectory()) {
-            f.mkdir();
-        }
         if (urlState == newState)
             return;
 
@@ -159,44 +165,38 @@ public class Url extends Observable {
             Logger.getInstance().writeToProgressLog("\"" + date + "\",\"visited\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
             Stats.visited++;
             Stats.addUrlVisitingTime(visitStartTime, visitFinishTime, visitTime);
+
             if (this.malicious != null && this.malicious) {
                 Stats.malicious++;
-                Stats.addFirstStateChangeTime(firstStateChange,visitFinishTime,visitTime);
+                Stats.addFirstStateChangeTime(firstStateChange, visitFinishTime, visitTime);
                 Logger.getInstance().writeToMaliciousUrlLog("\"" + date + "\",\"malicious\",\"" + groupID + "\",\"" + url +
                         "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
-            } else {
+            } else if (this.malicious != null && !this.malicious) {
                 Stats.safe++;
                 Logger.getInstance().writeToSafeUrlLog("\"" + date + "\",\"benign\",\"" + groupID + "\",\"" + url +
                         "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
             }
-            try {
-                if (logFile != null) {
-                    logFile.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace(System.out);
-            }
+            closeEventLog();
+
         } else if (urlState == URL_STATE.ERROR) {
             if (this.malicious != null) {
-                String date = DateFormat.getDateTimeInstance().format(new Date());
                 if (this.malicious) {
                     Stats.malicious++;
-                    Stats.addFirstStateChangeTime(firstStateChange,visitFinishTime,visitTime);
+                    String date = DateFormat.getDateTimeInstance().format(new Date());
+                    Stats.addFirstStateChangeTime(firstStateChange, visitFinishTime, visitTime);
                     Logger.getInstance().writeToMaliciousUrlLog("\"" + date + "\",\"malicious\",\"" + groupID + "\",\"" + url +
                             "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
                 }
+
+                //logged in error group even if group size is larger, because these URL
+                String finishDate = getVisitFinishTime();
+                Logger.getInstance().writeToProgressLog("\"" + finishDate  + "\",\"error" + ":" + majorErrorCode + "-" + minorErrorCode + "\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
+                Stats.urlError++;
             }
 
-            String date = getVisitFinishTime();
-            Logger.getInstance().writeToProgressLog("\"" + date + "\",\"error" + ":" + majorErrorCode + "-" + minorErrorCode + "\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
-            Stats.urlError++;
-            try {
-                if (logFile != null) {
-                    logFile.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace(System.out);
-            }
+
+
+            closeEventLog();
         }
         this.setChanged();
         this.notifyObservers();
@@ -283,7 +283,7 @@ public class Url extends Observable {
         this.initialGroup = initialGroup;
     }
 
-    public boolean getInitialGroup() {
+    public boolean isInitialGroup() {
         return initialGroup;
     }
 }
