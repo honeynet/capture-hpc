@@ -6,18 +6,19 @@ Version 2.1
 -----------
 Changes
 -------
-+ fixed bug 696, 655, 657, 613, 706, 689
-+ Implemented divide & conquer algorithm on IE plugin that allows to visit URLs faster (685)
++ Implemented divide & conquer algorithm that allows to visit URLs faster (685)
++ Added Safari plugin (693)
++ Network traffic collection can now be configured to occur on malicious as well as benign URLs. Previously, only network traffic on malicious URLs was pushed to the server. (707)
++ Added stats log to for tuning capture and troubleshooting issues.
 + Adjusted error handling. Now errors are only logged in the error.log file. The operator needs to decide on how to handle these errors.
 + Redirect client output to log file for debugging purposes. 
 + Added option -r to server parameters that can instruct the server to exit upon encountering an error (turn on by setting "-r true"). For debugging purposes.
-+ Logs that capture state changes are now only created if state changes are detected.
 + A malicious classification is now reported even if the client machine crashes.
++ Logs that capture state changes are now only created if state changes are detected.
 + The process,malicious,safe and eror log format now includes a new column that is related to the divide & conquer functionality . It shows the group ID number.
-+ Added Safari plugin (693)
-+ Added stats log to for tuning capture and troubleshoot issues.
-+ Network traffic collection can now be configured to occur on malicious as well as benign URLs. Previously only network traffic on malicious URLs was pushed to the server. (707)
 + Because of the new features, the config file format has changed.
++ removed jni usage for revert and replaced with a stand alone C prg for stability reasons
++ fixed bug 696, 655, 657, 613, 689, 711
 
 Known Issues
 ------------
