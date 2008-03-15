@@ -284,6 +284,7 @@ Analyzer::update(int eventType, const VisitEvent& visitEvent)
 		break;
 	default:
 		DebugPrint(L"Analyzer::update - Got default");
+		stop();	
 		send = true;
 		type = L"error";
 		element.addAttribute(L"error-code", boost::lexical_cast<std::wstring>(eventType));
