@@ -104,7 +104,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                         if(System.getProperty("os.name","Windows").toLowerCase().contains("windows")) {
                             cmd = "revert.exe";
                         } else {
-                            cmd = "revert";
+                            cmd = "./revert";
                         }
                         final String[] revertCmd = {cmd, address, username, password, vmPath, guestUsername, guestPassword, guestCmd, cmdOptions};
 

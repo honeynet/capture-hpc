@@ -64,6 +64,10 @@
 		   </then>
 		  <else>
 		    <copy file="./libVMwareServerExt.so" todir="${release}"/>
+		    <exec executable="cp">
+		      <arg value="./revert"/>
+		      <arg value="${release}"/>
+		    </exec>
 		  </else>
 		 </if>	
 		
@@ -75,6 +79,7 @@
 		<delete dir="${release}"/>
 		<delete>
 			<fileset dir="." includes="revert.exe"/>
+			<fileset dir="." includes="revert"/>
 			<fileset dir="." includes="CaptureServer-Release.zip"/>
 		</delete>
     </target>
