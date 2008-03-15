@@ -24,14 +24,14 @@
           <!-- Compile the java code -->         
           <javac srcdir="${src}" destdir="${build}" debug="true" debuglevel="lines,vars,source"/>
 		  
-		  <!-- Compile the jni code -->
+		  <!-- Compile the revert code -->
 		  <if>
 		   <equals arg1="${os}" arg2="windows" />
 		   <then>
-		   <exec executable="compile_jni_win32.bat"/>
+		   <exec executable="compile_revert_win32.bat"/>
 		   </then>
 		  <else>
-		   <exec command="sh" executable="./compile_jni_linux.sh"/>
+		   <exec command="sh" executable="./compile_revert_linux.sh"/>
 		  </else>
 		 </if>
 		  
