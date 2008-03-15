@@ -111,6 +111,8 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                         //for(int i=0;i<revertCmd.length;i++)
                         //System.out.println(revertCmd[i]);
 
+                        Date start = new Date(System.currentTimeMillis());
+
                         class VixThread extends Thread {
                             public int returnCode = 1;
 
@@ -182,10 +184,13 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                         if (error == 0) { //timeout regularly occurs, since vix could get stuck. if runprg is successful, all goes well. if not, the vmware checker will catch it.
                             item.vm.setLastContact(Calendar.getInstance().getTimeInMillis());
                             item.vm.setState(VM_STATE.RUNNING);
+                            Date end = new Date(System.currentTimeMillis());
+                            Stats.addRevertTimeTime(start,end);                            
                         } else {
                             System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] VMware error " + error);
                             item.vm.setState(VM_STATE.ERROR);
                         }
+
 
                     } else {
                         System.out.println("Invalid work item " + item.function);
