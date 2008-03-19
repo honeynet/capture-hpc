@@ -15,6 +15,7 @@
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Internet Explorer\\TypedURLs
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Internet Explorer\\Toolbar\\Locked
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Internet Explorer\\International\\.+
++	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Internet Explorer\\Toolbar\\WebBrowser\\.+
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Internet Explorer\\Security\\P3Global\\Enabled
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Internet Explorer\\Extensions\\CmdMapping\\.+
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MenuOrder\\.+

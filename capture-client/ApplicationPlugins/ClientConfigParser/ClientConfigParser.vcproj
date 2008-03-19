@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib User32.lib Urlmon.lib $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib User32.lib Urlmon.lib $(NOINHERIT) psapi.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
 				GenerateDebugInformation="true"
@@ -121,7 +121,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="c:\program files\boost\boost_1_34_0;&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;CAPTURE_DEBUG"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib User32.lib Urlmon.lib $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib User32.lib Urlmon.lib $(NOINHERIT) psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;c:\program files\boost\boost_1_34_0\lib&quot;;&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
 				GenerateDebugInformation="true"

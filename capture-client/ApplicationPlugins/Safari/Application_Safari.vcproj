@@ -120,7 +120,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;CAPTURE_DEBUG"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"

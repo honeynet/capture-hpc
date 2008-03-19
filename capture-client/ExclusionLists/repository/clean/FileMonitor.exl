@@ -1,0 +1,9 @@
+#[+,-]	[File Access]	[Process Name]	[File Path]
+###################################################
+### Clean Windows XP SP 2 System		###
+###################################################
++	Read	.*	.*
++	Create	.*	.*
++	Open	.*	.*
++	Write	.*	.*
++	Delete	.*	.*

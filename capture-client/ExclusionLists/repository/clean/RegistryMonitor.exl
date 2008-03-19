@@ -1,0 +1,14 @@
+#[+,-]	[Registry Event]	[Process Name]	[Registry Path]
+###################################################
+### Microsoft Windows XP SP2			###
+###################################################
++	OpenKey	.*	.*
++	CreateKey	.*	.*
++	CloseKey	.*	.*
++	EnumerateKey	.*	.*
++	EnumerateValueKey	.*	.*
++	QueryValueKey	.*	.*
++	QueryKey	.*	.*
++	SetValueKey	.*	.*
++	DeleteValueKey	.*	.*
++	DeleteKey	.*	.*

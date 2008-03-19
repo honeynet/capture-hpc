@@ -49,7 +49,6 @@ Application_ClientConfigManager::visitGroup(VisitEvent* visitEvent)
 		std::vector<ProcessHandler*> processHandlers(size);
 		
 		bool error = false;
-		DWORD parentProcessId = 0;
 		for(unsigned int i = 0; i < visitEvent->getUrls().size(); i++)
 		{	
 			// Download file to temp directory if required
@@ -76,24 +75,23 @@ Application_ClientConfigManager::visitGroup(VisitEvent* visitEvent)
 			wstring param = url_path;
 
 			ProcessHandler *ph = new ProcessHandler(cmd,param);
-			if(i>0) 
-			{
-				ph->setParentProcessId(parentProcessId);
-			}
 			processHandlers[i] = ph;
 
 			ph->executeProcess();
 
-			
-			
-			double maxWaitTimeInSec = 5;
+			if(i==0) 
+			{
+				Sleep(2000);
+			}
+
+			double maxWaitTimeInSec = 60;
 			double waitTimeInSec = 0;
 
 			bool isOpen = ph->isOpen();
 			while(!isOpen && waitTimeInSec < maxWaitTimeInSec) 
 			{
-				Sleep(1000);
-				waitTimeInSec = waitTimeInSec + 1;
+				Sleep(100);
+				waitTimeInSec = waitTimeInSec + 0.1;
 				isOpen = ph->isOpen();
 			}
 			if(waitTimeInSec >= maxWaitTimeInSec)
@@ -102,11 +100,8 @@ Application_ClientConfigManager::visitGroup(VisitEvent* visitEvent)
 				url->setMajorErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
 				url->setMinorErrorCode(GetLastError());
 				error = true;
+				printf("Error opening app");
 			} else {
-				if(i==0) 
-				{
-					parentProcessId = ph->getParentProcessId();
-				}
 				;//printf("Successfully opened app");
 			}
 			
@@ -125,7 +120,7 @@ Application_ClientConfigManager::visitGroup(VisitEvent* visitEvent)
 			ProcessHandler *ph = processHandlers[i];
 			ph->closeProcess();
 
-			double maxWaitTimeInSec = 5;	
+			double maxWaitTimeInSec = 30;	
 			double waitTimeInSec = 0;
 			bool isOpen = ph->isOpen();
 			while(isOpen && waitTimeInSec < maxWaitTimeInSec) 

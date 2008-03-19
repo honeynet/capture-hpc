@@ -8,6 +8,7 @@
 +	Write	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\logs\\.+
 +	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\.+\.zip
 +	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\logs
++	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\logs\\.*
 +	Write	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\capture\.log
 +	Write	C:\\program Files\\capture\\7za\.exe	C:\\program files\\capture\\.+\.zip
 +	Delete	C:\\program Files\\capture\\7za\.exe	C:\\program files\\capture\\.+\.zip
