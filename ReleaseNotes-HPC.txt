@@ -1,34 +1,36 @@
 Release Notes
 -------------
 
-
 Version 2.1
 -----------
 Changes
 -------
 + Implemented divide & conquer algorithm that allows to visit URLs faster (685)
-+ Added Safari plugin (693)
++ Added Safari plugin (693) (Note that the safari plug in does not support the divide & conquer algorithm.)
 + Network traffic collection can now be configured to occur on malicious as well as benign URLs. Previously, only network traffic on malicious URLs was pushed to the server. (707)
 + Added stats log to for tuning capture and troubleshooting issues.
 + Adjusted error handling. Now errors are only logged in the error.log file. The operator needs to decide on how to handle these errors.
 + Redirect client output to log file for debugging purposes. 
 + Added option -r to server parameters that can instruct the server to exit upon encountering an error (turn on by setting "-r true"). For debugging purposes.
-+ A malicious classification is now reported even if the client machine crashes.
++ A malicious classification is now reported even if the client machine crashes (e.g. drive by download causes blue screen).
 + Logs that capture state changes are now only created if state changes are detected.
 + The process,malicious,safe and eror log format now includes a new column that is related to the divide & conquer functionality . It shows the group ID number.
 + Because of the new features, the config file format has changed.
+	- the client-path attribute now points to a bat file
+	- global options changed and some were added
 + removed jni usage for revert and replaced with a stand alone C prg for stability reasons
 + fixed bug 696, 655, 657, 613, 689, 711
 
 Known Issues
 ------------
-615	Registry monitoring can't handle a key named 
-690 Capture is not able to detect file renames
-695 Opening and closing ProcessExplorer crashes Capture
-676 Empty password on the user of the guest vm in the config.xml causes the capture server to crash (Windows only).
-681	Error found When uninsall the CaptureClient
-689 Capture doesnt seem to work on port other than 7070
-706 Capture seems to ignore the VM server port.
+615		Registry monitoring can't handle a key named 
+690 	Capture is not able to detect file renames
+676 	Empty password on the user of the guest vm in the config.xml causes the capture server to crash (Windows only).
+706 	Capture seems to ignore the VM server port.
+709		sending of exclusion list from server doesnt appear to be working (only affects process exclusion list)
+718 	malware file copy not functioning unless network copy on malicious URL is enabled
+719 	closing a browser during visitation does not cause this event to be reported back to the server
+721		filedownloader writes to const file name preventing dac algorithm to be applied for applications that make use of this feature
 
 Version 2.0.1
 -----------
@@ -56,22 +58,3 @@ Changes
 + improved stability
 + improved performance
 + numerous bug fixes
-
-
-Known Issues
-------------
-564	File Monitor does not work on Windows XP without a service pack
-580	process monitor exclusion list & report redundant and inconsistent
-592	server crashes when dealing with multiple vmware servers
-613	Make file needs documentation about a quirk
-615	Registry monitoring can't handle a key named \
-655	no help available in command line mode on server
-656	send exclusion list via command line not functioning
-657	url remove command not functioning
-660	time stamp in visit xml doesnt make sense
-663	vmware instance is reset when 404 error encountered
-666	malicious activity on the client in an error condition does not lead to malicious classification
-673	url visitation ends in error without a reason
-676 Empty password on the user of the guest vm in the config.xml causes the capture server to crash (Windows only).
-681	Error found When uninsall the CaptureClient
-682 Unable to open pdf document
