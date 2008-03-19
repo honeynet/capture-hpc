@@ -268,7 +268,7 @@ public class Client extends Observable implements Runnable {
                 this.setClientState(CLIENT_STATE.DISCONNECTED);
                 visitingUrlGroup = null;
             } else {
-                System.out.print(this.getVirtualMachine().getLogHeader() + " Visited ");
+                System.out.print(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + "\n");
                 String malicious = element.attributes.get("malicious");
                 if (malicious.equals("1")) {
                     visitingUrlGroup.setMalicious(true);

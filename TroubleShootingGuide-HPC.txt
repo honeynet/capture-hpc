@@ -11,19 +11,19 @@ Below, we have specific troubleshooting guidelines for specific error messages. 
 1.	Piping URLs into the Capture Server doesn’t seem to work.
 Piping URLs via command line redirection is no longer supported. However, by specifying the list of URLs via the ‘-f’ parameter will provide identical 
 
-2.	Starting the Capture Server, I get the error: VIX_E_VMSERVER_NOT_FOUND
+2.	Starting the Capture Server, I get the error: "VIX Error on connect in connect: The system returned an error. Communication with the virtual machine may have been interrupted"
 Check the IP address and port of your virtual-machine-server setting in config.xml. If it is correct, ensure that you are able to connect to it from the machine you are running the Capture-Server on via the VMware console. If this does not work, your firewall is likely not configured correctly.
 
-3.	Starting the Capture Server, I get the error: VIX_E_HOST_USER_PERMISSIONS
+3.	Starting the Capture Server, I get the error: "VIX Error on connect in connect: Insufficient permissions in host operating system"
 Check the username/password of your virtual-machine-server setting in config.xml. If it is correct, ensure that you are able to connect to it from the machine you are running the Capture-Server on via the VMware console. If this does not work, your username/password is incorrect.
 
-4.	Starting the Capture Server, I get the error:  VIX_E_GUEST_USER_PERMISSIONS
+4.	Starting the Capture Server, I get the error:  VIX Error on login: Insufficient permissions in guest operating system
 Check the username/password of your virtual machine and that user has administrator rights and is able to start the CaptureClient.exe.
 
-5.	Starting the Capture Server, I get the error: ERROR - Unable to start … and VIX_E_FILE_NOT_FOUND
-This error indicates that the application specified in the client-path (the Capture Client application) wasn’t found. Check the path and retry.
+5.	Starting the Capture Server, I get the error: Client inactivity, reverting VM
+This error indicates that the application specified in the client-path (the Capture Client application) wasn’t found or doesnt have connectivity to the server. Check the path and retry.
 
-6.	Starting the Capture Server, I get the error: VIX_E_FILE_NOT_FOUND
+6.	Starting the Capture Server, I get the error: "VIX Error on obtaining handle: A file was not found"
 Check the path to your virtual machine vmx file and that the permissions are set correctly. You could open the virtual machine via the console to verify.
 
 7.	Starting the Capture Server, I get the error: java.net.URISyntaxException
