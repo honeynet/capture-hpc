@@ -3,7 +3,7 @@
  *	FILE: FileDownloader.h
  *	AUTHORS: Ramon Steenson (rsteenson@gmail.com) & Christian Seifert (christian.seifert@gmail.com)
  *
- *	Developed by Victoria University of Wellington and the New Zealand Honeynet Alliance
+ *	Copyright Victoria University of Wellington 2008
  *
  *	This file is part of Capture.
  *

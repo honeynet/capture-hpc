@@ -192,6 +192,10 @@
 				RelativePath=".\FileDownloader.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\ProcessHandler.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -204,6 +208,10 @@
 			</File>
 			<File
 				RelativePath=".\FileDownloader.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ProcessHandler.h"
 				>
 			</File>
 		</Filter>

@@ -3,7 +3,7 @@
  *	FILE: Application_ClientConfigManager.cpp
  *	AUTHORS: Ramon Steenson (rsteenson@gmail.com) & Christian Seifert (christian.seifert@gmail.com)
  *
- *	Developed by Victoria University of Wellington and the New Zealand Honeynet Alliance
+ *	Copyright Victoria University of Wellington 2008
  *
  *	This file is part of Capture.
  *
@@ -45,9 +45,13 @@ Application_ClientConfigManager::visitGroup(VisitEvent* visitEvent)
 	it = applicationsMap.find(visitEvent->getProgram());
 	if(it != applicationsMap.end())
 	{	
-		PROCESS_INFORMATION* piProcessInfo = new PROCESS_INFORMATION[visitEvent->getUrls().size()];
-		for(int i = 0; i < visitEvent->getUrls().size(); i++)
-		{
+		const size_t size = visitEvent->getUrls().size();
+		std::vector<ProcessHandler*> processHandlers(size);
+		
+		bool error = false;
+		DWORD parentProcessId = 0;
+		for(unsigned int i = 0; i < visitEvent->getUrls().size(); i++)
+		{	
 			// Download file to temp directory if required
 			Url* url = visitEvent->getUrls()[i];
 			wstring url_path = url->getUrl();
@@ -68,64 +72,79 @@ Application_ClientConfigManager::visitGroup(VisitEvent* visitEvent)
 			}
 
 			PAPPLICATION pApplication = it->second;
-			STARTUPINFO siStartupInfo;
-			//PROCESS_INFORMATION piProcessInfo;
+			wstring cmd = pApplication->path;
+			wstring param = url_path;
 
-			memset(&siStartupInfo, 0, sizeof(siStartupInfo));
-			memset(&piProcessInfo[i], 0, sizeof(PROCESS_INFORMATION));
-			siStartupInfo.cb = sizeof(siStartupInfo);
+			ProcessHandler *ph = new ProcessHandler(cmd,param);
+			if(i>0) 
+			{
+				ph->setParentProcessId(parentProcessId);
+			}
+			processHandlers[i] = ph;
 
-			wstring processCommand = L"\"";
-			processCommand += pApplication->path;
-			processCommand += L"\" ";
-			processCommand += L"\"";
-			processCommand += url_path;
-			processCommand += L"\"";
+			ph->executeProcess();
 
-			BOOL created = CreateProcess(NULL,(LPWSTR)processCommand.c_str(), 0, 0, FALSE,
-				CREATE_DEFAULT_ERROR_MODE, 0, 0, &siStartupInfo,
-				&piProcessInfo[i]);
+			
+			
+			double maxWaitTimeInSec = 5;
+			double waitTimeInSec = 0;
 
-			if(created == FALSE)
+			bool isOpen = ph->isOpen();
+			while(!isOpen && waitTimeInSec < maxWaitTimeInSec) 
+			{
+				Sleep(1000);
+				waitTimeInSec = waitTimeInSec + 1;
+				isOpen = ph->isOpen();
+			}
+			if(waitTimeInSec >= maxWaitTimeInSec)
 			{
 				visitEvent->setErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
 				url->setMajorErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
 				url->setMinorErrorCode(GetLastError());
+				error = true;
+			} else {
+				if(i==0) 
+				{
+					parentProcessId = ph->getParentProcessId();
+				}
+				;//printf("Successfully opened app");
 			}
-
-			if(i==0) 
-			{
-				Sleep(2000);
-			}
-
+			
 		}
-
-		bool sleep = true;
-
-		if(visitEvent->getErrorCode() != CAPTURE_VISITATION_OK)
+				
+		if(!error)
 		{
-			sleep = false;
+			int sleepTimeInSec = visitEvent->getUrls()[0]->getVisitTime();
+			Sleep(sleepTimeInSec*1000);
 		}
 
-		if(sleep)
-		{
-			Sleep(visitEvent->getUrls()[0]->getVisitTime()*1000);
-		}
-
-		for(int i = 0; i < visitEvent->getUrls().size(); i++)
+		for(unsigned int i = 0; i < visitEvent->getUrls().size(); i++)
 		{
 			DWORD minorError = 0;
 			Url* url = visitEvent->getUrls()[i];
-			bool processClosed = closeProcess(piProcessInfo[i], &minorError);
-			if(!processClosed)
+			ProcessHandler *ph = processHandlers[i];
+			ph->closeProcess();
+
+			double maxWaitTimeInSec = 5;	
+			double waitTimeInSec = 0;
+			bool isOpen = ph->isOpen();
+			while(isOpen && waitTimeInSec < maxWaitTimeInSec) 
+			{
+				Sleep(100);
+				waitTimeInSec = waitTimeInSec + 0.1;
+				isOpen = ph->isOpen();
+			}
+
+			if(waitTimeInSec >= maxWaitTimeInSec)
 			{
 				visitEvent->setErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
 				url->setMajorErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
 				url->setMinorErrorCode(minorError);
+			} else {
+				;//printf("Successfully closed app");
 			}
-			Sleep(1000);
 		}
-		delete [] piProcessInfo;
+		//delete [] processHandlers;
 	} else {
 		visitEvent->setErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
 		//url->setMajorErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
@@ -194,52 +213,3 @@ Application_ClientConfigManager::loadApplicationsList()
 	configF.close();
 }
 
-bool 
-Application_ClientConfigManager::closeProcess(const PROCESS_INFORMATION& processInfo, DWORD* error)
-{
-	
-	if(processInfo.hProcess == NULL)
-	{
-		*error = GetLastError();
-		if(*error == ERROR_INVALID_PARAMETER)
-		{
-			*error = CAPTURE_PE_PROCESS_ALREADY_TERMINATED;
-		}
-	} else {
-		EnumWindows(Application_ClientConfigManager::EnumWindowsProc, (LPARAM)processInfo.dwProcessId);
-
-		
-		HANDLE hPro = OpenProcess(PROCESS_TERMINATE,TRUE, processInfo.dwProcessId);
-		DWORD tempProcessId = GetProcessId(hPro);
-		if(tempProcessId == processInfo.dwProcessId)
-		{
-			if(!TerminateProcess(processInfo.hProcess, 0))
-			{
-				*error = GetLastError();
-			} else {
-				*error = CAPTURE_PE_PROCESS_TERMINATED_FORCEFULLY;
-			}
-		} else {
-			return true;
-		}
-	}
-	return false;
-}
-
-BOOL CALLBACK 
-Application_ClientConfigManager::EnumWindowsProc(HWND hwnd,LPARAM lParam)
-{
-	DWORD processId = (DWORD)lParam;
-	if (GetWindowLong(hwnd,GWL_STYLE) & WS_VISIBLE) {
-		DWORD windowsProcessId;
-		GetWindowThreadProcessId(hwnd, &windowsProcessId);
-		if (windowsProcessId == processId) 
-		{
-			WCHAR classname[256];
-			GetClassName(hwnd, classname, sizeof(classname));
-			HWND mainWindow = FindWindow(classname, NULL);
-			SendMessage(mainWindow, WM_CLOSE, 1, 0);
-		}
-	}
-	return TRUE;
-}

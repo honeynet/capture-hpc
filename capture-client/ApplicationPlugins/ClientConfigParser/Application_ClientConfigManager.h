@@ -3,7 +3,7 @@
  *	FILE: Application_ClientConfigManager.h
  *	AUTHORS: Ramon Steenson (rsteenson@gmail.com) & Christian Seifert (christian.seifert@gmail.com)
  *
- *	Developed by Victoria University of Wellington and the New Zealand Honeynet Alliance
+ *	Copyright Victoria University of Wellington 2008
  *
  *	This file is part of Capture.
  *
@@ -25,6 +25,7 @@
 
 #include "..\..\ApplicationPlugin.h"
 #include "FileDownloader.h"
+#include "ProcessHandler.h"
 
 #define _WIN32_WINNT 0x0501
 #include <string>
@@ -69,9 +70,6 @@ public:
 	unsigned int getPriority() { return 0; };
 private:
 	void loadApplicationsList();
-	static BOOL CALLBACK EnumWindowsProc(HWND hwnd,LPARAM lParam);
-	bool closeProcess(const PROCESS_INFORMATION& processInfo, DWORD* error);
-
 	wchar_t** supportedApplications;
 	stdext::hash_map<wstring, APPLICATION*> applicationsMap;
 };
