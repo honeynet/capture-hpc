@@ -6,7 +6,7 @@ Below, we have specific troubleshooting guidelines for specific error messages. 
 * ensure that you are using supported software. Capture has been tested with very specific software and software versions (e.g. VMware Server 1.0.4). If you use some other software and versions, it might not work. Try a supported configuration first. See the readme.txt file for supported configurations.
 * read this troubleshooting guide. There might be a solution to your problem described in the guide.
 * check the Capture-HPC mailing list. If there is problem with the Capture software, most likely someone else has encountered it as well and has asked for assistance on the mailing list. If you don’t find anything, post to the mailing list for help.
-* if you tried everything, check for a known bug at https://bugs.honeynet.org. If none are listed that describes your problem, file a new bug. Ensure that you describe the configuration of your system, attach log files and describe it so it can be reproduced.  If we cannot reproduce it, we cannot fix it :(
+* if you tried everything, check for a known bug at https://projects.honeynet.org/capture-hpc/report/1. If none are listed that describes your problem, file a new bug. Ensure that you describe the configuration of your system, attach log files (there is also a log file on the guest os now) and describe it so it can be reproduced.  If we cannot reproduce it, we cannot fix it :(
 
 1.	Piping URLs into the Capture Server doesn’t seem to work.
 Piping URLs via command line redirection is no longer supported. However, by specifying the list of URLs via the ‘-f’ parameter will provide identical 
