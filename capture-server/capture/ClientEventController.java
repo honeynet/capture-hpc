@@ -66,7 +66,7 @@ public class ClientEventController extends DefaultHandler implements Runnable {
                 //buffer = buffer.substring(0, buffer.length());
                 //System.out.println(buffer);
                 //buffer = buffer.trim();
-                System.out.println(buffer);
+                //System.out.println(buffer);
 
                 if (buffer.length() > 0) {
                     XMLReader xr = XMLReaderFactory.createXMLReader();
@@ -109,6 +109,9 @@ public class ClientEventController extends DefaultHandler implements Runnable {
             if (client != null) {
                 UrlGroup visitingUrlGroup = client.getVisitingUrlGroup();
                 if (visitingUrlGroup != null) {
+                    if(!visitingUrlGroup.isMalicious()) {
+                        visitingUrlGroup.setMalicious(false); //sets underlying url malicious, which will cause error to be written out down the line.
+                    }
                     visitingUrlGroup.setMajorErrorCode(ERROR_CODES.CAPTURE_CLIENT_CONNECTION_RESET.errorCode);
                     visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);
                 }
@@ -156,7 +159,6 @@ public class ClientEventController extends DefaultHandler implements Runnable {
                     where = client.getVirtualMachine().getLogHeader();
                 System.out.println(where + " Got pong");
             } else if (name.equals("visit-event")) {
-                System.out.println("Got visit event");
                 client.parseVisitEvent(currentElement);
             } else if (name.equals("client")) {
 

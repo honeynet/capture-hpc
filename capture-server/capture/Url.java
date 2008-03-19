@@ -154,7 +154,7 @@ public class Url extends Observable {
             return;
 
         urlState = newState;
-        System.out.println("\tUrlSetState: " + newState.toString());
+        //System.out.println("\tUrlSetState: " + newState.toString());
         if (urlState == URL_STATE.VISITING) {
             String date = getVisitStartTime();
             Stats.visiting++;

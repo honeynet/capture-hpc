@@ -122,8 +122,11 @@ public class Stats {
         Date currentTime = new Date(System.currentTimeMillis());
         long secondsPassed = (currentTime.getTime() - instantiationTime.getTime()) / 1000;
         long secondsPerDay = 60 * 60 * 24;
-        long visitedUrlsPerDay = ((safe+malicious+urlError) * secondsPerDay)/secondsPassed;
-        return visitedUrlsPerDay;
-        
+        if(secondsPassed!=0) {
+            long visitedUrlsPerDay = ((safe+malicious+urlError) * secondsPerDay)/secondsPassed;
+            return visitedUrlsPerDay;
+        } else {
+            return 0;
+        }
     }
 }

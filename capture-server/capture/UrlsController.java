@@ -3,6 +3,7 @@ package capture;
 import java.net.URISyntaxException;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.*;
+import java.text.SimpleDateFormat;
 
 public class UrlsController extends Observable implements EventObserver, Observer {
     private LinkedBlockingDeque<Url> urlQueue;
@@ -45,9 +46,21 @@ public class UrlsController extends Observable implements EventObserver, Observe
             Url url = urlFactory.getUrl(event);
             this.addUrl(url);
         } catch (URISyntaxException e) {
+            String date = currentTime();
+            String url = event.attributes.get("url");
+            ERROR_CODES majorErrorCode = ERROR_CODES.INVALID_URL;
+            Logger.getInstance().writeToErrorLog("\"" + date + "\",\"error:" + majorErrorCode + "\",\"nogroup\",\"" + url + "\",\"unkown\",\"unknown\"");
             System.out.println(e.getMessage());
         }
 
+    }
+
+    private String currentTime() {
+        long current = System.currentTimeMillis();
+        Date currentDate = new Date(current);
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy h:mm:ss a");
+        String strDate = sdf.format(currentDate);
+        return strDate;
     }
 
     private boolean inUrlQueue(Url url) {
@@ -66,6 +79,8 @@ public class UrlsController extends Observable implements EventObserver, Observe
             urlQueue.addLast(url);
             this.setChanged();
             this.notifyObservers(url);
+        } else {
+            System.out.println("Dupe URL " + url.getUrl() + ". Not adding.");
         }
     }
 

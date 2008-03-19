@@ -5,7 +5,7 @@
 			capture-network-packets-malicious="false"
 			capture-network-packets-benign="false"
 			send-exclusion-lists="false"
-        	p_m="0.0012"
+        	p_m="0.019"
 	/>
 	
 	<exclusion-list monitor="file" file="FileMonitor.exl" />

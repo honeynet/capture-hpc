@@ -51,10 +51,10 @@ public class UrlGroupsController extends Observable implements Observer {
         // e.g. 1.12%
         double maliciousPercentage = Double.parseDouble(ConfigManager.getInstance().getConfigOption("p_m"));
 
-        int k = 60;
+        int k = 80;
 
         if (maliciousPercentage < 0.005) { //0.5%
-            k = 60; //upper limit on whats doable on IE - should really be 80 here.
+            k = 80;
         } else if (maliciousPercentage < 0.010) {
             k = 40;
         } else if (maliciousPercentage < 0.015) {

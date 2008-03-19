@@ -78,7 +78,7 @@ public class ClientsController extends Observable implements Observer, Runnable,
 		{
 			for(Element e : ex.getExclusionListElements()) 
 			{
-				System.out.println("Sending element");
+				System.out.println("Sending exclusion list element");
 				c.sendXMLElement(e);
 			}
 		}
