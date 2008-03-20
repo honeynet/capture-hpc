@@ -28,7 +28,7 @@ Capture uses Windows XP SP2, thus the virtual machine that is to be created is t
 * Create a virtual machine 
 * Install Windows XP SP2 onto the virtual machine 
 * Install the VMware tools 
-* Install the Microsoft Visual C++ Redistributable Libraries
+* Install the Microsoft Visual C++ Redistributable Libraries (SP1)
 * Optionally install the winpcap 4.0.1 if network dump functionality is used
 
 3. Installing the Capture Client Component on the Virtual Machine
