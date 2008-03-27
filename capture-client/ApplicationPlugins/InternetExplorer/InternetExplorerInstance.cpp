@@ -31,6 +31,7 @@ InternetExplorerInstance::visitUrl(Url* url)
 	major = CAPTURE_VISITATION_OK;
 	CoInitializeEx(NULL,COINIT_MULTITHREADED);
 	mainURL.vt = VT_EMPTY;
+	exited = false;
 
 	int blah = GetTickCount() % 1024;
 	
@@ -179,6 +180,10 @@ InternetExplorerInstance::Invoke(
 			minor = dwNetworkErrorCode;
 			SetEvent(hVisiting);
 		}
+		break;
+	case DISPID_ONQUIT:
+		exited = true;
+		SetEvent(hVisiting);
 		break;
 	default:
 		break;

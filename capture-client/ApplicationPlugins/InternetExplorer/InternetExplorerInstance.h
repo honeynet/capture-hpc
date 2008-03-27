@@ -17,6 +17,7 @@ public:
 
 	DWORD major;
 	DWORD minor;
+	bool exited;
 private:
 	HANDLE hVisiting;
 	bool bNetworkError;
