@@ -109,13 +109,16 @@ Server::sendMessage(const std::wstring& message)
 {
 	if(isConnected())
 	{
+
 		int result = 0;
 		int mbsize = WideCharToMultiByte(CP_UTF8, 0, message.c_str(), static_cast<int>(message.length()), NULL, 0, NULL, NULL);
 		if (mbsize > 0)
 		{
 			char *szMessage = (char*)malloc(mbsize);
 			int bytes = WideCharToMultiByte(CP_UTF8, 0, message.c_str(), static_cast<int>(message.length()), szMessage, mbsize, NULL, NULL);
-			result = send(serverSocket, szMessage, bytes, 0);		
+			EnterCriticalSection(&sendQueueLock);
+			result = send(serverSocket, szMessage, bytes, 0);	
+			LeaveCriticalSection(&sendQueueLock);
 			DebugPrint(L"Capture-Server-sendMessage: Allocated: %i, Converted: %i, Sent: %i\n", mbsize, bytes, result);
 			if(result == SOCKET_ERROR)
 			{
@@ -208,7 +211,7 @@ Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& v
 	{
 		return;
 	}
-	EnterCriticalSection(&sendQueueLock);
+	//EnterCriticalSection(&sendQueueLock);
 	std::wstring xmlDocument = L"<";
 	xmlDocument += elementName;
 	std::vector<Attribute>::const_iterator it;
@@ -222,7 +225,7 @@ Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& v
 	}
 	xmlDocument += L"/>\r\n";
 	sendMessage(xmlDocument);
-	LeaveCriticalSection(&sendQueueLock);
+	//LeaveCriticalSection(&sendQueueLock);
 }
 
 void
