@@ -6,6 +6,7 @@
 			capture-network-packets-benign="false"
 			send-exclusion-lists="false"
         	p_m="0.019"
+			timeout_factor="1.0"
 	/>
 	
 	<exclusion-list monitor="file" file="FileMonitor.exl" />

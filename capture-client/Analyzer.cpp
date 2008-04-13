@@ -140,10 +140,12 @@ Analyzer::stop()
 	onProcessEventConnection.disconnect();
 	onRegistryEventConnection.disconnect();
 	onFileEventConnection.disconnect();
+	DebugPrintTrace(L"Analyzer::stop() stopped monitors\n");
 
 	if(captureNetworkPackets)
 	{
 		networkPacketDumper->stop();
+		DebugPrintTrace(L"Analyzer::stop() stopped network dumper\n");
 	}
 
 	if(collectModifiedFiles || captureNetworkPackets)
@@ -156,35 +158,42 @@ Analyzer::stop()
 			fileMonitor->copyCreatedFiles();
 		}
 
-		wchar_t* szLogFileName = new wchar_t[1024];
+		
 
-		std::wstring log = L"capture_";
-		log += boost::lexical_cast<std::wstring>(st.wDay);
-		log += boost::lexical_cast<std::wstring>(st.wMonth);
-		log += boost::lexical_cast<std::wstring>(st.wYear);
-		log += L"_";
-		log += boost::lexical_cast<std::wstring>(st.wHour);
-		log += boost::lexical_cast<std::wstring>(st.wMinute);
-		log += L".zip";
-		GetFullPathName(log.c_str(), 1024, szLogFileName, NULL);
-
-		bool compressed = compressLogDirectory(szLogFileName);
-
-		if((!malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") == L"true")) ||
+		if(collectModifiedFiles || (!malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") == L"true")) ||
 			(malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") == L"true")))
 		{
+			
+			wchar_t* szLogFileName = new wchar_t[1024];
+
+			std::wstring log = L"capture_";
+			log += boost::lexical_cast<std::wstring>(st.wDay);
+			log += boost::lexical_cast<std::wstring>(st.wMonth);
+			log += boost::lexical_cast<std::wstring>(st.wYear);
+			log += L"_";
+			log += boost::lexical_cast<std::wstring>(st.wHour);
+			log += boost::lexical_cast<std::wstring>(st.wMinute);
+			log += L".zip";
+			GetFullPathName(log.c_str(), 1024, szLogFileName, NULL);
+
+			bool compressed = compressLogDirectory(szLogFileName);
 			if(server.isConnected() && compressed)
 			{
 				printf("Sending log file to server\n");
 				FileUploader uploader(server);
 				uploader.sendFile(szLogFileName);
+				
+			}
+			if(compressed) 
+			{
 				DeleteFile(szLogFileName);
 			}
+			delete [] szLogFileName;
 		}
-
-		delete [] szLogFileName;
 	}
+
 	/* Delete the log directory */
+	DebugPrint(L"Analyzer::stop() deleting logs\n");
 	wchar_t* szFullPath = new wchar_t[1024];
 	GetFullPathName(L"logs", 1024, szFullPath, NULL);
 	SHFILEOPSTRUCT deleteLogDirectory;
@@ -196,6 +205,7 @@ Analyzer::stop()
 	deleteLogDirectory.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
 	SHFileOperation(&deleteLogDirectory);
 	delete [] szFullPath;
+	DebugPrint(L"Analyzer::stop() deleted logs\n");
 	DebugPrintTrace(L"Analyzer::stop() end\n");
 }
 
@@ -211,9 +221,11 @@ Analyzer::errorCodeToString(DWORD errorCode)
 }
 
 
+
 bool
 Analyzer::compressLogDirectory(const std::wstring& logFileName)
 {
+	printf("Analyzer::compressLogDirectory(const std::wstring& logFileName) start\n");
 	DebugPrintTrace(L"Analyzer::compressLogDirectory(const std::wstring& logFileName) start\n");
 	BOOL created = FALSE;
 	STARTUPINFO siStartupInfo;
@@ -233,19 +245,19 @@ Analyzer::compressLogDirectory(const std::wstring& logFileName)
 	processCommand += L"\" logs";
 
 	created = CreateProcess(NULL,(LPWSTR)processCommand.c_str(), 0, 0, FALSE,
-		CREATE_DEFAULT_ERROR_MODE, 0, 0, &siStartupInfo,
+		(CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_CONSOLE), 0, 0, &siStartupInfo,
 		&piProcessInfo);
 
 	if( created )
 	{
 		DWORD err = WaitForSingleObject( piProcessInfo.hProcess, INFINITE );
+		printf("Analyzer::compressLogDirectory(const std::wstring& logFileName) end\n");
 		DebugPrintTrace(L"Analyzer::compressLogDirectory(const std::wstring& logFileName) end\n");
 		return true;
 	}
 	else
 	{
 		printf("Analyzer: Cannot open 7za.exe process - 0x%08x\n", GetLastError());
-		printf("This is an internal error, Capture will now exit\n");
 		DebugPrintTrace(L"Analyzer::compressLogDirectory(const std::wstring& logFileName) end\n");
 		exit(0);
 		return false;

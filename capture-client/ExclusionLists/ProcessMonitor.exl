@@ -13,6 +13,9 @@
 +	defrag.exe	.*	C:\\WINDOWS\\system32\\defrag\.exe
 #7za
 +	7za.exe	.*	C:\\program Files\\capture\\7za\.exe
+#mapping
++	wmiadap.exe	.*	C:\\WINDOWS\\system32\\wbem\\wmiadap\.exe
++	wmiprvse.exe	.*	C:\\WINDOWS\\system32\\wbem\\wmiprvse\.exe
 ###################################################
 ### Microsoft Internet Explorer 6.0		###
 ###################################################
@@ -21,3 +24,4 @@
 +	agentsvr.exe	.*	C:\\WINDOWS\\msagent\\agentsvr.exe
 #messenger activeX
 +	msmsgs.exe	.*	C:\\Program Files\\Messenger\\msmsgs.exe
++	rundll32.exe	.*	C:\\WINDOWS\\system32\\rundll32.exe

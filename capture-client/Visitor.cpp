@@ -4,7 +4,6 @@
 #include "ApplicationPlugin.h"
 #include "EventController.h"
 #include "VisitEvent.h"
-#include "Debug.h"
 #include <exception>
 #include <iostream>
 #include <fstream>
@@ -51,49 +50,64 @@ Visitor::~Visitor(void)
 void
 Visitor::run()
 {
-	DebugPrintTrace(L"Visitor::run() start\n");
-	while(true)
-	{
-		WaitForSingleObject(hQueueNotEmpty, INFINITE);
-		VisitEvent* visitEvent = toVisit.front();
-		toVisit.pop();
-		visiting = true;
-
-		ApplicationPlugin* applicationPlugin = getApplicationPlugin(visitEvent->getProgram());
-
-		_ASSERT(applicationPlugin != NULL);
-		if(applicationPlugin)
+	try {
+		DebugPrintTrace(L"Visitor::run() start\n");
+		while(true)
 		{
-			notify(CAPTURE_VISITATION_PRESTART, *visitEvent);
+			WaitForSingleObject(hQueueNotEmpty, INFINITE);
+			VisitEvent* visitEvent = toVisit.front();
+			toVisit.pop();
+			visiting = true;
 
-			notify(CAPTURE_VISITATION_START, *visitEvent);
+			DebugPrintTrace(L"Visitor::run() getting App plugin\n");
+			ApplicationPlugin* applicationPlugin = getApplicationPlugin(visitEvent->getProgram());
+			
 
-			// Send the group of urls to the appropiate application plugin
-
-			try
+			_ASSERT(applicationPlugin != NULL);
+			DebugPrintTrace(L"Visitor::run() got App plugin\n");
+			if(applicationPlugin)
 			{
-				applicationPlugin->visitGroup(visitEvent);
-			} 
-			catch (...)
-			{
-				Warn(L"Visitor::run() method caught exception from visitGroup call.\n");
-				notify(CAPTURE_VISITATION_EXCEPTION, *visitEvent);
+				DebugPrintTrace(L"Visitor::run() notify prestart\n");
+				notify(CAPTURE_VISITATION_PRESTART, *visitEvent);
+
+				DebugPrintTrace(L"Visitor::run() notify start\n");
+				notify(CAPTURE_VISITATION_START, *visitEvent);
+
+				// Send the group of urls to the appropiate application plugin
+
+				try
+				{
+					DebugPrintTrace(L"Visitor::run() visit group start\n");
+					applicationPlugin->visitGroup(visitEvent);
+					DebugPrintTrace(L"Visitor::run() visit group end\n");
+				} 
+				catch (...)
+				{
+					Warn(L"Visitor::run() method caught exception from visitGroup call.\n");
+					notify(CAPTURE_VISITATION_EXCEPTION, *visitEvent);
+				}
+
+				// If there are errors report it else finish visitation
+				if(visitEvent->isError())
+				{
+					DebugPrintTrace(L"Visitor::run() notify visitEvent isError\n");
+					notify(visitEvent->getErrorCode(), *visitEvent);
+				} else {
+					DebugPrintTrace(L"Visitor::run() notify visitiation finish\n");
+					notify(CAPTURE_VISITATION_FINISH, *visitEvent);
+				}
+
+				DebugPrintTrace(L"Visitor::run() notify postfinish\n");
+				notify(CAPTURE_VISITATION_POSTFINISH, *visitEvent);
 			}
 
-			// If there are errors report it else finish visitation
-			if(visitEvent->isError())
-			{
-				notify(visitEvent->getErrorCode(), *visitEvent);
-			} else {
-				notify(CAPTURE_VISITATION_FINISH, *visitEvent);
-			}
-
-			notify(CAPTURE_VISITATION_POSTFINISH, *visitEvent);
+			delete visitEvent;
+			visiting = false;
+			DebugPrintTrace(L"Visitor::run() end\n");
 		}
-
-		delete visitEvent;
-		visiting = false;
-		DebugPrintTrace(L"Visitor::run() end\n");
+	} catch (...) {
+		printf("Visitor::run exception\n");	
+		throw;
 	}
 }
 

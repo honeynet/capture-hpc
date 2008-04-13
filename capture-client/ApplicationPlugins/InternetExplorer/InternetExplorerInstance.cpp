@@ -65,53 +65,56 @@ InternetExplorerInstance::visitUrl(Url* url)
 				DWORD m_dwConnectionToken;
 				hr = pConnectionPoint->Advise((IUnknown*)this,                              
 					&m_dwConnectionToken);
+
+				/* Make the IE window just created visit a url */
+				bNetworkError = false;
+				bool wait = true;
+				pInternetExplorer->put_Visible(TRUE);
+				_variant_t URL, Flag, TargetFrameName, PostData, Headers;
+				URL = url->getUrl().c_str();
+					
+				hr = pInternetExplorer->Navigate2(&URL,&Flag,&TargetFrameName,&PostData,&Headers);
+				
+				// Wait for the IE instance to visit the url
+				DWORD dwWait = WaitForSingleObject(hVisiting, 180*1000); //determines timeout error
+				
+				if(dwWait == WAIT_TIMEOUT)
+				{
+					url->setMajorErrorCode(CAPTURE_VISITATION_TIMEOUT_ERROR);
+					wait = false;
+				} else {
+					url->setMajorErrorCode(major);
+					url->setMinorErrorCode(minor);
+
+					if(minor >= 0x800C0000 && minor <= 0x800CFFFF) {
+						wait = false;
+					} else {
+						url->setVisited(true);
+					}
+				}
+
+				// If it has visited the site and no error has occured wait the required time set by the url
+				if(wait)
+				{
+					Sleep(url->getVisitTime()*1000);
+				}
+
+				// Close the IE window
+				bool closed = Close();
+
+				if( !closed )
+				{
+					url->setMajorErrorCode( CAPTURE_VISITATION_WARNING );
+					url->setMinorErrorCode( CAPTURE_PE_PROCESS_ALREADY_TERMINATED );
+				}
 			}
 		}
 	} else {
-		_ASSERT(false);
+		printf("Error: Unable to create IE window.\n");
+		url->setMajorErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
 	}
 	
-	/* Make the IE window just created visit a url */
-	bNetworkError = false;
-	bool wait = true;
-	pInternetExplorer->put_Visible(TRUE);
-	_variant_t URL, Flag, TargetFrameName, PostData, Headers;
-	URL = url->getUrl().c_str();
-		
-	hr = pInternetExplorer->Navigate2(&URL,&Flag,&TargetFrameName,&PostData,&Headers);
 	
-	// Wait for the IE instance to visit the url
-	DWORD dwWait = WaitForSingleObject(hVisiting, 180*1000); //determines timeout error
-	
-	if(dwWait == WAIT_TIMEOUT)
-	{
-		url->setMajorErrorCode(CAPTURE_VISITATION_TIMEOUT_ERROR);
-		wait = false;
-	} else {
-		url->setMajorErrorCode(major);
-		url->setMinorErrorCode(minor);
-
-		if(minor >= 0x800C0000 && minor <= 0x800CFFFF) {
-			wait = false;
-		} else {
-			url->setVisited(true);
-		}
-	}
-
-	// If it has visited the site and no error has occured wait the required time set by the url
-	if(wait)
-	{
-		Sleep(url->getVisitTime()*1000);
-	}
-
-	// Close the IE window
-	bool closed = Close();
-
-	if( !closed )
-	{
-		url->setMajorErrorCode( CAPTURE_VISITATION_WARNING );
-		url->setMinorErrorCode( CAPTURE_PE_PROCESS_ALREADY_TERMINATED );
-	}
 	DebugPrintTrace(L"InternetExplorerInstance::visitUrl(Url* url) end\n");
 }
 

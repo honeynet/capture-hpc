@@ -39,48 +39,55 @@ ServerReceive::stop()
 void
 ServerReceive::run()
 {
-	//while(server->isConnected())
-	//{
-		/*
-		int bytesRecv = 0;
-		char buffer[MAX_RECEIVE_BUFFER];
-		wchar_t message[MAX_RECEIVE_BUFFER];
-		ZeroMemory(&buffer, MAX_RECEIVE_BUFFER);
-		bytesRecv = recv(server->serverSocket, buffer, MAX_RECEIVE_BUFFER, 0);
-		if(bytesRecv < 2)
-		{
-			server->setConnected(false);
-			break;
-		}
-		
-		size_t convertedChars = 0;
-		mbstowcs_s(&convertedChars, message, strlen(buffer) + 1, buffer, _TRUNCATE);
-		printf("Received: %i - > %ls\n",bytesRecv, message);
-		*/
-
-		char buffer[MAX_RECEIVE_BUFFER];
-		std::string xmlDocument = "";
-		int bytesRecv = 0;
-		while((bytesRecv = recv(server->serverSocket, buffer, MAX_RECEIVE_BUFFER, 0)) > 2)
-		{
-			for(int i = 0; i < bytesRecv; i++)
+	try {
+		DebugPrintTrace(L"ServerReceive::run() start\n");
+		//while(server->isConnected())
+		//{
+			/*
+			int bytesRecv = 0;
+			char buffer[MAX_RECEIVE_BUFFER];
+			wchar_t message[MAX_RECEIVE_BUFFER];
+			ZeroMemory(&buffer, MAX_RECEIVE_BUFFER);
+			bytesRecv = recv(server->serverSocket, buffer, MAX_RECEIVE_BUFFER, 0);
+			if(bytesRecv < 2)
 			{
-				if(buffer[i] != '\0')
-				{
-					xmlDocument += buffer[i];
-				} else {
-					printf("Got: %s\n", xmlDocument.c_str());
-					DebugPrint(L"Capture-ServerReceiver: Received document - length: %i\n", xmlDocument.length());
-					EventController::getInstance()->receiveServerEvent(xmlDocument.c_str());
-					xmlDocument = "";
-				}
+				server->setConnected(false);
+				break;
 			}
-			Sleep(100);
-			//EventController::getInstance()->receiveServerEvent(message);
-		}
+			
+			size_t convertedChars = 0;
+			mbstowcs_s(&convertedChars, message, strlen(buffer) + 1, buffer, _TRUNCATE);
+			printf("Received: %i - > %ls\n",bytesRecv, message);
+			*/
 
-		// Received something so pass it onto the event manager
-		
-	//}
-	running = false;
+			char buffer[MAX_RECEIVE_BUFFER];
+			std::string xmlDocument = "";
+			int bytesRecv = 0;
+			while((bytesRecv = recv(server->serverSocket, buffer, MAX_RECEIVE_BUFFER, 0)) > 2)
+			{
+				for(int i = 0; i < bytesRecv; i++)
+				{
+					if(buffer[i] != '\0')
+					{
+						xmlDocument += buffer[i];
+					} else {
+						printf("Got: %s\n", xmlDocument.c_str());
+						DebugPrint(L"Capture-ServerReceiver: Received document - length: %i\n", xmlDocument.length());
+						EventController::getInstance()->receiveServerEvent(xmlDocument.c_str());
+						xmlDocument = "";
+					}
+				}
+				Sleep(100);
+				//EventController::getInstance()->receiveServerEvent(message);
+			}
+
+			// Received something so pass it onto the event manager
+			
+		//}
+		running = false;
+		DebugPrintTrace(L"ServerReceive::run() end\n");
+	} catch (...) {
+		printf("ServerReceive::run exception\n");	
+		throw;
+	}
 }

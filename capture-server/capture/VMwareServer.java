@@ -79,6 +79,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
 
 
     public void run() {
+        long lastVM = -1;
         while (true) {
             WorkItem item = queuedWorkItems.peek();
 
@@ -101,7 +102,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
 
 
                         String cmd = "";
-                        if(System.getProperty("os.name","Windows").toLowerCase().contains("windows")) {
+                        if (System.getProperty("os.name", "Windows").toLowerCase().contains("windows")) {
                             cmd = "revert.exe";
                         } else {
                             cmd = "./revert";
@@ -180,18 +181,28 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                         }
                         int error = vixThread.returnCode;
 
+                        synchronized(item.vm) {
+                            if (error == 0) { //timeout regularly occurs, since vix could get stuck. if runprg is successful, all goes well. if not, the vmware checker will catch it.
+                                item.vm.setLastContact(Calendar.getInstance().getTimeInMillis());
+                                item.vm.setState(VM_STATE.RUNNING);
+                                Date end = new Date(System.currentTimeMillis());
+                                Stats.addRevertTimeTime(start, end);
+                            } else {
+                                System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] VMware error " + error);
+                                item.vm.setState(VM_STATE.ERROR);
+                            }
 
-                        if (error == 0) { //timeout regularly occurs, since vix could get stuck. if runprg is successful, all goes well. if not, the vmware checker will catch it.
-                            item.vm.setLastContact(Calendar.getInstance().getTimeInMillis());
-                            item.vm.setState(VM_STATE.RUNNING);
-                            Date end = new Date(System.currentTimeMillis());
-                            Stats.addRevertTimeTime(start,end);                            
-                        } else {
-                            System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] VMware error " + error);
-                            item.vm.setState(VM_STATE.ERROR);
+                            if (lastVM == item.vm.getVmUniqueId()) {
+                                //identical VM. Occurs, for example if malicious URLs are encountered; dont slow things down much
+                                System.out.println("Reverting same VM...just waiting a bit");
+                                Thread.sleep((long) (6000 * Double.parseDouble(ConfigManager.getInstance().getConfigOption("timeout_factor"))));
+                            } else {
+                                System.out.println("Reverting different VM...waiting considerably");
+                                //reverting different VMs (for instance during startup); this needs to be throttled considerably
+                                Thread.sleep((long) (24000 * Double.parseDouble(ConfigManager.getInstance().getConfigOption("timeout_factor"))));
+                            }
+                            lastVM = item.vm.getVmUniqueId();
                         }
-
-
                     } else {
                         System.out.println("Invalid work item " + item.function);
                     }

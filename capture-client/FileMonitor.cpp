@@ -362,76 +362,81 @@ FileMonitor::copyCreatedFiles()
 void
 FileMonitor::run()
 {
-	HRESULT hResult;
-	DWORD bytesReturned = 0;
-	monitorRunning = true;
-	while(isMonitorRunning())
-	{
-		FILEMONITOR_MESSAGE command;
-		command.Command = GetFileEvents;
-
-		ZeroMemory(fileEvents, FILE_EVENTS_BUFFER_SIZE);
-
-		hResult = FilterSendMessage( communicationPort,
-                                     &command,
-                                     sizeof( FILEMONITOR_COMMAND ),
-                                     fileEvents,
-                                     FILE_EVENTS_BUFFER_SIZE,
-                                     &bytesReturned );
-		if(bytesReturned >= sizeof(FILE_EVENT))
+	try {
+		HRESULT hResult;
+		DWORD bytesReturned = 0;
+		monitorRunning = true;
+		while(isMonitorRunning())
 		{
-			UINT offset = 0;
-			do {
-				PFILE_EVENT e = (PFILE_EVENT)(fileEvents + offset);
+			FILEMONITOR_MESSAGE command;
+			command.Command = GetFileEvents;
 
-				std::wstring fileEventName;
-				std::wstring fileEventPath;
-				std::wstring processModuleName;
-				std::wstring processPath;
+			ZeroMemory(fileEvents, FILE_EVENTS_BUFFER_SIZE);
 
-				if(getFileEventName(e, &fileEventName))
-				{
-					processPath = ProcessManager::getInstance()->getProcessPath(e->processId);
-					processModuleName = ProcessManager::getInstance()->getProcessModuleName(e->processId);
-					
-					fileEventPath = e->filePath;
-					fileEventPath = convertFileObjectNameToDosName(fileEventPath);
+			hResult = FilterSendMessage( communicationPort,
+										 &command,
+										 sizeof( FILEMONITOR_COMMAND ),
+										 fileEvents,
+										 FILE_EVENTS_BUFFER_SIZE,
+										 &bytesReturned );
+			if(bytesReturned >= sizeof(FILE_EVENT))
+			{
+				UINT offset = 0;
+				do {
+					PFILE_EVENT e = (PFILE_EVENT)(fileEvents + offset);
 
-					if((fileEventPath != L"UNKNOWN"))
+					std::wstring fileEventName;
+					std::wstring fileEventPath;
+					std::wstring processModuleName;
+					std::wstring processPath;
+
+					if(getFileEventName(e, &fileEventName))
 					{
-						if(!Monitor::isEventAllowed(fileEventName, processPath, fileEventPath))
-						{
-							if(monitorModifiedFiles)
-							{
-		
-								if(!isDirectory(fileEventPath))
-								{
-									if(e->majorFileEventType == IRP_MJ_CREATE || 
-										e->majorFileEventType == IRP_MJ_WRITE )
-									{	
-										modifiedFiles.insert(fileEventPath);
-									} else if(e->majorFileEventType == IRP_MJ_DELETE) 
-									{
-										modifiedFiles.erase(fileEventPath);
-									}	
-								}
-							}
+						processPath = ProcessManager::getInstance()->getProcessPath(e->processId);
+						processModuleName = ProcessManager::getInstance()->getProcessModuleName(e->processId);
+						
+						fileEventPath = e->filePath;
+						fileEventPath = convertFileObjectNameToDosName(fileEventPath);
 
-							signal_onFileEvent(fileEventName, Time::timefieldToString(e->time), processPath, fileEventPath);
+						if((fileEventPath != L"UNKNOWN"))
+						{
+							if(!Monitor::isEventAllowed(fileEventName, processPath, fileEventPath))
+							{
+								if(monitorModifiedFiles)
+								{
+			
+									if(!isDirectory(fileEventPath))
+									{
+										if(e->majorFileEventType == IRP_MJ_CREATE || 
+											e->majorFileEventType == IRP_MJ_WRITE )
+										{	
+											modifiedFiles.insert(fileEventPath);
+										} else if(e->majorFileEventType == IRP_MJ_DELETE) 
+										{
+											modifiedFiles.erase(fileEventPath);
+										}	
+									}
+								}
+
+								signal_onFileEvent(fileEventName, Time::timefieldToString(e->time), processPath, fileEventPath);
+							}
 						}
 					}
-				}
-				
-				offset += sizeof(FILE_EVENT) + e->filePathLength;
-			} while(offset < bytesReturned);	
+					
+					offset += sizeof(FILE_EVENT) + e->filePathLength;
+				} while(offset < bytesReturned);	
+			}
+			
+			if(bytesReturned == FILE_EVENTS_BUFFER_SIZE)
+			{
+				Sleep(FILE_EVENT_BUFFER_FULL_WAIT_TIME);
+			} else {
+				Sleep(FILE_EVENT_WAIT_TIME);
+			}
 		}
-		
-		if(bytesReturned == FILE_EVENTS_BUFFER_SIZE)
-		{
-			Sleep(FILE_EVENT_BUFFER_FULL_WAIT_TIME);
-		} else {
-			Sleep(FILE_EVENT_WAIT_TIME);
-		}
+		SetEvent(hMonitorStoppedEvent);
+	} catch (...) {
+		printf("FileMonitor::run exception\n");	
+		throw;
 	}
-	SetEvent(hMonitorStoppedEvent);
 }

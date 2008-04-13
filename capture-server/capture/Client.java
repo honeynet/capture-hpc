@@ -182,6 +182,12 @@ public class Client extends Observable implements Runnable {
     public void parseVisitEvent(Element element) {
         String type = element.attributes.get("type");
         if (type.equals("start")) {
+	    if(visitingUrlGroup==null) {
+		System.out.println("visiting grp is null");
+	    }
+	    if(this.getVirtualMachine()==null) {
+		System.out.println("vm is null");
+	    }
             System.out.println(this.getVirtualMachine().getLogHeader() + " Visiting group " + visitingUrlGroup.getIdentifier());
             visitingUrlGroup.setVisitStartTime(element.attributes.get("time"));
 
@@ -265,8 +271,8 @@ public class Client extends Observable implements Runnable {
                 visitingUrlGroup.setMajorErrorCode(Long.parseLong(major));
                 visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);   //will set underlying url state and cause reset vm
 
-                this.setClientState(CLIENT_STATE.DISCONNECTED);
                 visitingUrlGroup = null;
+                this.setClientState(CLIENT_STATE.DISCONNECTED);
             } else {
                 System.out.print(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + "\n");
                 String malicious = element.attributes.get("malicious");
@@ -274,14 +280,15 @@ public class Client extends Observable implements Runnable {
                     visitingUrlGroup.setMalicious(true);
                     visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);   //will set underlying url state
                     System.out.println(this.getVirtualMachine().getLogHeader() + " MALICIOUS " + visitingUrlGroup.getIdentifier());
+		    visitingUrlGroup = null;
                     this.setClientState(CLIENT_STATE.DISCONNECTED);
                 } else {
                     visitingUrlGroup.setMalicious(false);
                     visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);   //will set underlying url state and not cause reset vm
                     System.out.println(this.getVirtualMachine().getLogHeader() + " BENIGN " + visitingUrlGroup.getIdentifier());
+		    visitingUrlGroup = null;
                     this.setClientState(CLIENT_STATE.WAITING);
                 }
-                visitingUrlGroup = null;
             }
         }
     }

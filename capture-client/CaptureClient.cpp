@@ -34,6 +34,7 @@ class CaptureClient : public Runnable
 public:
 	CaptureClient()
 	{
+		DebugPrintTrace(L"CaptureClient start\n");
 		/* Capture needs the SeDriverLoadPrivilege and SeDebugPrivilege to correctly run.
 		   If it doesn't acquire these privileges it exits. DebugPrivilege is used in the
 		   ProcessManager to open handles to existing process. DriverLoadPrivilege allows
@@ -67,10 +68,12 @@ public:
 		analyzer =  new Analyzer(*visitor, *server);
 		Thread* captureClientThread = new Thread(this);
 		captureClientThread->start("CaptureClient");
+		DebugPrintTrace(L"CaptureClient end\n");
 	}
 	
 	~CaptureClient()
 	{
+		DebugPrintTrace(L"~CaptureClient start\n");
 		onServerConnectEventConnection.disconnect();
 		onServerPingEventConnection.disconnect();
 		CloseHandle(hStopRunning);
@@ -84,35 +87,44 @@ public:
 		delete ProcessManager::getInstance();
 		delete OptionsManager::getInstance();
 		delete EventController::getInstance();
+		DebugPrintTrace(L"~CaptureClient end\n");
 	}
 
 	void run()
 	{		
-		if((OptionsManager::getInstance()->getOption(L"server") == L"") || 
-			server->connectToServer())
-		{
-			//EventController::getInstance()->receiveServerEvent("<visit url=\"http://www.neowin.net\" program=\"safari\" time=\"30\"/>");
-			/* If Capture is being run in standalone mode start the analyzer now */
-			/* Send file test */
-			printf("---------------------------------------------------------\n");
-			if((OptionsManager::getInstance()->getOption(L"server") == L""))
+		DebugPrintTrace(L"CaptureClient::run start\n");
+		try {
+			if((OptionsManager::getInstance()->getOption(L"server") == L"") || 
+				server->connectToServer())
 			{
-				analyzer->start();
+				//EventController::getInstance()->receiveServerEvent("<visit url=\"http://www.neowin.net\" program=\"safari\" time=\"30\"/>");
+				/* If Capture is being run in standalone mode start the analyzer now */
+				/* Send file test */
+				printf("---------------------------------------------------------\n");
+				if((OptionsManager::getInstance()->getOption(L"server") == L""))
+				{
+					analyzer->start();
+				}
+				/* Wait till a user presses a key then exit */
+				getchar();
+				if((OptionsManager::getInstance()->getOption(L"server") == L""))
+				{
+					analyzer->stop();
+				}
 			}
-			/* Wait till a user presses a key then exit */
-			getchar();
-			if((OptionsManager::getInstance()->getOption(L"server") == L""))
-			{
-				analyzer->stop();
-			}
+			SetEvent(hStopRunning);
+		} catch (...) {
+			printf("CaptureClient::run exception\n");	
+			throw;
 		}
-		SetEvent(hStopRunning);
+		DebugPrintTrace(L"CaptureClient::run end\n");
 	}
 
 	/* Event passed when the state of the connection between the server is changed.
 	   When capture becomes disconnected from the server the client exits */
 	void onConnectionStatusChanged(bool connectionStatus)
 	{
+		DebugPrintTrace(L"CaptureClient::onConnectionStatusChanged(bool connectionStatus) start\n");
 		printf("Got connect status changed\n");
 #ifndef _DEBUG
 		if(!connectionStatus)
@@ -122,12 +134,14 @@ public:
 			SetEvent(hStopRunning);
 		}
 #endif
+		DebugPrintTrace(L"CaptureClient::onConnectionStatusChanged(bool connectionStatus) end\n");
 	}
 
 	/* Responds to a connect event from the server. It sends the virtual machine
 	   server id and virtual machine id this client is hosted on back to the server */
 	void onServerConnectEvent(const Element& element)
 	{
+		DebugPrintTrace(L"CaptureClient::onServerConnectEvent(const Element& element) start\n");
 		printf("Got connect event\n");
 		if(element.getName() == L"connect")
 		{
@@ -136,21 +150,25 @@ public:
 			attributes.push_back(Attribute(L"vm-id", OptionsManager::getInstance()->getOption(L"vm-id")));
 			server->sendXML(L"connect", attributes);
 		}
+		DebugPrintTrace(L"CaptureClient::onServerConnectEvent(const Element& element) endn");
 	}
 
 	/* Sends a pong message back to the server when a ping is received */
 	void onServerPingEvent(const Element& element)
 	{
+		DebugPrintTrace(L"CaptureClient::onServerPingEvent(const Element& element) start\n");
 		if(element.getName() == L"ping")
 		{
 			vector<Attribute> attributes;
 			server->sendXML(L"pong", attributes);
 		}
+		DebugPrintTrace(L"CaptureClient::onServerPingEvent(const Element& element) end\n");
 	}
 
 	/* Get the driver load privilege so that the kernel drivers can be loaded */
 	bool obtainDriverLoadPrivilege()
 	{
+		DebugPrintTrace(L"CaptureClient::obtainDriverLoadPrivilege() start\n");
 		HANDLE hToken;
 		if(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,&hToken))
 		{
@@ -181,16 +199,19 @@ public:
 				(PDWORD) NULL) )
 			{ 
 			  printf("AdjustTokenPrivileges error: %u\n", GetLastError() );
+			  DebugPrintTrace(L"CaptureClient::obtainDriverLoadPrivilege() end1\n");
 			  return false; 
 			} 
 
 			if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
 			{	
 				printf("The token does not have the specified privilege. \n");
+				DebugPrintTrace(L"CaptureClient::obtainDriverLoadPrivilege() end2\n");
 				return false;
 			} 
 		}
 		CloseHandle(hToken);
+		DebugPrintTrace(L"CaptureClient::obtainDriverLoadPrivilege() end3\n");
 		return true;
 
 	}
@@ -199,6 +220,7 @@ public:
 	   except for the system process */
 	bool obtainDebugPrivilege()
 	{
+		DebugPrintTrace(L"CaptureClient::obtainDebugPrivilege() start\n");
 		HANDLE hToken;
 		if(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,&hToken))
 		{
@@ -212,6 +234,7 @@ public:
 					&luid ) )        // receives LUID of privilege
 			{
 				printf("LookupPrivilegeValue error: %u\n", GetLastError() ); 
+				DebugPrintTrace(L"CaptureClient::obtainDebugPrivilege() end1\n");
 				return false; 
 			}
 
@@ -229,16 +252,19 @@ public:
 				(PDWORD) NULL) )
 			{ 
 			  printf("AdjustTokenPrivileges error: %u\n", GetLastError() );
+			  DebugPrintTrace(L"CaptureClient::obtainDebugPrivilege() end2\n");
 			  return false; 
 			} 
 
 			if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
 			{	
 				printf("The token does not have the specified privilege. \n");
+				DebugPrintTrace(L"CaptureClient::obtainDebugPrivilege() end3\n");
 				return false;
 			} 
 		}
 		CloseHandle(hToken);
+		DebugPrintTrace(L"CaptureClient::obtainDebugPrivilege() end4\n");
 		return true;
 	}
 
@@ -255,6 +281,7 @@ private:
 
 int _tmain(int argc, WCHAR* argv[])
 {
+	DebugPrintTrace(L"CaptureClient::main start\n");
 	/* Set the current directory to the where the CaptureClient.exe is found */
 	/* This is a bug fix for the VIX library as the runProgramInGuest function
 	   opens the client from within c:\windows\system32 so nothing will load
@@ -363,6 +390,7 @@ int _tmain(int argc, WCHAR* argv[])
 						{
 							printf("NetworkPacketDumper: ERROR - wpcap.dll not found. Check that winpcap is installed on this system\n");
 							printf("Cannot use -n option if winpcap is not installed ... exiting\n");
+							DebugPrintTrace(L"CaptureClient::main end1\n");
 							exit(1);
 						} else {
 							printf("Option: Capturing network packets\n");
@@ -397,6 +425,7 @@ int _tmain(int argc, WCHAR* argv[])
 			{
 				printf("Analyzer: ERROR - Could not find 7za.exe (http://www.7-zip.org/) - Not collecting modified files\n");
 				printf("Cannot use -c option if 7za.exe is not in the current directory ... exiting\n");
+				DebugPrintTrace(L"CaptureClient::main end2\n");
 				exit(1);
 			}
 		}
@@ -405,5 +434,6 @@ int _tmain(int argc, WCHAR* argv[])
 	CaptureClient* cp = new CaptureClient();
 	WaitForSingleObject(cp->hStopRunning, INFINITE);
 	delete cp;
+	DebugPrintTrace(L"CaptureClient::main end3\n");
 	return 0;
 }

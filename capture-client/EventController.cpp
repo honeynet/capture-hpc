@@ -25,18 +25,20 @@ EventController::getInstance()
 }
 
 boost::signals::connection 
-EventController::connect_onServerEvent(const std::wstring& eventType, 
-										  const signal_serverEvent::slot_type& s)
+EventController::connect_onServerEvent(const std::wstring& eventType, const signal_serverEvent::slot_type& s)
 {
+	DebugPrintTrace(L"EventController::connect_onServerEvent(const std::wstring& eventType, const signal_serverEvent::slot_type& s) start\n");
 	stdext::hash_map<std::wstring, signal_serverEvent*>::iterator it;
 	if((it = onServerEventMap.find(eventType)) != onServerEventMap.end())
 	{
 		signal_serverEvent* signal_onServerEvent = it->second;
+		DebugPrintTrace(L"EventController::connect_onServerEvent(const std::wstring& eventType, const signal_serverEvent::slot_type& s) end1\n");
 		return signal_onServerEvent->connect(s);
 	} else {
 		signal_serverEvent* signal_onServerEvent = new signal_serverEvent();
 		boost::signals::connection connection = signal_onServerEvent->connect(s);
 		onServerEventMap.insert(OnServerEventPair(eventType, signal_onServerEvent)); 
+		DebugPrintTrace(L"EventController::connect_onServerEvent(const std::wstring& eventType, const signal_serverEvent::slot_type& s) end2\n");
 		return connection;
 	}
 }
@@ -44,6 +46,7 @@ EventController::connect_onServerEvent(const std::wstring& eventType,
 void
 EventController::notifyListeners()
 {
+	DebugPrintTrace(L"EventController::notifyListeners() start\n");
 	if(currentElement->getName().length() > 0)
 	{
 		stdext::hash_map<std::wstring, signal_serverEvent*>::iterator it;
@@ -58,17 +61,21 @@ EventController::notifyListeners()
 		currentElement = NULL;
 		//currentElement = new Element();
 	}
+	DebugPrintTrace(L"EventController::notifyListeners() end\n");
 }
 
 void 
 EventController::receiveServerEvent(const char* xmlDocument)
 {
+	DebugPrintTrace(L"EventController::receiveServerEvent(const char* xmlDocument) start\n");
 	this->parseString(xmlDocument);
+	DebugPrintTrace(L"EventController::receiveServerEvent(const char* xmlDocument) end\n");
 }
 
 void 
 EventController::startElement(const char* name, const char** atts)
 {
+	DebugPrintTrace(L"EventController::startElement(const char* name, const char** atts) start\n");
 	size_t nameLength = strlen(name) + 1;
 	wchar_t* wszElementName = (wchar_t*)malloc((strlen(name) + 1)*sizeof(wchar_t));
 	size_t convertedChars = 0;
@@ -110,12 +117,14 @@ EventController::startElement(const char* name, const char** atts)
 			}
 		}
 	}
+	DebugPrintTrace(L"EventController::startElement(const char* name, const char** atts) end\n");
 }
 
 
 void 
 EventController::endElement(const char* name)
 {
+	DebugPrintTrace(L"EventController::endElement(const char* name) start\n");
 	size_t nameLength = strlen(name) + 1;
 	wchar_t* wszElementName = (wchar_t*)malloc((strlen(name) + 1)*sizeof(wchar_t));
 	size_t convertedChars = 0;
@@ -135,11 +144,14 @@ EventController::endElement(const char* name)
 			currentElement = currentElement->getParent();
 		}
 	}
+	DebugPrintTrace(L"EventController::endElement(const char* name) end\n");
 }
 
 
 void 
 EventController::charData(const char *s, int len)
 {
+	DebugPrintTrace(L"EventController::charData(const char *s, int len) start\n");
 	currentElement->setData(s, len);
+	DebugPrintTrace(L"EventController::charData(const char *s, int len) end\n");
 }

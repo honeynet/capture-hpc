@@ -5,11 +5,12 @@
 +	Read	.*	.*
 +	Create	.*	.*
 +	Open	.*	.*
-+	Write	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\logs\\.+
++	Write	.*	C:\\program files\\capture\\logs\\.+
 +	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\.+\.zip
 +	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\logs
 +	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\logs\\.*
 +	Write	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\capture\.log
++	Write	C:\\program Files\\capture\\7za\.exe	C:\\program files\\capture\\capture\.log
 +	Write	C:\\program Files\\capture\\7za\.exe	C:\\program files\\capture\\.+\.zip
 +	Delete	C:\\program Files\\capture\\7za\.exe	C:\\program files\\capture\\.+\.zip
 #Prefetch
@@ -106,21 +107,21 @@
 ### Minus List - General Malicious Activity	###
 ###################################################
 # Alert about executables or scripts that are written to disk
--	Write	.*	.+\.bat
--	Write	.*	.+\.cmd
--	Write	.*	.+\.exe
--	Write	.*	.+\.inf
--	Write	.*	.+\.lnk
--	Write	.*	.+\.msi
--	Write	.*	.+\.msp
--	Write	.*	.+\.pif
--	Write	.*	.+\.reg
--	Write	.*	.+\.sct
--	Write	.*	.+\.shs
--	Write	.*	.+\.scr
--	Write	.*	.+\.wsc
--	Write	.*	.+\.wsf
--	Write	.*	.+\.wsh
+#-	Write	.*	.+\.bat
+#-	Write	.*	.+\.cmd
+#-	Write	.*	.+\.exe
+#-	Write	.*	.+\.inf
+#-	Write	.*	.+\.lnk
+#-	Write	.*	.+\.msi
+#-	Write	.*	.+\.msp
+#-	Write	.*	.+\.pif
+#-	Write	.*	.+\.reg
+#-	Write	.*	.+\.sct
+#-	Write	.*	.+\.shs
+#-	Write	.*	.+\.scr
+#-	Write	.*	.+\.wsc
+#-	Write	.*	.+\.wsf
+#-	Write	.*	.+\.wsh
 #commented out for IE because \.com cache files and \.vb script files are very common
 #-	Write	.*	.+\.vb
 #-	Write	.*	.+\.com

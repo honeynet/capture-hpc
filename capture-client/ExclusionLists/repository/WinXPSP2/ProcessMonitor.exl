@@ -11,3 +11,6 @@
 +	defrag.exe	.*	C:\\WINDOWS\\system32\\defrag\.exe
 #7za
 +	7za.exe	.*	C:\\program Files\\capture\\7za\.exe
+#mapping
++	wmiadap.exe	.*	C:\\WINDOWS\\system32\\wbem\\wmiadap\.exe
++	wmiprvse.exe	.*	C:\\WINDOWS\\system32\\wbem\\wmiprvse\.exe

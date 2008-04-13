@@ -3,26 +3,29 @@
 
 NetworkAdapter::NetworkAdapter(NetworkPacketDumper* npDumper, string aName, pcap_t* adap)
 {
+	DebugPrintTrace(L"NetworkAdapter::NetworkAdapter(NetworkPacketDumper* npDumper, string aName, pcap_t* adap) start\n");
 	networkPacketDumper = npDumper;
 	adapterName = aName;
 	adapter = adap;
 	running = false;
 
-	InitializeCriticalSection(&adapter_thread_lock);
-	
+	DebugPrintTrace(L"NetworkAdapter::NetworkAdapter(NetworkPacketDumper* npDumper, string aName, pcap_t* adap) end\n");
 }
 
 NetworkAdapter::~NetworkAdapter(void)
 {
+	DebugPrintTrace(L"NetworkAdapter::~NetworkAdapter(void) start\n");
 	stop();
+	DebugPrintTrace(L"NetworkAdapter::~NetworkAdapter(void) end\n");
 }
 
 void
 NetworkAdapter::start()
 {
+	printf("Starting network adapter\n");
+	DebugPrintTrace(L"NetworkAdapter::start() start\n");
 	if(!running)
 	{
-		running = true;
 		char* szLogFileName = new char[1024];
 		string logName = "logs\\";
 		logName += adapterName;
@@ -34,48 +37,38 @@ NetworkAdapter::start()
 		threadName += adapterName;
 		char* t = (char*)threadName.c_str();
 		adapterThread->start(t);
-		
+		running = true;
 		delete [] szLogFileName;
 	}
+	DebugPrintTrace(L"NetworkAdapter::start() end\n");
 }
 
 void
 NetworkAdapter::stop()
 {
+	printf("Stopping network adapter\n");
+	DebugPrintTrace(L"NetworkAdapter::stop() start\n");
 	if(running)
 	{
-		// Set to false so the thread will exit
-		running = false;
-
-		// Wait for the thread to exit (by setting running to false) and delete
-		EnterCriticalSection(&adapter_thread_lock);
-		
-		// Once we are in the critical section we can be sure the thread has not got
-		// any handles to resources that we may deadlock on so now we can stop the thread
-		// if it hasn't alread
 		adapterThread->stop();
 		delete adapterThread;
-
 		if(dumpFile != NULL)
-		{
-			// Close the dump file
 			networkPacketDumper->pfn_pcap_dump_close(dumpFile);
-		}	
-
-		LeaveCriticalSection(&adapter_thread_lock);
+		//networkPacketDumper->pfn_pcap_close(adapter);
+		running = false;
 	}
+	DebugPrintTrace(L"NetworkAdapter::stop() end\n");
 }
 
 void
 NetworkAdapter::run()
 {
-	int res;
-	struct pcap_pkthdr *header;
-	const u_char *pkt_data;
-	EnterCriticalSection(&adapter_thread_lock);
-	while( running )
-	{
-		if((res = networkPacketDumper->pfn_pcap_next_ex( adapter, &header, &pkt_data)) >= 0)
+	DebugPrintTrace(L"NetworkAdapter::run() start\n");
+	try {
+		int res;
+		struct pcap_pkthdr *header;
+		const u_char *pkt_data;
+		while((res = networkPacketDumper->pfn_pcap_next_ex( adapter, &header, &pkt_data)) >= 0)
 		{     
 			if(res > 0)
 			{
@@ -85,6 +78,9 @@ NetworkAdapter::run()
 				}
 			}
 		}
+	} catch (...) {
+		printf("NetworkAdapter::run exception\n");	
+		throw;
 	}
-	LeaveCriticalSection(&adapter_thread_lock);
+	DebugPrintTrace(L"NetworkAdapter::run() start\n");
 }

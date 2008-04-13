@@ -341,73 +341,78 @@ RegistryMonitor::processRegistryData(PREGISTRY_EVENT registryEvent, BYTE* regist
 void
 RegistryMonitor::run()
 {
-	DWORD dwReturn; 
-	monitorRunning = true;
-	int waitTime = REGISTRY_DEFAULT_WAIT_TIME;
-	while(isMonitorRunning())
-	{
-		ZeroMemory(registryEventsBuffer, REGISTRY_EVENTS_BUFFER_SIZE);
-		DeviceIoControl(hDriver,
-			IOCTL_GET_REGISTRY_EVENTS, 
-			0, 
-			0, 
-			registryEventsBuffer, 
-			REGISTRY_EVENTS_BUFFER_SIZE, 
-			&dwReturn, 
-			NULL);
-		/* Go through all the registry events received. Events are variable sized
-		   so the starts of them are calculated by adding the lengths of the various
-		   data stored in it */
-		if(dwReturn >= sizeof(REGISTRY_EVENT))
+	try {
+		DWORD dwReturn; 
+		monitorRunning = true;
+		int waitTime = REGISTRY_DEFAULT_WAIT_TIME;
+		while(isMonitorRunning())
 		{
-			UINT offset = 0;
-			do {
-				/* e->registryData contains the registry path first and then optionally
-				   some data */
-				PREGISTRY_EVENT e = (PREGISTRY_EVENT)(registryEventsBuffer + offset);
-				BYTE* registryData = NULL;
-				wchar_t* szRegistryPath = NULL;
+			ZeroMemory(registryEventsBuffer, REGISTRY_EVENTS_BUFFER_SIZE);
+			DeviceIoControl(hDriver,
+				IOCTL_GET_REGISTRY_EVENTS, 
+				0, 
+				0, 
+				registryEventsBuffer, 
+				REGISTRY_EVENTS_BUFFER_SIZE, 
+				&dwReturn, 
+				NULL);
+			/* Go through all the registry events received. Events are variable sized
+			   so the starts of them are calculated by adding the lengths of the various
+			   data stored in it */
+			if(dwReturn >= sizeof(REGISTRY_EVENT))
+			{
+				UINT offset = 0;
+				do {
+					/* e->registryData contains the registry path first and then optionally
+					   some data */
+					PREGISTRY_EVENT e = (PREGISTRY_EVENT)(registryEventsBuffer + offset);
+					BYTE* registryData = NULL;
+					wchar_t* szRegistryPath = NULL;
+					
+					std::wstring registryEventName = getRegistryEventName(e->eventType);
+					/* Get the registry string */
+					szRegistryPath = (wchar_t*)malloc(e->registryPathLengthB);
+					CopyMemory(szRegistryPath, e->registryData, e->registryPathLengthB);
+					std::wstring registryPath = convertRegistryObjectNameToHiveName(std::wstring(szRegistryPath));
+					std::wstring processPath = ProcessManager::getInstance()->getProcessPath((DWORD)e->processId);
+					
+					/* If there is data stored retrieve it */
+					if(e->dataLengthB > 0)
+					{
+						registryData = (BYTE*)malloc(e->dataLengthB);
+						CopyMemory(registryData, e->registryData+e->registryPathLengthB, e->dataLengthB);				
+					}
+					
+					/* Is the event excluded */
+					if(!Monitor::isEventAllowed(registryEventName,processPath,registryPath))
+					{
+						//std::vector<std::wstring> data;
+						//processRegistryData(e, registryData, data);
+		
+						signal_onRegistryEvent(registryEventName, Time::timefieldToString(e->time), processPath, registryPath);
+					}
+					if(registryData != NULL)
+						free(registryData);
+					if(szRegistryPath != NULL)
+						free(szRegistryPath);
+					offset += sizeof(REGISTRY_EVENT) + e->registryPathLengthB + e->dataLengthB;
+				}while(offset < dwReturn);
 				
-				std::wstring registryEventName = getRegistryEventName(e->eventType);
-				/* Get the registry string */
-				szRegistryPath = (wchar_t*)malloc(e->registryPathLengthB);
-				CopyMemory(szRegistryPath, e->registryData, e->registryPathLengthB);
-				std::wstring registryPath = convertRegistryObjectNameToHiveName(std::wstring(szRegistryPath));
-				std::wstring processPath = ProcessManager::getInstance()->getProcessPath((DWORD)e->processId);
 				
-				/* If there is data stored retrieve it */
-				if(e->dataLengthB > 0)
-				{
-					registryData = (BYTE*)malloc(e->dataLengthB);
-					CopyMemory(registryData, e->registryData+e->registryPathLengthB, e->dataLengthB);				
-				}
-				
-				/* Is the event excluded */
-				if(!Monitor::isEventAllowed(registryEventName,processPath,registryPath))
-				{
-					//std::vector<std::wstring> data;
-					//processRegistryData(e, registryData, data);
-	
-					signal_onRegistryEvent(registryEventName, Time::timefieldToString(e->time), processPath, registryPath);
-				}
-				if(registryData != NULL)
-					free(registryData);
-				if(szRegistryPath != NULL)
-					free(szRegistryPath);
-				offset += sizeof(REGISTRY_EVENT) + e->registryPathLengthB + e->dataLengthB;
-			}while(offset < dwReturn);
-			
-			
-		}
+			}
 
-		if(dwReturn == (REGISTRY_EVENTS_BUFFER_SIZE))
-		{
-			waitTime = REGISTRY_BUFFER_FULL_WAIT_TIME;
-		} else {
-			waitTime = REGISTRY_DEFAULT_WAIT_TIME;
-		}
+			if(dwReturn == (REGISTRY_EVENTS_BUFFER_SIZE))
+			{
+				waitTime = REGISTRY_BUFFER_FULL_WAIT_TIME;
+			} else {
+				waitTime = REGISTRY_DEFAULT_WAIT_TIME;
+			}
 
-		Sleep(waitTime);
+			Sleep(waitTime);
+		}
+		SetEvent(hMonitorStoppedEvent);
+	} catch (...) {
+		printf("RegistryMonitor::run exception\n");	
+		throw;
 	}
-	SetEvent(hMonitorStoppedEvent);
 }

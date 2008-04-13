@@ -120,6 +120,7 @@ Logger::openLogFile(const std::wstring& file)
 		} else {
 			printf("Logger: ERROR %08x - Could not open log file %ls\n", GetLastError(), szFullPath);
 		}
+		delete [] pFileName;
 		delete [] szFullPath;
 	}
 }

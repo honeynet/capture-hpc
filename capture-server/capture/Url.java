@@ -154,7 +154,7 @@ public class Url extends Observable {
             return;
 
         urlState = newState;
-        //System.out.println("\tUrlSetState: " + newState.toString());
+        System.out.println("\tUrlSetState: " + newState.toString());
         if (urlState == URL_STATE.VISITING) {
             String date = getVisitStartTime();
             Stats.visiting++;
@@ -183,7 +183,9 @@ public class Url extends Observable {
                 if (this.malicious) {
                     Stats.malicious++;
                     String date = DateFormat.getDateTimeInstance().format(new Date());
-                    Stats.addFirstStateChangeTime(firstStateChange, visitFinishTime, visitTime);
+                    if(firstStateChange!=null && visitFinishTime != null) {//could happen when VM is stalled. since the tim can't be calculated correctly, we skip this one for this URL
+                        Stats.addFirstStateChangeTime(firstStateChange, visitFinishTime, visitTime);
+                    }
                     Logger.getInstance().writeToMaliciousUrlLog("\"" + date + "\",\"malicious\",\"" + groupID + "\",\"" + url +
                             "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
                 }

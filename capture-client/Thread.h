@@ -76,7 +76,7 @@ public:
 	{
 		THREADNAME_INFO info;
 		info.dwType = 0x1000;
-		info.szName = "hello";
+		info.szName = szThreadName;
 		info.dwThreadID = dwThreadID;
 		info.dwFlags = 0;
 

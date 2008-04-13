@@ -48,6 +48,7 @@
 			<xs:attribute name="capture-network-packets-benign" type="xs:boolean" use="required"></xs:attribute>
     		<xs:attribute name="send-exclusion-lists" type="xs:boolean" use="required"></xs:attribute>
             <xs:attribute name="p_m" type="xs:double" use="required"></xs:attribute>
+			<xs:attribute name="timeout_factor" type="xs:double" use="required"></xs:attribute>
     	</xs:complexType>
     </xs:element>
 </xs:schema>

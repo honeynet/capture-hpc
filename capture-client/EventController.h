@@ -28,6 +28,7 @@
 #include <boost/signal.hpp>
 #include <hash_map>
 
+#include "CaptureGlobal.h"
 #include "Element.h"
 
 /*

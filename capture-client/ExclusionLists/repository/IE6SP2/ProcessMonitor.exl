@@ -7,3 +7,5 @@
 +	agentsvr.exe	.*	C:\\WINDOWS\\msagent\\agentsvr.exe
 #messenger activeX
 +	msmsgs.exe	.*	C:\\Program Files\\Messenger\\msmsgs.exe
+#print 
++	rundll32.exe	.*	C:\\WINDOWS\\system32\\rundll32.exe
