@@ -5,7 +5,8 @@
     		<xs:sequence>
     			<xs:element ref="global" minOccurs="1" maxOccurs="1"></xs:element>
     			<xs:element ref="exclusion-list" minOccurs="0" maxOccurs="unbounded"></xs:element>
-    			<xs:element ref="virtual-machine-server" minOccurs="0" maxOccurs="unbounded"></xs:element>		
+    			<xs:element ref="preprocessor" minOccurs="0" maxOccurs="1"></xs:element>
+                <xs:element ref="virtual-machine-server" minOccurs="0" maxOccurs="unbounded"></xs:element>
     		</xs:sequence>
     	</xs:complexType>
     </xs:element>
@@ -38,6 +39,13 @@
     		<xs:attribute name="port" type="xs:string" use="required"></xs:attribute>
     		<xs:anyAttribute processContents="lax"></xs:anyAttribute>
     	</xs:complexType>
+    </xs:element>
+
+    <xs:element name="preprocessor">
+        <xs:complexType  mixed="true">
+    		<xs:attribute name="classname" type="xs:string" use="required"></xs:attribute>
+        </xs:complexType>
+
     </xs:element>
 
     <xs:element name="global">

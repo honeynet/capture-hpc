@@ -12,8 +12,15 @@
 	<exclusion-list monitor="file" file="FileMonitor.exl" />
 	<exclusion-list monitor="process" file="ProcessMonitor.exl" />
 	<exclusion-list monitor="registry" file="RegistryMonitor.exl" />
-	
-	<!--virtual-machine-server type="mock-vm-server" address="127.0.0.1" port="902"
+
+    <!--preprocessor classname="example">
+			<![CDATA[
+				<example-config attribute1="1.0" attribute2="40" attribute2="log/output.log"/>
+			]]>
+	</preprocessor-->
+
+    
+    <!--virtual-machine-server type="mock-vm-server" address="127.0.0.1" port="902"
 		username="User" password="Password">
 		<virtual-machine vm-path="dummyPath"
 						 client-path="dummyClientPath"
