@@ -57,9 +57,20 @@ public class Server
 		if(ConfigManager.getInstance().getConfigOption("input_urls") != null)
 		{
 			String file = ConfigManager.getInstance().getConfigOption("input_urls");
-			FileUrlTail tail = new FileUrlTail(file);
-			Thread tailthread = new Thread(tail, "FileTail:" + file);
-			tailthread.start();
+
+            Preprocessor preprocessor = PreprocessorFactory.getDefaultPreprocessor();
+            try {
+                String preprocessorClassName = ConfigManager.getInstance().getConfigOption("preprocessor-classname");
+                if(preprocessorClassName!=null && !preprocessorClassName.equals("")) {
+                    preprocessor = PreprocessorFactory.getPreprocessor(preprocessorClassName);
+                    String preprocessorConfig = ConfigManager.getInstance().getConfigOption("preprocessor-configuration");
+                    preprocessor.setConfiguration(preprocessorConfig);
+                }
+            } catch (FactoryException e) {
+                System.out.println("Unable to create preprocessor. Proceeding without preprocessor");
+                e.printStackTrace(System.out);
+            }
+            preprocessor.readInputUrls(file);
 		}
 	}
 

@@ -2,22 +2,33 @@ package capture;
 
 import java.net.URISyntaxException;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.*;
 import java.text.SimpleDateFormat;
 
 public class UrlsController extends Observable implements EventObserver, Observer {
-    private LinkedBlockingDeque<Url> urlQueue;
+    private PriorityBlockingQueue<Url> urlQueue;
     private LinkedList<Url> visitingList;
     private LinkedList<Url> visitedList;
     private LinkedList<Url> errorUrlList;
     private UrlFactory urlFactory;
+
+    private static int INITIAL_URL_QUEUE_CAPACITY = 20000;
 
     private UrlsController() {
         visitingList = new LinkedList<Url>();
         visitedList = new LinkedList<Url>();
         errorUrlList = new LinkedList<Url>();
         urlFactory = new UrlFactory();
-        urlQueue = new LinkedBlockingDeque<Url>();
+
+        urlQueue = new PriorityBlockingQueue<Url>(INITIAL_URL_QUEUE_CAPACITY, new Comparator<Url> () {
+
+            public int compare(Url o1, Url o2) {
+                int p1 = (int) (o1.getPriority()*100);
+                int p2 = (int) (o2.getPriority()*100);
+                return (p2 - p1);
+            }
+        });
         EventsController.getInstance().addEventObserver("url", this);
     }
 
@@ -76,7 +87,7 @@ public class UrlsController extends Observable implements EventObserver, Observe
     private void addUrl(Url url) {
         if(!inUrlQueue(url)) {
             url.addObserver(this);
-            urlQueue.addLast(url);
+            urlQueue.add(url);
             this.setChanged();
             this.notifyObservers(url);
         } else {

@@ -47,9 +47,18 @@ public class Url extends Observable {
     private long groupID;
     private boolean initialGroup;
 
+    //0.0 low
+    //1.0 high
+    public double getPriority() {
+        return priority;
+    }
 
-    public Url(String u, String cProgram, int vTime) throws URISyntaxException {
+    private double priority;
+
+
+    public Url(String u, String cProgram, int vTime, double priority) throws URISyntaxException {
         url = new URI(u);
+        this.priority = priority;
         malicious = null;
         if (cProgram == null || cProgram == "") {
             clientProgram = "iexplore";

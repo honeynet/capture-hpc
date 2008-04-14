@@ -58,7 +58,8 @@ public class ConfigFile implements Observer, ErrorHandler {
 			this.parseGlobalElements();
 			this.parseExclusionListElements();
 			this.parseServerElements();
-			loaded = true;
+            this.parsePreprocessorElements();
+            loaded = true;
 		} catch (SAXException e) {
 			e.printStackTrace(System.out);
 	    	System.exit(1);
@@ -102,12 +103,24 @@ public class ConfigFile implements Observer, ErrorHandler {
 			}
 		}
 	}
-	
-	public void parseServerElements()
+
+    public void parsePreprocessorElements() {
+        NodeList preprocessor = configDocument.getElementsByTagName("preprocessor");
+        Node n = preprocessor.item(0);
+
+        if(n!=null) {
+            String value = n.getAttributes().getNamedItem("classname").getNodeValue();
+            ConfigManager.getInstance().addConfigOption("preprocessor-classname", value);
+
+            String configValue = n.getFirstChild().getNextSibling().getNodeValue();
+            ConfigManager.getInstance().addConfigOption("preprocessor-configuration", configValue);
+        }
+    }
+
+    public void parseServerElements()
 	{
 		NodeList globalList = configDocument.getElementsByTagName("virtual-machine-server");
-
-		for(int i = 0; i < globalList.getLength(); i++)
+        for(int i = 0; i < globalList.getLength(); i++)
 		{
 			Element event = new Element();
 			NamedNodeMap serverMap = globalList.item(i).getAttributes();

@@ -29,7 +29,6 @@ public class ConfigManager extends Observable {
 	public String getConfigOption(String option)
 	{
 		String value = null;
-		//configLock.readLock().lock();
 		if(configOptions.containsKey(option))
 		{
 			//System.out.println("Found option: " + option);
@@ -37,7 +36,6 @@ public class ConfigManager extends Observable {
 		} else {
 			;//System.out.println("NOT Found option: " + option);
 		}
-		//configLock.readLock().unlock();
 		return value;
 	}
 	
@@ -49,7 +47,6 @@ public class ConfigManager extends Observable {
 	public boolean setConfigOption(String option, String value)
 	{
 		boolean set = false;
-		//configLock.writeLock().lock();
 		if(configOptions.containsKey(option))
 		{
 			configOptions.remove(option);
@@ -58,21 +55,18 @@ public class ConfigManager extends Observable {
 			this.notifyObservers(option);
 			set = true;
 		}
-		//configLock.writeLock().unlock();
 		return set;
 	}
 	
 	public boolean addConfigOption(String option, String value)
 	{
 		boolean added = false;
-		//configLock.writeLock().lock();
 		if(!configOptions.containsKey(option))
 		{
 			configOptions.put(option, value);
 			System.out.println("Option added: " + option + " => " + value);
 			added = true;
 		}
-		//configLock.writeLock().unlock();
 		return added;
 	}
 }
