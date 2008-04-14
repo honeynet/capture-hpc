@@ -3,8 +3,30 @@ package capture;
 public class Server
 {
 	public Server(String[] args)
-	{	
-		for(int i = 0; i < args.length; i++)
+	{
+        System.out.println("PROJECT: Capture-HPC\n" +
+                "VERSION: 2.2\n" +
+                "DATE: Apr 13, 2008\n" +
+                "COPYRIGHT HOLDER: Victoria University of Wellington, NZ\n" +
+                "AUTHORS:\n" +
+                "\tChristian Seifert (christian.seifert@gmail.com)\n" +
+                "\tRamon Steenson(ramon.steenson@gmail.com)\n" +
+                "\n" +
+                "Capture-HPC is free software; you can redistribute it and/or modify\n" +
+                "it under the terms of the GNU General Public License as published by\n" +
+                "the Free Software Foundation; either version 2 of the License, or\n" +
+                "(at your option) any later version.\n" +
+                "\n" +
+                "Capture-HPC is distributed in the hope that it will be useful,\n" +
+                "but WITHOUT ANY WARRANTY; without even the implied warranty of\n" +
+                "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n" +
+                "GNU General Public License for more details.\n" +
+                "\n" +
+                "You should have received a copy of the GNU General Public License\n" +
+                "along with Capture-HPC; if not, write to the Free Software\n" +
+                "Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301,USA\n\n");
+
+        for(int i = 0; i < args.length; i++)
 		{
 			if(args[i].equals("-s")) {
 				if(((i+1) < args.length) && !args[i+1].startsWith("-")) {
@@ -76,8 +98,8 @@ public class Server
 
     private static String getUsageString() {
         StringBuffer usageString = new StringBuffer();
-        usageString.append("\nUsage: java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s listen address [-f input_urls]");
-        usageString.append("\\nExample java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s 192.168.1.100:7070 -f input_urls.txt");
+        usageString.append("\nUsage: java -cp [classpath] -Xmx[memory] -Djava.net.preferIPv4Stack=true capture.Server -s listen address [-f input_urls]");
+        usageString.append("\nExample java -cp ./CaptureServer.jar -Xmx1024m -Djava.net.preferIPv4Stack=true capture.Server -s 192.168.1.100:7070 -f input_urls.txt");
         return usageString.toString();
     }
 
