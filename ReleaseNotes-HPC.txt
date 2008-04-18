@@ -1,6 +1,24 @@
 Release Notes
 -------------
 
+Version 2.2
+-----------
+Changes
+-------
++ added preprocessor plugin architecture. Preprocessor plugins allow to handle the input urls before they are passed onto capture. For instance, this could be used to create a crawler or filtering plugin.
+
+Known Issues
+------------
+XXX		When IE instance locks up, close method fails leading to a VM stalled error.
+XXX		
+615		Registry monitoring can't handle a key named 
+690 	Capture is not able to detect file renames
+676 	Empty password on the user of the guest vm in the config.xml causes the capture server to crash (Windows only).
+706 	Capture seems to ignore the VM server port.
+709		sending of exclusion list from server doesnt appear to be working (only affects process exclusion list)
+719 	closing a browser during visitation does not cause this event to be reported back to the server
+721		filedownloader writes to const file name preventing dac algorithm to be applied for applications that make use of this feature
+
 Version 2.1.1
 -----------
 Changes
@@ -14,19 +32,6 @@ Changes
 + changed IE plugin to close all IE windows (fixes pop ups hanging around)
 + optimized handling of zipping of files - leads to speedup if network capture is not enabled
 + fixed bug 718
-
-
-Known Issues
-------------
-XXX		When IE instance locks up, close method fails leading to a VM stalled error.
-XXX		
-615		Registry monitoring can't handle a key named 
-690 	Capture is not able to detect file renames
-676 	Empty password on the user of the guest vm in the config.xml causes the capture server to crash (Windows only).
-706 	Capture seems to ignore the VM server port.
-709		sending of exclusion list from server doesnt appear to be working (only affects process exclusion list)
-719 	closing a browser during visitation does not cause this event to be reported back to the server
-721		filedownloader writes to const file name preventing dac algorithm to be applied for applications that make use of this feature
 
 Version 2.1
 -----------

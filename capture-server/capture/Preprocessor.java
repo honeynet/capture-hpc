@@ -79,19 +79,20 @@ public abstract class Preprocessor {
         return hasMoreInputUrls;
     }
 
-    /* The meat of the preprocessor. Urls are passed from the input file to the preprocessor.
-    * If URLs shall be processed by Capture, the preprocessor must call the addUrlToCaptureQueue function.
+ /* The meat of the preprocessor. Urls are passed from the input file to the preprocessor.
+    * If URLs shall be processed by Capture, the preprocessor must call the addUrlToCaptureQueue function (which will not block). The preprocessor can tag ::<priority> to the URL to influence which URLs Capture will inspect first (0.0 for low and 1.0 for high priority)
     *
-    * @param url - url as per capture format (including prg and delay)
+    * @param url - url as per capture format (optionally including prg and delay, for instance http://www.foo.com::iexplore::30)
     */
-    abstract public void preprocess(String url);
+	abstract public void preprocess(String url);
 
-    /* Sets the configuration of the preprocessor. Allows the preprocessor to be configured via the
+  /* Sets the configuration of the preprocessor. Allows the preprocessor to be configured via the
      * existing config.xml configuration file.
      *
      * @param configuration - from the CDATA element of the preprocessor xml tag of config.xml
      */
-    abstract public void setConfiguration(String configuration);
+	abstract public void setConfiguration(String configuration);
+
 
     /*
      * @param url - url as per capture format (including prg and delay)
