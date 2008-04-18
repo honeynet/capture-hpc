@@ -40,43 +40,34 @@ DWORD WINAPI
 Application_InternetExplorer::InternetExplorerWorker(LPVOID data)
 {
 	DebugPrintTrace(L"Application_InternetExplorer::InternetExplorerWorker start\n");
-	try {
-		int worker_id = (int)data;
-		DebugPrint(L"IE Worker Start\n.");
-		while(true)
+	int worker_id = (int)data;
+	DebugPrint(L"IE Worker Start\n.");
+	while(true)
+	{
+		DebugPrint(L"IE Worker Visit Start.\n");
+		
+		WaitForSingleObject(worker_has_data[worker_id], INFINITE);
+		
+
+		VISIT_INFO* visit_information = (VISIT_INFO*)worker_thread_data[worker_id];
+
+		_ASSERT(visit_information);
+
+		if(visit_information)
 		{
-			DebugPrint(L"IE Worker Visit Start.\n");
+			// Get the visit information
+			Url* url = visit_information->url;
+			InternetExplorerInstance* internet_explorer_instance = visit_information->internet_explorer_instance;
 			
-			WaitForSingleObject(worker_has_data[worker_id], INFINITE);
-			
-
-			VISIT_INFO* visit_information = (VISIT_INFO*)worker_thread_data[worker_id];
-
-			_ASSERT(visit_information);
-
-			if(visit_information)
-			{
-				// Get the visit information
-				Url* url = visit_information->url;
-				InternetExplorerInstance* internet_explorer_instance = visit_information->internet_explorer_instance;
-				
-				// Visit the actual url
-				internet_explorer_instance->visitUrl(url);
-				worker_thread_busy[worker_id] = false;
-				SetEvent(worker_finished[worker_id]);
-			}
-			DebugPrint(L"IE Worker Visit End.\n");
+			// Visit the actual url
+			internet_explorer_instance->visitUrl(url);
+			worker_thread_busy[worker_id] = false;
+			SetEvent(worker_finished[worker_id]);
 		}
-		DebugPrint(L"IE Worker End\n.");
-	} catch(char * exception) {
-		Warn(L"IE Worker caught exception ");
-		Warn(L"...rethrowing\n.");
-		throw exception;
-	} catch(...) {
-		Warn(L"IE Worker caught exception...rethrowing\n.");
-		throw;
+		DebugPrint(L"IE Worker Visit End.\n");
 	}
-	
+	DebugPrint(L"IE Worker End\n.");
+
 	DebugPrintTrace(L"Application_InternetExplorer::InternetExplorerWorker end\n");
 }
 
@@ -115,6 +106,7 @@ Application_InternetExplorer::~Application_InternetExplorer(void)
 	
 
 }
+
 
 
 void
@@ -187,40 +179,12 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 	}
 	DebugPrint(L"IE Visit Group set errors on urls.\n");
 
-	// Create another fake IE instance so that we can close the process
-	IWebBrowser2* pInternetExplorer;
-	hr = internet_explorer_factory->CreateInstance(NULL, IID_IWebBrowser2, 
-							(void**)&pInternetExplorer);
-	
-	if( hr == S_OK )
-	{
-		DebugPrint(L"IE Visit Group created fake IE instance.\n");
-		HWND hwndIE;
-		DWORD dProcessID;
-		pInternetExplorer->get_HWND((SHANDLE_PTR*)&hwndIE);
-		GetWindowThreadProcessId(hwndIE, &dProcessID);
-		// Close the IE process - try 1
-		EnumWindows(Application_InternetExplorer::EnumWindowsProc, (LPARAM)dProcessID);
-	
-		// Close the IE process - try 2
-		HANDLE hProc = OpenProcess(PROCESS_TERMINATE, FALSE, dProcessID);
-		DWORD tempProcessId = GetProcessId(hProc);
-		if(tempProcessId == dProcessID)
-		{
-			if(!TerminateProcess(hProc, 0))
-			{
-				DebugPrint(L"IE: Unable to terminate IE process.\n");		
-				visitEvent->setErrorCode( CAPTURE_VISITATION_PROCESS_ERROR );
-			}
-		} 
-		pInternetExplorer->Release();
-	}
-	else
-	{
-		DebugPrint(L"IE Visit Group failed to created fake IE instanc\n");
+	DWORD errorCode = closeAllInternetExplorers(internet_explorer_factory);
+	if(errorCode!=0) {
 		visitEvent->setErrorCode( CAPTURE_VISITATION_WARNING );
 	}
-	DebugPrint(L"IE Visit Group created fake IE instance - done\n");
+	DebugPrint(L"IE Visit Group closed all instances.\n");
+
 
 	//Delete all IE instance objects
 	delete [] visit_information;
@@ -237,6 +201,124 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 	DebugPrintTrace(L"Application_InternetExplorer::visitGroup(VisitEvent* visitEvent) end\n");
 }
 
+DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* internet_explorer_factory) {
+
+	DebugPrintTrace(L"Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* internet_explorer_factory) start\n");
+	DWORD iReturnVal;
+	iReturnVal = 0;
+	// Create another fake IE instance so that we can close the process
+	
+	IWebBrowser2* pInternetExplorer;
+	HRESULT hr = internet_explorer_factory->CreateInstance(NULL, IID_IWebBrowser2, 
+							(void**)&pInternetExplorer);
+	
+	if( hr == S_OK )
+	{
+		DebugPrint(L"IE CloseAll created fake IE instance.\n");
+		HWND hwndIE;
+		DWORD dProcessId;
+		pInternetExplorer->get_HWND((SHANDLE_PTR*)&hwndIE);
+		
+		GetWindowThreadProcessId(hwndIE, &dProcessId);
+		// Close the IE process - try 1
+		EnumWindows(Application_InternetExplorer::EnumWindowsProc, (LPARAM)dProcessId);
+	
+		// Close the IE process - try 2
+		HANDLE hProc = OpenProcess(PROCESS_TERMINATE, FALSE, dProcessId);
+		DWORD tempProcessId = GetProcessId(hProc);
+		if(tempProcessId == dProcessId)
+		{
+			if(!TerminateProcess(hProc, 0))
+			{
+				iReturnVal = GetLastError();
+				DebugPrint(L"IE CloseAll unable to terminate 1.\n");
+			}
+		}
+	}
+	if(pInternetExplorer!=NULL) {
+		pInternetExplorer->Release();
+	}
+	
+
+	//then all processes that match the exe
+	DWORD aProcesses[1024], cbNeeded, cProcesses;
+	unsigned int i;
+
+	if ( !EnumProcesses( aProcesses, sizeof(aProcesses), &cbNeeded ) ) {
+		DebugPrint(L"IE CloseAll couldn't enum processes.\n");
+		iReturnVal = -1;
+	}
+
+	// Calculate how many process identifiers were returned.
+	cProcesses = cbNeeded / sizeof(DWORD);
+
+	for ( i = 0; i < cProcesses; i++ )
+	{
+		if( aProcesses[i] != 0 )
+		{
+			std::wstring processName = L"c:\\Program Files\\Internet Explorer\\iexplore.exe";
+			size_t iPos = processName.find_last_of(L"\\");
+			processName.erase(0, iPos +1);
+			//wprintf(processName.c_str());
+
+			if(compareName(aProcesses[i], processName)==0) 
+			{
+				DebugPrint(L"IE CloseAll IE process left over. Closing....\n");
+				EnumWindows(Application_InternetExplorer::EnumWindowsCloseAppProc, (LPARAM) aProcesses[i]);
+				
+				HANDLE hPro = OpenProcess(PROCESS_TERMINATE,TRUE, aProcesses[i]);
+				if(!TerminateProcess(hPro, 0))
+				{
+					iReturnVal = GetLastError();
+					DebugPrint(L"IE CloseAll unable to terminate 2.\n");
+				}
+			}
+		}
+	}
+
+	
+
+	if(iReturnVal!=0) {
+		printf("IE CloseAll Error (%d)\n",iReturnVal);
+	}
+	DebugPrintTrace(L"Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* internet_explorer_factory) end\n");
+	return iReturnVal;
+}
+
+//lookup process name of process with processID
+//compare to processName
+int Application_InternetExplorer::compareName(DWORD processID, std::wstring processName)
+{
+	TCHAR szProcessName[MAX_PATH] = TEXT("<unknown>");
+    // Get a handle to the process.
+
+    HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION |
+                                   PROCESS_VM_READ,
+                                   FALSE, processID );
+
+    // Get the process name.
+
+    if (NULL != hProcess )
+    {
+        HMODULE hMod;
+        DWORD cbNeeded;
+
+        if ( EnumProcessModules( hProcess, &hMod, sizeof(hMod), 
+             &cbNeeded) )
+        {
+            GetModuleBaseName( hProcess, hMod, szProcessName, 
+                               sizeof(szProcessName)/sizeof(TCHAR) );
+        }
+    }
+
+	//_tprintf( TEXT("%s  (PID: %u)\n"), szProcessName, processID );
+	int comparison;
+	comparison = wcsicmp(szProcessName, processName.c_str());
+    CloseHandle( hProcess );
+
+	return comparison;
+}
+
 wchar_t**
 Application_InternetExplorer::getSupportedApplicationNames()
 {
@@ -245,26 +327,33 @@ Application_InternetExplorer::getSupportedApplicationNames()
 	return supportedApplications;
 }
 
-BOOL CALLBACK 
-Application_InternetExplorer::EnumWindowsProc(HWND hwnd,LPARAM lParam)
-{
-	DebugPrintTrace(L"Application_InternetExplorer::EnumWindowsProc(HWND hwnd,LPARAM lParam) start\n");
 
-	DWORD processId = (DWORD)lParam;
+BOOL CALLBACK Application_InternetExplorer::EnumWindowsProc(HWND hwnd,LPARAM lParam)
+{
+	DWORD processId = (DWORD) lParam;
 	if (GetWindowLong(hwnd,GWL_STYLE) & WS_VISIBLE) {
 		DWORD windowsProcessId;
 		GetWindowThreadProcessId(hwnd, &windowsProcessId);
 		if (windowsProcessId == processId) 
 		{
-			WCHAR classname[256];
-			GetClassName(hwnd, classname, sizeof(classname));
-			HWND mainWindow = FindWindow(classname, NULL);
-			SendMessage(mainWindow, WM_CLOSE, 1, 0);
+			SendMessage(hwnd, WM_CLOSE, 1, 0);		
 		}
 	}
-
-	DebugPrintTrace(L"Application_InternetExplorer::EnumWindowsProc(HWND hwnd,LPARAM lParam) end\n");
-
 	return TRUE;
 }
+
+BOOL CALLBACK Application_InternetExplorer::EnumWindowsCloseAppProc(HWND hwnd,LPARAM lParam)
+{
+	DWORD processId = (DWORD) lParam;
+	if (GetWindowLong(hwnd,GWL_STYLE) & WS_VISIBLE) {
+		DWORD windowsProcessId;
+		GetWindowThreadProcessId(hwnd, &windowsProcessId);
+		if (windowsProcessId == processId) 
+		{
+			SendMessage(hwnd, WM_CLOSE, 1, 0);		
+		}
+	}
+	return TRUE;
+}
+
 

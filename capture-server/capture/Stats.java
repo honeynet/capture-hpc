@@ -75,8 +75,10 @@ public class Stats {
 
     public static void addFirstStateChangeTime(Date firstStateChange, Date end, int classificationDelay) {
         long classificationDelayInMillis = classificationDelay * 1000;
-        long secondsTillFirstStateChange = (firstStateChange.getTime() - (end.getTime() - classificationDelayInMillis)) / 1000;
-        firstStateChanges.add(secondsTillFirstStateChange);
+        if(firstStateChange!=null && end != null) {
+            long secondsTillFirstStateChange = (firstStateChange.getTime() - (end.getTime() - classificationDelayInMillis)) / 1000;
+            firstStateChanges.add(secondsTillFirstStateChange);
+        }
     }
 
     public static double getAvgUrlVisitingTime() {

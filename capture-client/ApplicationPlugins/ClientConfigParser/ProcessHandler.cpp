@@ -90,8 +90,7 @@ DWORD ProcessHandler::closeProcess(void) {
 			processName.erase(0, iPos +1);
 			//wprintf(processName.c_str());
 
-            wchar_t* name = getName(aProcesses[i]);
-			if(wcscmp(name, processName.c_str())==0) 
+            if(compareName(aProcesses[i], processName)==0) 
 			{
 				EnumWindows(ProcessHandler::EnumWindowsCloseAppProc, (LPARAM) aProcesses[i]);
 				
@@ -132,8 +131,7 @@ bool ProcessHandler::isOpen()
 			processName.erase(0, iPos +1);
 			//wprintf(processName.c_str());
 
-            wchar_t* name = getName(aProcesses[i]);
-			if(wcscmp(name, processName.c_str())==0) 
+           if(compareName(aProcesses[i], processName)==0) 
 			{
 				open = true;
 			}
@@ -143,10 +141,11 @@ bool ProcessHandler::isOpen()
 	return open;
 }
 
-wchar_t* ProcessHandler::getName(DWORD processID) 
+//lookup process name of process with processID
+//compare to processName
+int ProcessHandler::compareName(DWORD processID, std::wstring processName)
 {
 	TCHAR szProcessName[MAX_PATH] = TEXT("<unknown>");
-
     // Get a handle to the process.
 
     HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION |
@@ -169,11 +168,11 @@ wchar_t* ProcessHandler::getName(DWORD processID)
     }
 
 	//_tprintf( TEXT("%s  (PID: %u)\n"), szProcessName, processID );
-	
+	int comparison;
+	comparison = wcsicmp(szProcessName, processName.c_str());
     CloseHandle( hProcess );
 
-	return szProcessName;
-
+	return comparison;
 }
 
 void ProcessHandler::DebugPrintTrace(LPCTSTR pszFormat, ... )
@@ -194,6 +193,8 @@ DWORD ProcessHandler::getProcessId(void)
 {
 	return m_piProcessInfo.dwProcessId;
 }
+
+
 
 BOOL CALLBACK ProcessHandler::EnumWindowsCloseProc(HWND hwnd,LPARAM lParam)
 {

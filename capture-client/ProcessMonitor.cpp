@@ -145,7 +145,25 @@ ProcessMonitor::stop()
 		monitorRunning = false;
 		WaitForSingleObject(hMonitorStoppedEvent, 1000);
 		CloseHandle(hEvent);
+		DebugPrint(L"ProcessMonitor::stop() stopping thread.\n");
 		processMonitorThread->stop();
+		DWORD dwWaitResult;
+		dwWaitResult = processMonitorThread->wait(5000);
+		switch (dwWaitResult) 
+		{
+        // All thread objects were signaled
+        case WAIT_OBJECT_0: 
+            DebugPrint(L"ProcessMonitor::stop() stopped processMonitorThread.\n");
+			break;
+		case WAIT_TIMEOUT:
+			DebugPrint(L"ProcessMonitor::stop() stopping processMonitorThread timed out. Attempting to terminate.\n");
+			processMonitorThread->terminate();
+			DebugPrint(L"ProcessMonitor::stop() terminated processMonitorThread.\n");
+			break;
+        // An error occurred
+        default: 
+            printf("ProcessMonitor stopping processMonitorThread failed (%d)\n", GetLastError());
+		} 
 		delete processMonitorThread;
 	}
 }
@@ -153,67 +171,58 @@ ProcessMonitor::stop()
 void
 ProcessMonitor::run()
 {
-	try {
-		ProcessInfo tempP;
-		ZeroMemory(&tempP, sizeof(tempP));
-		monitorRunning = true;
-		DWORD      dwBytesReturned = 0;
-		while(isMonitorRunning())
+	ProcessInfo tempP;
+	ZeroMemory(&tempP, sizeof(tempP));
+	monitorRunning = true;
+	DWORD      dwBytesReturned = 0;
+	while(!processMonitorThread->shouldStop() && isMonitorRunning())
+	{
+		WaitForSingleObject(hEvent, INFINITE);
+		BOOL       bReturnCode = FALSE;
+		
+		ProcessInfo p;
+
+		bReturnCode = DeviceIoControl(
+			hDriver,
+			IOCTL_CAPTURE_GET_PROCINFO,
+			0, 
+			0,
+			&p, sizeof(p),
+			&dwBytesReturned,
+			NULL
+			);
+
+		if(dwBytesReturned > 0)
 		{
-			WaitForSingleObject(hEvent, INFINITE);
-			BOOL       bReturnCode = FALSE;
-			
-			ProcessInfo p;
+			if(p.bCreate != tempP.bCreate ||
+				p.ParentId != tempP.ParentId ||
+				p.ProcessId != tempP.ProcessId)
+			{		
+				std::wstring processPath;
+				std::wstring processModuleName;
+				std::wstring parentProcessPath;
+				std::wstring parentProcessModuleName;
+				std::wstring time = Time::timefieldToString(p.time);
 
-			bReturnCode = DeviceIoControl(
-				hDriver,
-				IOCTL_CAPTURE_GET_PROCINFO,
-				0, 
-				0,
-				&p, sizeof(p),
-				&dwBytesReturned,
-				NULL
-				);
+				ProcessManager::getInstance()->onProcessEvent(p.bCreate, time, p.ParentId, 
+					p.ProcessId, p.processPath);
 
-			if(dwBytesReturned > 0)
-			{
-				if(p.bCreate != tempP.bCreate ||
-					p.ParentId != tempP.ParentId ||
-					p.ProcessId != tempP.ProcessId)
-				{		
-					std::wstring processPath;
-					std::wstring processModuleName;
-					std::wstring parentProcessPath;
-					std::wstring parentProcessModuleName;
-					std::wstring time = Time::timefieldToString(p.time);
-
-					ProcessManager::getInstance()->onProcessEvent(p.bCreate, time, p.ParentId, 
-						p.ProcessId, p.processPath);
-
-					// Get process name and path
-					processModuleName = ProcessManager::getInstance()->getProcessModuleName(p.ProcessId);
-					processPath = ProcessManager::getInstance()->getProcessPath(p.ProcessId);
+				// Get process name and path
+				processModuleName = ProcessManager::getInstance()->getProcessModuleName(p.ProcessId);
+				processPath = ProcessManager::getInstance()->getProcessPath(p.ProcessId);
+				
+				// Get parent process name and path
+				parentProcessModuleName = ProcessManager::getInstance()->getProcessModuleName(p.ParentId);
+				parentProcessPath = ProcessManager::getInstance()->getProcessPath(p.ParentId);
+				if(!Monitor::isEventAllowed(processModuleName,parentProcessModuleName,processPath))
+				{
 					
-					// Get parent process name and path
-					parentProcessModuleName = ProcessManager::getInstance()->getProcessModuleName(p.ParentId);
-					parentProcessPath = ProcessManager::getInstance()->getProcessPath(p.ParentId);
-					//if(!checkIfExcluded(processPath)) 
-					//{
-						if(!Monitor::isEventAllowed(processModuleName,parentProcessModuleName,processPath))
-						{
-							
-							DebugPrint(L"Capture-ProcessMonitor: %i %i:%ls -> %i:%ls\n", p.bCreate, p.ParentId, parentProcessPath.c_str(), p.ProcessId, processPath.c_str()); 
-							signalProcessEvent(p.bCreate, time, p.ParentId, parentProcessPath, p.ProcessId, processPath);
-						}
-					//}		
-					tempP = p;
-				}		
-			}
-			//Sleep(1000);
+					DebugPrint(L"Capture-ProcessMonitor: %i %i:%ls -> %i:%ls\n", p.bCreate, p.ParentId, parentProcessPath.c_str(), p.ProcessId, processPath.c_str()); 
+					signalProcessEvent(p.bCreate, time, p.ParentId, parentProcessPath, p.ProcessId, processPath);
+				}
+				tempP = p;
+			}		
 		}
-		SetEvent(hMonitorStoppedEvent);
-	} catch (...) {
-		printf("ProcessMonitor::run exception\n");	
-		throw;
 	}
+	SetEvent(hMonitorStoppedEvent);
 }

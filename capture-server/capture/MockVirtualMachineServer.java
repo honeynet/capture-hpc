@@ -25,7 +25,11 @@ public class MockVirtualMachineServer implements VirtualMachineServer, Observer 
         this.port = port;
         this.username = username;
         this.password = password;
-        uniqueId = this.hashCode();
+        if(System.getProperty("fixIds") != null && System.getProperty("fixIds").equals("true")) {
+            uniqueId = 1;
+        } else {
+            uniqueId = this.hashCode();
+        }
     }
 
     public boolean revertVirtualMachineStateAsync(VirtualMachine vm) {

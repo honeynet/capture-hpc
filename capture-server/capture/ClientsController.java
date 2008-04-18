@@ -4,25 +4,16 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Observable;
-import java.util.Observer;
-import java.util.Timer;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.*;
 
 
-public class ClientsController extends Observable implements Observer, Runnable, EventObserver {
-	private LinkedList<Client> clients;
-	private ReentrantReadWriteLock clientsLock;
+public class ClientsController extends Observable implements Runnable, EventObserver {
 	private ClientsPinger clientsPinger;
 	private HashMap<String, ExclusionList> exclusionLists;
 
 	private ClientsController()
 	{
-		clients = new LinkedList<Client>();
-		clientsLock = new ReentrantReadWriteLock();
-		clientsPinger = new ClientsPinger(clients, clientsLock);
+		clientsPinger = new ClientsPinger();
 		exclusionLists = new HashMap<String, ExclusionList>();
 		EventsController.getInstance().addEventObserver("exclusion-list", this);
 		Timer clientsPingerTask = new Timer(true);
@@ -51,7 +42,7 @@ public class ClientsController extends Observable implements Observer, Runnable,
             Socket clientSocket;
             while (true) {
             	clientSocket = listener.accept();
-            	this.addClient(clientSocket);
+            	this.handleConnection(clientSocket);
             }
         } catch (IOException ioe) {
         	System.out.println("CaptureServer: exception - " + ioe);
@@ -59,57 +50,20 @@ public class ClientsController extends Observable implements Observer, Runnable,
         }
 	}
 	
-	private void addClient(Socket clientSocket)
+	private void handleConnection(Socket clientSocket)
 	{
-        Client client = new Client(clientSocket);
-        client.addObserver(this);
-        clientsLock.writeLock().lock();
-        clients.add(client);
-        clientsLock.writeLock().unlock();
-        //this.sendExclusionLists(client);
-        client.send("<connect server=\"2.1\" />");
-    	this.setChanged();
-    	this.notifyObservers(client);
+        //pass to clientEventController, which will handle all aspects of this current connection
+        ClientEventController clientEventController = new ClientEventController(clientSocket, exclusionLists, clientsPinger);
+        clientEventController.contactClient();
+
+        //Client client = clientEventController.getClient();
+
+
+        this.setChanged();
+    	//this.notifyObservers(client);
 	}
 	
-	private void sendExclusionLists(Client c)
-	{
-		for(ExclusionList ex : exclusionLists.values())
-		{
-			for(Element e : ex.getExclusionListElements()) 
-			{
-				System.out.println("Sending exclusion list element");
-				c.sendXMLElement(e);
-			}
-		}
-	}
 	
-	private void removeClient(Client client)
-	{
-		clientsLock.writeLock().lock();
-		clients.remove(client);
-		clientsLock.writeLock().unlock();
-	}
-
-	public void update(Observable arg0, Object arg1) {
-		Client client = (Client)arg0;
-		if(client.getClientState() == CLIENT_STATE.DISCONNECTED)
-		{
-			this.removeClient(client);
-		} else if(client.getClientState() == CLIENT_STATE.CONNECTED) {
-            client.send("<option name=\"capture-network-packets-malicious\" value=\"" +
-                    ConfigManager.getInstance().getConfigOption("capture-network-packets-malicious") + "\"/>");
-			client.send("<option name=\"capture-network-packets-benign\" value=\"" + 
-					ConfigManager.getInstance().getConfigOption("capture-network-packets-benign") + "\"/>");
-			client.send("<option name=\"collect-modified-files\" value=\"" + 
-					ConfigManager.getInstance().getConfigOption("collect-modified-files") + "\"/>");
-	        if(ConfigManager.getInstance().getConfigOption("send-exclusion-lists").equals("true"))
-	        {
-	        	this.sendExclusionLists(client);
-	        }
-		}
-	}
-
 	public void update(Element event) {
 		if(event.name.equals("exclusion-list")) {
 			if(event.attributes.containsKey("add-list")) {

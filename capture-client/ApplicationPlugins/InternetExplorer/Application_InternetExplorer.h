@@ -24,6 +24,7 @@
 #pragma once
 #include "..\..\ApplicationPlugin.h"
 #include "..\..\CaptureGlobal.h"
+#include <psapi.h>
 
 #define MAX_WORKER_THREADS 60
 
@@ -42,9 +43,12 @@ public:
 	void visitGroup(VisitEvent* visitEvent);
 	wchar_t** getSupportedApplicationNames();
 	unsigned int getPriority() { return 100; };
+	DWORD closeAllInternetExplorers(IClassFactory* internet_explorer_factory);
 private:
 	static BOOL CALLBACK EnumWindowsProc(HWND hwnd,LPARAM lParam);
 	static DWORD WINAPI InternetExplorerWorker(LPVOID data);
+	int compareName(DWORD processID, std::wstring processName);
+	static BOOL CALLBACK EnumWindowsCloseAppProc(HWND hwnd,LPARAM lParam);
 
 
 };

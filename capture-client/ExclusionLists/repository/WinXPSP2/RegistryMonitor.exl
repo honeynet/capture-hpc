@@ -24,6 +24,7 @@
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	\\REGISTRY\\USER\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKU\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKCU\\Software\\Microsoft\\SystemCertificates\\Root\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\EAPOL\\Parameters\\General\\InterfaceList
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\SystemCertificates\\AuthRoot\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\PCHealth\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\.+

@@ -19,16 +19,7 @@ FileMonitor::FileMonitor(void)
 	
 	FilterUnload(L"CaptureFileMonitor");
 	hResult = FilterLoad(L"CaptureFileMonitor");
-	// Keep trying to load the filter - On some VM's this can take a few seconds
-#ifdef NDEBUG
-	while((turn < 5) && IS_ERROR( hResult ))
-	{
-		turn++;
-		printf("FileMonitor: WARNING - Filter driver not loaded (error: %x) waiting 3 seconds to try again ... (try %i of 5)\n", hResult, turn);
-		Sleep(3000);
-		hResult = FilterLoad(L"CaptureFileMonitor");
-	}
-#endif
+
 	if (!IS_ERROR( hResult )) {
 		
 		hResult = FilterConnectCommunicationPort( CAPTURE_FILEMON_PORT_NAME,
@@ -43,7 +34,6 @@ FileMonitor::FileMonitor(void)
 		} else {
 			printf("Loaded filter driver: CaptureFileMonitor\n");
 			driverInstalled = true;
-			//this.setMonitorModifiedFiles(false);
 		}
 		
 		wchar_t exListDriverPath[1024];
@@ -68,7 +58,6 @@ FileMonitor::FileMonitor(void)
 		Monitor::addExclusion(L"+", L"create", L".*", captureLogDirectory, true);
 		Monitor::addExclusion(L"+", L"delete", L".*", captureLogDirectory, true);
 		Monitor::addExclusion(L"+", L"open", L".*", captureLogDirectory, true);
-		//Monitor::addExclusion(L"+", L"open", L".*", logDirectory, true);
 		Monitor::addExclusion(L"+", L"read", L".*", captureLogDirectory, true);
 
 		/* Exclude Captures temp directory */
@@ -78,9 +67,6 @@ FileMonitor::FileMonitor(void)
 		Monitor::prepareStringForExclusion(captureTempDirectory);
 		captureTempDirectory += L"\\\\.*";
 
-		//std::wstring captureExecutablePath = ProcessManager::getInstance()->getProcessPath(GetCurrentProcessId());
-		//Monitor::prepareStringForExclusion(&captureExecutablePath);
-		
 		/* Exclude file events in the log directory */
 		/* NOTE we exclude all processes because files are copied/delete/openend
 		   etc in the context of the calling process not Capture */
@@ -250,7 +236,25 @@ FileMonitor::stop()
 	{
 		monitorRunning = false;
 		WaitForSingleObject(hMonitorStoppedEvent, 1000);
+		DebugPrint(L"FileMonitor::stop() stopping thread.\n");
 		fileMonitorThread->stop();
+		DWORD dwWaitResult;
+		dwWaitResult = fileMonitorThread->wait(5000);
+		switch (dwWaitResult) 
+		{
+        // All thread objects were signaled
+        case WAIT_OBJECT_0: 
+            DebugPrint(L"FileMonitor::stop() stopped fileMonitorThread.\n");
+			break;
+		case WAIT_TIMEOUT:
+			DebugPrint(L"FileMonitor::stop() stopping fileMonitorThread timed out. Attempting to terminate.\n");
+			fileMonitorThread->terminate();
+			DebugPrint(L"FileMonitor::stop() terminated fileMonitorThread.\n");
+			break;
+        // An error occurred
+        default: 
+            printf("FileMonitor stopping fileMonitorThread failed (%d)\n", GetLastError());
+		} 
 		delete fileMonitorThread;
 		free(fileEvents);
 	}	
@@ -263,8 +267,6 @@ FileMonitor::getFileEventName(PFILE_EVENT pFileEvent, std::wstring *fileEventNam
 	*fileEventName = L"UNKNOWN";
 	if(pFileEvent->majorFileEventType == IRP_MJ_CREATE) {
 		/* Defined at http://msdn2.microsoft.com/en-us/library/ms804358.aspx */
-		//if(!FlagOn(pFileEvent->flags, FO_STREAM_FILE) && pFileEvent->flags > 0)
-		//{
 			if( pFileEvent->information == FILE_CREATED || 
 				pFileEvent->information == FILE_OVERWRITTEN ||
 				pFileEvent->information == FILE_SUPERSEDED ) {
@@ -274,9 +276,7 @@ FileMonitor::getFileEventName(PFILE_EVENT pFileEvent, std::wstring *fileEventNam
 			} else {
 				found = false;
 			}
-		//} else {
-		//	found = false;
-		//}
+
 			/* Ignore stream accesses */
 			std::wstring eventPath = pFileEvent->filePath;
 			if(eventPath.find(L":", 0) != std::wstring::npos)
@@ -289,8 +289,6 @@ FileMonitor::getFileEventName(PFILE_EVENT pFileEvent, std::wstring *fileEventNam
 		*fileEventName = L"Write";
 	} else if(pFileEvent->majorFileEventType == IRP_MJ_DELETE) {
 		*fileEventName = L"Delete";
-	//} else if(pFileEvent->majorFileEventType == IRP_MJ_CLOSE) {
-	//	*fileEventName = L"Close";
 	} else {
 		found = false;
 	}
@@ -310,7 +308,6 @@ FileMonitor::convertFileObjectNameToDosName(std::wstring fileObjectName)
 			break;
 		}
 	}
-	//transform(fileObjectName.begin(), fileObjectName.end(), fileObjectName.begin(), tolower);
 	return fileObjectName;
 }
 
@@ -362,81 +359,76 @@ FileMonitor::copyCreatedFiles()
 void
 FileMonitor::run()
 {
-	try {
-		HRESULT hResult;
-		DWORD bytesReturned = 0;
-		monitorRunning = true;
-		while(isMonitorRunning())
+	HRESULT hResult;
+	DWORD bytesReturned = 0;
+	monitorRunning = true;
+	while(!fileMonitorThread->shouldStop() && isMonitorRunning())
+	{
+		FILEMONITOR_MESSAGE command;
+		command.Command = GetFileEvents;
+
+		ZeroMemory(fileEvents, FILE_EVENTS_BUFFER_SIZE);
+
+		hResult = FilterSendMessage( communicationPort,
+									 &command,
+									 sizeof( FILEMONITOR_COMMAND ),
+									 fileEvents,
+									 FILE_EVENTS_BUFFER_SIZE,
+									 &bytesReturned );
+		if(bytesReturned >= sizeof(FILE_EVENT))
 		{
-			FILEMONITOR_MESSAGE command;
-			command.Command = GetFileEvents;
+			UINT offset = 0;
+			do {
+				PFILE_EVENT e = (PFILE_EVENT)(fileEvents + offset);
 
-			ZeroMemory(fileEvents, FILE_EVENTS_BUFFER_SIZE);
+				std::wstring fileEventName;
+				std::wstring fileEventPath;
+				std::wstring processModuleName;
+				std::wstring processPath;
 
-			hResult = FilterSendMessage( communicationPort,
-										 &command,
-										 sizeof( FILEMONITOR_COMMAND ),
-										 fileEvents,
-										 FILE_EVENTS_BUFFER_SIZE,
-										 &bytesReturned );
-			if(bytesReturned >= sizeof(FILE_EVENT))
-			{
-				UINT offset = 0;
-				do {
-					PFILE_EVENT e = (PFILE_EVENT)(fileEvents + offset);
+				if(getFileEventName(e, &fileEventName))
+				{
+					processPath = ProcessManager::getInstance()->getProcessPath(e->processId);
+					processModuleName = ProcessManager::getInstance()->getProcessModuleName(e->processId);
+					
+					fileEventPath = e->filePath;
+					fileEventPath = convertFileObjectNameToDosName(fileEventPath);
 
-					std::wstring fileEventName;
-					std::wstring fileEventPath;
-					std::wstring processModuleName;
-					std::wstring processPath;
-
-					if(getFileEventName(e, &fileEventName))
+					if((fileEventPath != L"UNKNOWN"))
 					{
-						processPath = ProcessManager::getInstance()->getProcessPath(e->processId);
-						processModuleName = ProcessManager::getInstance()->getProcessModuleName(e->processId);
-						
-						fileEventPath = e->filePath;
-						fileEventPath = convertFileObjectNameToDosName(fileEventPath);
-
-						if((fileEventPath != L"UNKNOWN"))
+						if(!Monitor::isEventAllowed(fileEventName, processPath, fileEventPath))
 						{
-							if(!Monitor::isEventAllowed(fileEventName, processPath, fileEventPath))
+							if(monitorModifiedFiles)
 							{
-								if(monitorModifiedFiles)
+		
+								if(!isDirectory(fileEventPath))
 								{
-			
-									if(!isDirectory(fileEventPath))
+									if(e->majorFileEventType == IRP_MJ_CREATE || 
+										e->majorFileEventType == IRP_MJ_WRITE )
+									{	
+										modifiedFiles.insert(fileEventPath);
+									} else if(e->majorFileEventType == IRP_MJ_DELETE) 
 									{
-										if(e->majorFileEventType == IRP_MJ_CREATE || 
-											e->majorFileEventType == IRP_MJ_WRITE )
-										{	
-											modifiedFiles.insert(fileEventPath);
-										} else if(e->majorFileEventType == IRP_MJ_DELETE) 
-										{
-											modifiedFiles.erase(fileEventPath);
-										}	
-									}
+										modifiedFiles.erase(fileEventPath);
+									}	
 								}
-
-								signal_onFileEvent(fileEventName, Time::timefieldToString(e->time), processPath, fileEventPath);
 							}
+
+							signal_onFileEvent(fileEventName, Time::timefieldToString(e->time), processPath, fileEventPath);
 						}
 					}
-					
-					offset += sizeof(FILE_EVENT) + e->filePathLength;
-				} while(offset < bytesReturned);	
-			}
-			
-			if(bytesReturned == FILE_EVENTS_BUFFER_SIZE)
-			{
-				Sleep(FILE_EVENT_BUFFER_FULL_WAIT_TIME);
-			} else {
-				Sleep(FILE_EVENT_WAIT_TIME);
-			}
+				}
+				
+				offset += sizeof(FILE_EVENT) + e->filePathLength;
+			} while(!fileMonitorThread->shouldStop() && offset < bytesReturned);	
 		}
-		SetEvent(hMonitorStoppedEvent);
-	} catch (...) {
-		printf("FileMonitor::run exception\n");	
-		throw;
+		
+		if(bytesReturned == FILE_EVENTS_BUFFER_SIZE)
+		{
+			Sleep(FILE_EVENT_BUFFER_FULL_WAIT_TIME);
+		} else {
+			Sleep(FILE_EVENT_WAIT_TIME);
+		}
 	}
+	SetEvent(hMonitorStoppedEvent);
 }

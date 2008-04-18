@@ -30,6 +30,7 @@
 #include "Element.h"
 #include <string>
 #include <vector>
+#include "OptionsManager.h"
 
 #include <boost/signal.hpp>
 /*
@@ -52,7 +53,6 @@
 */
 class Server
 {
-	friend class ServerSend;
 	friend class ServerReceive;
 public:
 	typedef boost::signal<void (bool)> signal_setConnected;
@@ -61,6 +61,7 @@ public:
 	Server(const std::wstring& serverAddress, int port);
 	~Server();
 	bool connectToServer(bool startSenderAndReciever = true);
+	bool reconnect();
 	void sendMessage(const std::wstring& message);
 	void sendData(const char* data, size_t length);
 	void sendXML(const std::wstring& elementName, const std::vector<Attribute>& vAttributes);
@@ -69,13 +70,14 @@ public:
 
 	void disconnectFromServer();
 	bool isConnected();
-
+	bool isReconnecting();
 
 	inline std::wstring getServerAddress() { return serverAddress; }
 	
 	
 	boost::signals::connection onConnectionStatusChanged(const signal_setConnected::slot_type& s);
 private:
+	bool reconnecting;
 	bool initialiseWinsock2();
 	void setConnected(bool connected);
 	std::wstring xml_escape(const std::wstring& xml);
@@ -86,7 +88,6 @@ private:
 	std::wstring serverAddress;
 	CRITICAL_SECTION sendQueueLock;
 	std::vector<std::wstring> sendQueue;
-	ServerSend* serverSend;
 	ServerReceive* serverReceive;
 	
 	signal_setConnected signalSetConnected;

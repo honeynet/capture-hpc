@@ -140,12 +140,13 @@ Analyzer::stop()
 	onProcessEventConnection.disconnect();
 	onRegistryEventConnection.disconnect();
 	onFileEventConnection.disconnect();
-	DebugPrintTrace(L"Analyzer::stop() stopped monitors\n");
+	DebugPrint(L"Analyzer::stop() stopped monitors\n");
 
 	if(captureNetworkPackets)
 	{
+		DebugPrint(L"Analyzer::stop() stopping network dumper\n");
 		networkPacketDumper->stop();
-		DebugPrintTrace(L"Analyzer::stop() stopped network dumper\n");
+		DebugPrint(L"Analyzer::stop() stopped network dumper\n");
 	}
 
 	if(collectModifiedFiles || captureNetworkPackets)

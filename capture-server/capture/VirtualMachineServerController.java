@@ -58,7 +58,13 @@ public class VirtualMachineServerController extends Observable implements EventO
 			int id = Integer.parseInt(vmServerId);
 			for(VirtualMachineServer vmServer : virtualMachineServers)
 			{
-				if(vmServer.hashCode() == id)
+                int uniqueId;
+                if(System.getProperty("fixIds") != null && System.getProperty("fixIds").equals("true")) {
+                    uniqueId = 1;
+                } else {
+                    uniqueId = vmServer.hashCode();
+                }
+                if(uniqueId == id)
 				{
 					return vmServer;
 				}

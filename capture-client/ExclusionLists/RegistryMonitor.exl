@@ -24,6 +24,7 @@
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	\\REGISTRY\\USER\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKU\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKCU\\Software\\Microsoft\\SystemCertificates\\Root\\.+
++	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\EAPOL\\Parameters\\General\\InterfaceList
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\SystemCertificates\\AuthRoot\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\PCHealth\\.+
 +	SetValueKey	C:\\WINDOWS\\system32\\svchost.exe	HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\.+
@@ -96,8 +97,7 @@
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\.+
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\CabinetState\\.+
-+	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	
-HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ZoneMap\\UNCAsIntranet
++	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ZoneMap\\UNCAsIntranet
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Internet Explorer\\Toolbar\\WebBrowser\\.+
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ZoneMap\\IntranetName
 +	SetValueKey	C:\\Program Files\\Internet Explorer\\iexplore\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ZoneMap\\AutoDetect

@@ -47,7 +47,7 @@ private:
 	PROCESS_INFORMATION m_piProcessInfo;
 	BOOL static CALLBACK EnumWindowsCloseProc(HWND hwnd,LPARAM lParam);
 	BOOL static CALLBACK EnumWindowsCloseAppProc(HWND hwnd,LPARAM lParam);
-	wchar_t* getName(DWORD processId);
+	int compareName(DWORD processID, std::wstring processName);
 	void DebugPrintTrace(LPCTSTR pszFormat, ... );
 
 

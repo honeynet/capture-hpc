@@ -22,7 +22,6 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include "Server.h"
-#include "ServerSend.h"
 #include "ServerReceive.h"
 
 #include <boost/bind.hpp>
@@ -33,20 +32,35 @@
 
 Server::Server(const std::wstring& sAddress, int p)
 {
+	reconnecting = false;
 	InitializeCriticalSection(&sendQueueLock);
 	serverAddress = sAddress;
 	port = p;
 	connected = false;
-	//serverSend = new ServerSend(this);
 	serverReceive = new ServerReceive(this);
 }
 
 Server::~Server()
 {
-	//delete serverSend;
 	delete serverReceive;
 	WSACleanup();
 	disconnectFromServer();
+}
+
+bool
+Server::isReconnecting() {
+	return reconnecting;
+}
+
+bool
+Server::reconnect()
+{
+	reconnecting = true;
+	WSACleanup();
+	disconnectFromServer();
+	connectToServer(false);
+	connected=true;
+	return TRUE;
 }
 
 
@@ -107,6 +121,7 @@ Server::connectToServer(bool startSenderAndReciever)
 void
 Server::sendMessage(const std::wstring& message)
 {
+	DebugPrintTrace(L"Server::sendMessage(const std::wstring& message) start\n");
 	if(isConnected())
 	{
 
@@ -127,12 +142,16 @@ Server::sendMessage(const std::wstring& message)
 			}
 			free(szMessage);
 		}	
+	} else {
+		DebugPrint(L"Server sendMessage not connected\n");
 	}
+	DebugPrintTrace(L"Server::sendMessage(const std::wstring& message) end\n");
 }
 
 void
 Server::sendData(const char* data, size_t length)
 {
+	DebugPrintTrace(L"Server::sendData(const char* data, size_t length) start\n");
 	if(isConnected())
 	{
 		int result = send(serverSocket, data, static_cast<int>(length), 0);
@@ -141,51 +160,29 @@ Server::sendData(const char* data, size_t length)
 			DebugPrint(L"Capture-Server-sendData: Socket Error %i", WSAGetLastError());
 			setConnected(false);
 		}
+	} else {
+		DebugPrint(L"Server sendData not connected\n");
 	}
+	DebugPrintTrace(L"Server::sendData(const char* data, size_t length) end\n");
 }
 
 void
 Server::sendElement(const Element& element)
 {
+	DebugPrintTrace(L"Server::sendElement(const Element& element) start\n");
 	if(!isConnected())
 	{
+		DebugPrintTrace(L"Server::sendElement(const Element& element) end1\n");
 		return;
 	}
 	sendMessage(element.toString());
-	/*
-	EnterCriticalSection(&sendQueueLock);
-	std::wstring xmlDocument = L"<";
-	xmlDocument += element.getName();
-	std::vector<Attribute>::const_iterator it;
-	for(it = element.getAttributes().begin(); it != element.getAttributes().end(); it++)
-	{
-		xmlDocument += L" ";
-		xmlDocument += (*it).getName();
-		xmlDocument += L"=\"";
-		xmlDocument += xml_escape((*it).getValue());
-		xmlDocument += L"\"";
-	}
-	if(element.getData() != NULL)
-	{
-		xmlDocument += L">";
-		sendMessage(xmlDocument);
-		sendData(element.getData(), element.getDataSize());
-		xmlDocument = L"</";
-		xmlDocument += element.getName();
-		xmlDocument += L">\r\n";
-		sendMessage(xmlDocument);
-	} else {
-		xmlDocument += L"/>\r\n";
-		sendMessage(xmlDocument);
-	}
-	LeaveCriticalSection(&sendQueueLock);
-	*/
-	
+	DebugPrintTrace(L"Server::sendElement(const Element& element) end2\n");
 }
 
 std::wstring
 Server::xml_escape(const std::wstring& xml)
 {
+	DebugPrintTrace(L"Server::xml_escape(const std::wstring& xml) start\n");
 	std::wstring escaped = xml;
 	for(unsigned int i = 0; i < xml.length(); i++)
 	{
@@ -201,14 +198,17 @@ Server::xml_escape(const std::wstring& xml)
 			escaped = escaped.replace(i, 1, L"&apos;");
 		}
 	}
+	DebugPrintTrace(L"Server::xml_escape(const std::wstring& xml) end\n");
 	return escaped;
 }
 
 void
 Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& vAttributes)
 {
+	DebugPrintTrace(L"Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& vAttributes) start\n");
 	if(!isConnected())
 	{
+		DebugPrintTrace(L"Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& vAttributes) end1\n");
 		return;
 	}
 	//EnterCriticalSection(&sendQueueLock);
@@ -226,6 +226,7 @@ Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& v
 	xmlDocument += L"/>\r\n";
 	sendMessage(xmlDocument);
 	//LeaveCriticalSection(&sendQueueLock);
+	DebugPrintTrace(L"Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& vAttributes) end2\n");
 }
 
 void

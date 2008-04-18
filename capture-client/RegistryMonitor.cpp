@@ -181,7 +181,28 @@ RegistryMonitor::stop()
 	{	
 		monitorRunning = false;
 		WaitForSingleObject(hMonitorStoppedEvent, 1000);
+		DebugPrint(L"RegistryMonitor::stop() stopping thread.\n");
 		registryMonitorThread->stop();
+		DWORD dwWaitResult;
+		dwWaitResult = registryMonitorThread->wait(5000);
+		switch (dwWaitResult) 
+		{
+        // All thread objects were signaled
+        case WAIT_OBJECT_0: 
+            DebugPrint(L"RegistryMonitor::stop() stopped registryMonitorThread.\n");
+			break;
+		case WAIT_TIMEOUT:
+			DebugPrint(L"RegistryMonitor::stop() stopping registryMonitorThread timed out. Attempting to terminate.\n");
+			registryMonitorThread->terminate();
+			DebugPrint(L"RegistryMonitor::stop() terminated registryMonitorThread.\n");
+			break;
+        // An error occurred
+        default: 
+            printf("RegistryMonitor stopping registryMonitorThread failed (%d)\n", GetLastError());
+		} 
+
+
+
 		delete registryMonitorThread;
 		free(registryEventsBuffer);
 	}
@@ -245,174 +266,76 @@ RegistryMonitor::convertRegistryObjectNameToHiveName(std::wstring& registryObjec
 	return registryObjectName;
 }
 
-/*
-void
-RegistryMonitor::processRegistryData(PREGISTRY_EVENT registryEvent, BYTE* registryData, std::vector<std::wstring>& data)
-{
-	// Process registry data - Xeno (xenoatwork@gmail.com)
-	//Handle all the post-processing to format the data
-	wchar_t szTemp[256];
-	std::wstring other;
-	size_t tmp_len;
-	data.push_back(registryEvent->valueName);
-
-	//MS description of data types:
-	//http://support.microsoft.com/kb/256986
-	switch(registryEvent->dataType){
-		case REG_NONE:
-			data.push_back(L"REG_NONE");
-			data.push_back(L""); //This is so that the logger adds an extra blank value
-			break;
-		case REG_SZ:
-			data.push_back(L"REG_SZ");
-			data.push_back((wchar_t *)registryData);
-			break;
-		case REG_EXPAND_SZ:
-			data.push_back(L"REG_EXPAND_SZ");
-			data.push_back((wchar_t *)registryData);
-			break;
-		case REG_BINARY:
-			data.push_back(L"REG_BINARY");
-			for(DWORD n = 0; n < registryEvent->dataLengthB; n++){
-				swprintf(szTemp, L"%x", registryData[n]);
-				other.append(szTemp);
-			}
-			data.push_back(other);
-			break;
-		case REG_DWORD:
-			data.push_back(L"REG_DWORD");
-			swprintf_s(szTemp, 256, L"%lx", ((DWORD *)registryData)[0]);
-			data.push_back(szTemp);
-			break;
-		//TODO: Untested
-		case REG_DWORD_BIG_ENDIAN:
-			data.push_back(L"REG_DWORD_BIG_ENDIAN");
-			swprintf_s(szTemp, 256, L"%x%x%x%x", registryData[0],registryData[1],registryData[2],registryData[3]);
-			data.push_back(szTemp);
-			break;
-		//From MS: "A Unicode string naming a symbolic link."
-		//TODO: Untested
-		case REG_LINK:
-			data.push_back(L"REG_LINK");
-			data.push_back((wchar_t *)registryData);
-			break;
-		//TODO: regedit won't let me make a string,empty string, string, but that 
-		// doesn't mean something else might not be able to do it. Look into it as it would
-		// break the while condition into ending early.
-		case REG_MULTI_SZ:
-			data.push_back(L"REG_MULTI_SZ");
-			while(((wchar_t *)registryData)[0] != '\0' ){
-				other.append((wchar_t *)registryData);
-				other.append(L"-|-");
-				tmp_len = wcsnlen((wchar_t *)registryData, 512); //This doesn't count the null char in the length
-				registryData = (BYTE *)((wchar_t *)registryData + (tmp_len + 1));
-			}
-			data.push_back(other);
-			break;
-		//TODO: Untested, "A series of nested arrays..."
-		case REG_RESOURCE_LIST:
-			data.push_back(L"REG_RESOURCE_LIST");
-			data.push_back(L"FILL IN");
-			break;
-		//TODO: Untested, "A series of nested arrays..."
-		case REG_FULL_RESOURCE_DESCRIPTOR:
-			data.push_back(L"REG_FULL_RESOURCE_DESCRIPTOR");
-			data.push_back(L"FILL IN");
-			break;
-		//TODO: Untested, "A series of nested arrays..."
-		case REG_RESOURCE_REQUIREMENTS_LIST:
-			data.push_back(L"REG_RESOURCE_REQUIREMENTS_LIST");
-			data.push_back(L"FILL IN");
-			break;
-		case REG_QWORD_LITTLE_ENDIAN:
-			data.push_back(L"REG_QWORD");
-			swprintf_s(szTemp, 256, L"%lx%lx", ((DWORD *)registryData)[0],((DWORD *)registryData)[1]);
-			data.push_back(szTemp);
-			break;
-		default:
-			data.push_back(L"UNKNOWN TYPE!");
-			swprintf_s(szTemp, 256, L"%ld", registryEvent->dataType);
-			data.push_back(szTemp);
-			break;
-	}
-}
-*/
-
 void
 RegistryMonitor::run()
 {
-	try {
-		DWORD dwReturn; 
-		monitorRunning = true;
-		int waitTime = REGISTRY_DEFAULT_WAIT_TIME;
-		while(isMonitorRunning())
+	DWORD dwReturn; 
+	monitorRunning = true;
+	int waitTime = REGISTRY_DEFAULT_WAIT_TIME;
+	while(!registryMonitorThread->shouldStop() && isMonitorRunning())
+	{
+		ZeroMemory(registryEventsBuffer, REGISTRY_EVENTS_BUFFER_SIZE);
+		DeviceIoControl(hDriver,
+			IOCTL_GET_REGISTRY_EVENTS, 
+			0, 
+			0, 
+			registryEventsBuffer, 
+			REGISTRY_EVENTS_BUFFER_SIZE, 
+			&dwReturn, 
+			NULL);
+		/* Go through all the registry events received. Events are variable sized
+		   so the starts of them are calculated by adding the lengths of the various
+		   data stored in it */
+		if(dwReturn >= sizeof(REGISTRY_EVENT))
 		{
-			ZeroMemory(registryEventsBuffer, REGISTRY_EVENTS_BUFFER_SIZE);
-			DeviceIoControl(hDriver,
-				IOCTL_GET_REGISTRY_EVENTS, 
-				0, 
-				0, 
-				registryEventsBuffer, 
-				REGISTRY_EVENTS_BUFFER_SIZE, 
-				&dwReturn, 
-				NULL);
-			/* Go through all the registry events received. Events are variable sized
-			   so the starts of them are calculated by adding the lengths of the various
-			   data stored in it */
-			if(dwReturn >= sizeof(REGISTRY_EVENT))
-			{
-				UINT offset = 0;
-				do {
-					/* e->registryData contains the registry path first and then optionally
-					   some data */
-					PREGISTRY_EVENT e = (PREGISTRY_EVENT)(registryEventsBuffer + offset);
-					BYTE* registryData = NULL;
-					wchar_t* szRegistryPath = NULL;
-					
-					std::wstring registryEventName = getRegistryEventName(e->eventType);
-					/* Get the registry string */
-					szRegistryPath = (wchar_t*)malloc(e->registryPathLengthB);
-					CopyMemory(szRegistryPath, e->registryData, e->registryPathLengthB);
-					std::wstring registryPath = convertRegistryObjectNameToHiveName(std::wstring(szRegistryPath));
-					std::wstring processPath = ProcessManager::getInstance()->getProcessPath((DWORD)e->processId);
-					
-					/* If there is data stored retrieve it */
-					if(e->dataLengthB > 0)
-					{
-						registryData = (BYTE*)malloc(e->dataLengthB);
-						CopyMemory(registryData, e->registryData+e->registryPathLengthB, e->dataLengthB);				
-					}
-					
-					/* Is the event excluded */
-					if(!Monitor::isEventAllowed(registryEventName,processPath,registryPath))
-					{
-						//std::vector<std::wstring> data;
-						//processRegistryData(e, registryData, data);
-		
-						signal_onRegistryEvent(registryEventName, Time::timefieldToString(e->time), processPath, registryPath);
-					}
-					if(registryData != NULL)
-						free(registryData);
-					if(szRegistryPath != NULL)
-						free(szRegistryPath);
-					offset += sizeof(REGISTRY_EVENT) + e->registryPathLengthB + e->dataLengthB;
-				}while(offset < dwReturn);
+			UINT offset = 0;
+			do {
+				/* e->registryData contains the registry path first and then optionally
+				   some data */
+				PREGISTRY_EVENT e = (PREGISTRY_EVENT)(registryEventsBuffer + offset);
+				BYTE* registryData = NULL;
+				wchar_t* szRegistryPath = NULL;
 				
+				std::wstring registryEventName = getRegistryEventName(e->eventType);
+				/* Get the registry string */
+				szRegistryPath = (wchar_t*)malloc(e->registryPathLengthB);
+				CopyMemory(szRegistryPath, e->registryData, e->registryPathLengthB);
+				std::wstring registryPath = convertRegistryObjectNameToHiveName(std::wstring(szRegistryPath));
+				std::wstring processPath = ProcessManager::getInstance()->getProcessPath((DWORD)e->processId);
 				
-			}
-
-			if(dwReturn == (REGISTRY_EVENTS_BUFFER_SIZE))
-			{
-				waitTime = REGISTRY_BUFFER_FULL_WAIT_TIME;
-			} else {
-				waitTime = REGISTRY_DEFAULT_WAIT_TIME;
-			}
-
-			Sleep(waitTime);
+				/* If there is data stored retrieve it */
+				if(e->dataLengthB > 0)
+				{
+					registryData = (BYTE*)malloc(e->dataLengthB);
+					CopyMemory(registryData, e->registryData+e->registryPathLengthB, e->dataLengthB);				
+				}
+				
+				/* Is the event excluded */
+				if(!Monitor::isEventAllowed(registryEventName,processPath,registryPath))
+				{
+					//std::vector<std::wstring> data;
+					//processRegistryData(e, registryData, data);
+	
+					signal_onRegistryEvent(registryEventName, Time::timefieldToString(e->time), processPath, registryPath);
+				}
+				if(registryData != NULL)
+					free(registryData);
+				if(szRegistryPath != NULL)
+					free(szRegistryPath);
+				offset += sizeof(REGISTRY_EVENT) + e->registryPathLengthB + e->dataLengthB;
+			}while(!registryMonitorThread->shouldStop() && offset < dwReturn);
+			
+			
 		}
-		SetEvent(hMonitorStoppedEvent);
-	} catch (...) {
-		printf("RegistryMonitor::run exception\n");	
-		throw;
+
+		if(dwReturn == (REGISTRY_EVENTS_BUFFER_SIZE))
+		{
+			waitTime = REGISTRY_BUFFER_FULL_WAIT_TIME;
+		} else {
+			waitTime = REGISTRY_DEFAULT_WAIT_TIME;
+		}
+
+		Sleep(waitTime);
 	}
+	SetEvent(hMonitorStoppedEvent);
 }

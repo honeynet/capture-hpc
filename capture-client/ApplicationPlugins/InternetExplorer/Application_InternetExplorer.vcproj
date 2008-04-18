@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="Application_InternetExplorer"
 	ProjectGUID="{AE2C8E80-7D21-47AD-987B-43E0708AE549}"
 	RootNamespace="Client_InternetExplorer"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -41,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;CLIENT_INTERNETEXPLORER_EXPORTS;_WIN32_DCOM;CAPTURE_DEBUG;WARN"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;CLIENT_INTERNETEXPLORER_EXPORTS;_WIN32_DCOM;WARN"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="1"
 				RuntimeLibrary="3"
@@ -62,12 +63,14 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="comsuppw.lib Version.lib Advapi32.lib CaptureGlobal.obj"
+				AdditionalDependencies="comsuppw.lib Version.lib Advapi32.lib CaptureGlobal.obj psapi.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;C:\workingDir\capture-hpc\capture-hpc\trunk\capture-client\Debug&quot;;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;&quot;C:\Program Files\boost\boost_1_34_0\lib&quot;;&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\workingDir\capture-hpc\capture-hpc\branches\2.1.1\capture-client\Debug&quot;;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;&quot;C:\Program Files\boost\boost_1_35_0\lib&quot;;&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				ResourceOnlyDLL="false"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -87,9 +90,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -121,7 +121,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CLIENT_INTERNETEXPLORER_EXPORTS;_WIN32_DCOM;CAPTURE_DEBUG;WARN"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CLIENT_INTERNETEXPLORER_EXPORTS;_WIN32_DCOM;WARN"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -139,14 +139,16 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="comsuppw.lib Version.lib Advapi32.lib CaptureGlobal.obj"
+				AdditionalDependencies="comsuppw.lib Version.lib Advapi32.lib CaptureGlobal.obj psapi.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;C:\workingDir\capture-hpc\capture-hpc\trunk\capture-client\Release&quot;;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;&quot;C:\Program Files\boost\boost_1_34_0\lib&quot;;&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\workingDir\capture-hpc\capture-hpc\branches\2.1.1\capture-client\Release&quot;;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;&quot;C:\Program Files\boost\boost_1_34_0\lib&quot;;&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				ResourceOnlyDLL="false"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -166,9 +168,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"

@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.util.Observable;
 import java.util.List;
 import java.util.Iterator;
+import java.util.HashMap;
 
 enum CLIENT_STATE {
     CONNECTING,
@@ -53,28 +54,34 @@ enum CLIENT_STATE {
  * @version 2.0
  * @see ClientEventController, VirtualMachine
  */
-public class Client extends Observable implements Runnable {
+public class Client extends Observable implements Runnable, Comparable {
     private Socket clientSocket;
     private UrlGroup visitingUrlGroup;
     private CLIENT_STATE clientState;
     private VirtualMachine virtualMachine;
-    private ClientEventController clientEventController;
-    private Thread controller;
 
     private BufferedWriter out;
 
     private Thread urlRetriever;
+    private HashMap<String, ExclusionList> exclusionLists;
 
-    public Client(Socket c) {
+    public Client(HashMap<String, ExclusionList> exclusionLists) {
+        this.exclusionLists = exclusionLists;
         clientState = CLIENT_STATE.CONNECTING;
-        clientSocket = c;
+
+        urlRetriever = new Thread(this, "ClientUrl");
+        urlRetriever.start();
+
+    }
+
+    public void setVirtualMachine(VirtualMachine vm) {
+        this.virtualMachine = vm;
+    }
+
+    public void setSocket(Socket c) {
         try {
+            clientSocket = c;
             out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-            clientEventController = new ClientEventController(this);
-            controller = new Thread(clientEventController, "ClientEC");
-            controller.start();
-            urlRetriever = new Thread(this, "ClientUrl");
-            urlRetriever.start();
         } catch (IOException e) {
             e.printStackTrace(System.out);
             if (visitingUrlGroup != null) {
@@ -84,7 +91,6 @@ public class Client extends Observable implements Runnable {
 
             clientState = CLIENT_STATE.DISCONNECTED;
         }
-
     }
 
     public String errorCodeToString(long error) {
@@ -146,6 +152,17 @@ public class Client extends Observable implements Runnable {
         } catch (IOException e) {
             e.printStackTrace(System.out);
         }
+
+        finally {
+            if (visitingUrlGroup != null) {
+                if (!visitingUrlGroup.isMalicious()) {
+                    visitingUrlGroup.setMalicious(false); //sets underlying url malicious, which will cause error to be written out down the line.
+                }
+                visitingUrlGroup.setMajorErrorCode(ERROR_CODES.CAPTURE_CLIENT_CONNECTION_RESET.errorCode);
+                visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);
+            }
+            setClientState(CLIENT_STATE.DISCONNECTED);
+        }
     }
 
     public void parseEvent(Element element) {
@@ -163,7 +180,7 @@ public class Client extends Observable implements Runnable {
 
             //if we are visiting a group, we can reset right now,
             // because we will revisit URLs later to get more detail info about state changes
-            if(visitingUrlGroup.size()>1) {
+            if (visitingUrlGroup.size() > 1) {
                 System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
                 visitingUrlGroup.setVisitFinishTime(element.attributes.get("time"));
 
@@ -182,12 +199,12 @@ public class Client extends Observable implements Runnable {
     public void parseVisitEvent(Element element) {
         String type = element.attributes.get("type");
         if (type.equals("start")) {
-	    if(visitingUrlGroup==null) {
-		System.out.println("visiting grp is null");
-	    }
-	    if(this.getVirtualMachine()==null) {
-		System.out.println("vm is null");
-	    }
+            if (visitingUrlGroup == null) {
+                System.out.println("visiting grp is null");
+            }
+            if (this.getVirtualMachine() == null) {
+                System.out.println("vm is null");
+            }
             System.out.println(this.getVirtualMachine().getLogHeader() + " Visiting group " + visitingUrlGroup.getIdentifier());
             visitingUrlGroup.setVisitStartTime(element.attributes.get("time"));
 
@@ -256,7 +273,7 @@ public class Client extends Observable implements Runnable {
             if (!(major.equals("268435730") || major.equals("268435731") || major.equals("268436224") || major.equals("268435728"))) {
                 System.out.println(this.getVirtualMachine().getLogHeader() + " ERROR " + visitingUrlGroup.getIdentifier());
 
-                if(ConfigManager.getInstance().getConfigOption("halt_on_revert")!=null && ConfigManager.getInstance().getConfigOption("halt_on_revert").equals("true")) { //if option is set, vm is not reverted, but rather server is halted.
+                if (ConfigManager.getInstance().getConfigOption("halt_on_revert") != null && ConfigManager.getInstance().getConfigOption("halt_on_revert").equals("true")) { //if option is set, vm is not reverted, but rather server is halted.
                     System.out.println("Halt on revert set.");
                     System.out.println("Revert called - exiting with code -20.");
                     System.exit(-20);
@@ -280,40 +297,19 @@ public class Client extends Observable implements Runnable {
                     visitingUrlGroup.setMalicious(true);
                     visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);   //will set underlying url state
                     System.out.println(this.getVirtualMachine().getLogHeader() + " MALICIOUS " + visitingUrlGroup.getIdentifier());
-		    visitingUrlGroup = null;
+                    visitingUrlGroup = null;
                     this.setClientState(CLIENT_STATE.DISCONNECTED);
                 } else {
                     visitingUrlGroup.setMalicious(false);
                     visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);   //will set underlying url state and not cause reset vm
                     System.out.println(this.getVirtualMachine().getLogHeader() + " BENIGN " + visitingUrlGroup.getIdentifier());
-		    visitingUrlGroup = null;
+                    visitingUrlGroup = null;
                     this.setClientState(CLIENT_STATE.WAITING);
                 }
             }
         }
     }
 
-    public void parseConnectEvent(Element element) {
-        String vmServerId = element.attributes.get("vm-server-id");
-        String vmId = element.attributes.get("vm-id");
-        if ((vmServerId != null && vmId != null) &&
-                (vmServerId != "" && vmId != "")) {
-            VirtualMachineServer vmServer = VirtualMachineServerController.getInstance().getVirtualMachineServer(vmServerId);
-
-            int id = Integer.parseInt(vmId);
-            for (VirtualMachine vm : vmServer.getVirtualMachines()) {
-                if (vm.getVmUniqueId() == id) {
-
-                    virtualMachine = vm;
-                    virtualMachine.setClient(this);
-
-                    this.setClientState(CLIENT_STATE.CONNECTED);
-                    this.setClientState(CLIENT_STATE.WAITING);
-                    break;
-                }
-            }
-        }
-    }
 
     public CLIENT_STATE getClientState() {
         return clientState;
@@ -338,9 +334,29 @@ public class Client extends Observable implements Runnable {
             synchronized (urlRetriever) {
                 urlRetriever.notify(); //in order to let urlRetriever thread stop
             }
+        } else if (clientState == CLIENT_STATE.CONNECTED) {
+            send("<option name=\"capture-network-packets-malicious\" value=\"" +
+                    ConfigManager.getInstance().getConfigOption("capture-network-packets-malicious") + "\"/>");
+            send("<option name=\"capture-network-packets-benign\" value=\"" +
+                    ConfigManager.getInstance().getConfigOption("capture-network-packets-benign") + "\"/>");
+            send("<option name=\"collect-modified-files\" value=\"" +
+                    ConfigManager.getInstance().getConfigOption("collect-modified-files") + "\"/>");
+            if (ConfigManager.getInstance().getConfigOption("send-exclusion-lists").equals("true")) {
+                this.sendExclusionLists();
+            }
         }
         this.setChanged();
         this.notifyObservers();
+    }
+
+
+    private void sendExclusionLists() {
+        for (ExclusionList ex : exclusionLists.values()) {
+            for (Element e : ex.getExclusionListElements()) {
+                System.out.println("Sending exclusion list element");
+                sendXMLElement(e);
+            }
+        }
     }
 
     public Socket getClientSocket() {
@@ -378,5 +394,11 @@ public class Client extends Observable implements Runnable {
                 }
             }
         }
+    }
+
+    public int compareTo(Object o) {
+        Client c1 = (Client) o;
+        int vmId1 = c1.getVirtualMachine().getVmUniqueId();
+        return vmId1 - getVirtualMachine().getVmUniqueId();
     }
 }

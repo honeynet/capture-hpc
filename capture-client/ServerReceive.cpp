@@ -31,7 +31,25 @@ ServerReceive::stop()
 {
 	if(running)
 	{
+		DebugPrint(L"ServerReceive::stop() stopping thread.\n");
 		receiver->stop();
+		DWORD dwWaitResult;
+		dwWaitResult = receiver->wait(5000);
+		switch (dwWaitResult) 
+		{
+        // All thread objects were signaled
+        case WAIT_OBJECT_0: 
+            DebugPrint(L"ServerReceive::stop() stopped receiver.\n");
+			break;
+		case WAIT_TIMEOUT:
+			DebugPrint(L"ServerReceive::stop() stopping receiver timed out. Attempting to terminate.\n");
+			receiver->terminate();
+			DebugPrint(L"ServerReceive::stop() terminated sender.\n");
+			break;
+        // An error occurred
+        default: 
+            printf("ServerReceive stopping receiver failed (%d)\n", GetLastError());
+		} 
 	}
 	running = false;
 }
@@ -39,55 +57,36 @@ ServerReceive::stop()
 void
 ServerReceive::run()
 {
-	try {
-		DebugPrintTrace(L"ServerReceive::run() start\n");
-		//while(server->isConnected())
-		//{
-			/*
-			int bytesRecv = 0;
-			char buffer[MAX_RECEIVE_BUFFER];
-			wchar_t message[MAX_RECEIVE_BUFFER];
-			ZeroMemory(&buffer, MAX_RECEIVE_BUFFER);
-			bytesRecv = recv(server->serverSocket, buffer, MAX_RECEIVE_BUFFER, 0);
-			if(bytesRecv < 2)
+	DebugPrintTrace(L"ServerReceive::run() start\n");
+	while(!receiver->shouldStop() && server->isConnected())
+	{
+		char buffer[MAX_RECEIVE_BUFFER];
+		std::string xmlDocument = "";
+		int bytesRecv = 0;
+		while(!receiver->shouldStop() && (bytesRecv = recv(server->serverSocket, buffer, MAX_RECEIVE_BUFFER, 0)) > 2)
+		{
+			printf("ServerReceive. Bytes received: %d\n",bytesRecv);
+			for(int i = 0; i < bytesRecv; i++)
 			{
-				server->setConnected(false);
-				break;
-			}
-			
-			size_t convertedChars = 0;
-			mbstowcs_s(&convertedChars, message, strlen(buffer) + 1, buffer, _TRUNCATE);
-			printf("Received: %i - > %ls\n",bytesRecv, message);
-			*/
-
-			char buffer[MAX_RECEIVE_BUFFER];
-			std::string xmlDocument = "";
-			int bytesRecv = 0;
-			while((bytesRecv = recv(server->serverSocket, buffer, MAX_RECEIVE_BUFFER, 0)) > 2)
-			{
-				for(int i = 0; i < bytesRecv; i++)
+				if(buffer[i] != '\0')
 				{
-					if(buffer[i] != '\0')
-					{
-						xmlDocument += buffer[i];
-					} else {
-						printf("Got: %s\n", xmlDocument.c_str());
-						DebugPrint(L"Capture-ServerReceiver: Received document - length: %i\n", xmlDocument.length());
-						EventController::getInstance()->receiveServerEvent(xmlDocument.c_str());
-						xmlDocument = "";
-					}
+					xmlDocument += buffer[i];
+				} else {
+					printf("Got: %s\n", xmlDocument.c_str());
+					DebugPrint(L"ServerReceive: Received document - length: %i\n", xmlDocument.length());
+					EventController::getInstance()->receiveServerEvent(xmlDocument.c_str());
+					xmlDocument = "";
 				}
-				Sleep(100);
-				//EventController::getInstance()->receiveServerEvent(message);
 			}
+			Sleep(100);
+		}
 
-			// Received something so pass it onto the event manager
-			
-		//}
-		running = false;
-		DebugPrintTrace(L"ServerReceive::run() end\n");
-	} catch (...) {
-		printf("ServerReceive::run exception\n");	
-		throw;
+		if(bytesRecv<0) {
+			printf("ServerReceive. Bytes received2: %d\n",bytesRecv);
+			printf("ServerReceive. Recv failed: %d\n", WSAGetLastError());
+			server->reconnect();
+		}
 	}
+	running = false;
+	DebugPrintTrace(L"ServerReceive::run() end\n");
 }

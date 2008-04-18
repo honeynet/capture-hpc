@@ -106,13 +106,17 @@ NetworkPacketDumper::start()
 void
 NetworkPacketDumper::stop()
 {	
+	DebugPrintTrace(L"NetworkPacketDumper::stop() start\n");
 	if(isMonitorRunning() && isDriverInstalled())
 	{
 		std::list<NetworkAdapter*>::iterator it;
 		for(it = adapterList.begin(); it != adapterList.end(); it++)
 		{
+			DebugPrint(L"NetworkPacketDumper::stop() stopping adapter X\n");
 			(*it)->stop();
+			DebugPrint(L"NetworkPacketDumper::stop() stopped adapter X\n");
 		}
 		monitorRunning = false;
 	}	
+	DebugPrintTrace(L"NetworkPacketDumper::stop() end\n");
 }

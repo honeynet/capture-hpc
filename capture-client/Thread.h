@@ -56,6 +56,8 @@ public:
 		Creates a thread object and stores the object which implements the IRunnable interface in <_threadObj>
 	*/
 	Thread(Runnable *ptr) {
+		
+
 		_threadObj = ptr;
 	}
 
@@ -68,7 +70,25 @@ public:
 		DWORD threadID;
 		hThread = CreateThread(0, 0, threadProc, _threadObj, 0, &threadID);
 		setThreadName( threadID, name);
+
+		hStopEvent = CreateEvent( 
+			NULL,              
+			TRUE,              
+			FALSE,             
+			(LPCTSTR) name 
+			); 
+
 		return threadID;
+	}
+
+	DWORD wait(int timeout) {
+		DWORD dwWaitResult = WAIT_OBJECT_0;
+		if(hThread != NULL) {
+		dwWaitResult = WaitForSingleObject(
+			hThread,
+			timeout);
+		}
+		return dwWaitResult;
 	}
 
 	/* Give a thread a name. Thanks Microsoft. */ 
@@ -89,9 +109,42 @@ public:
 	/*
 		Function: Stop
 
-		Stops the running thread that was created
+		Stops the running thread that was created. Thread should monitor the shouldStop() function
 	*/
-	BOOL stop() {
+	void stop() {
+		SetEvent(hStopEvent);
+	}
+
+	/*
+		Function: ShouldStop
+
+		Indicates that the thread should stop
+	*/
+	BOOL shouldStop() {
+		DWORD dwWaitResult;
+
+     
+		dwWaitResult = WaitForSingleObject( 
+			hStopEvent, 
+			0);    
+
+		switch(dwWaitResult)
+		{
+			case WAIT_OBJECT_0:
+				return TRUE;
+				break;
+			default:
+				return FALSE;
+				break;
+		}
+	}
+
+	/*
+		Function: Terminate
+
+		Terminates the running thread that was created
+	*/
+	BOOL terminate() {
 		if(hThread != NULL)
 			return TerminateThread(hThread, 0);
 		return FALSE;
@@ -104,6 +157,15 @@ protected:
 		Handle to the thread when <Start> is called
 	*/
 	HANDLE hThread;
+
+
+	/*
+		Variable hStopEvent
+
+		Handle to event that indicates whether Thread should stop.
+		Thread needs to monitor signal state via WaitForSingleObjectFunction
+	*/
+	HANDLE hStopEvent;
 
 	/*
 		Variable: _threadObj

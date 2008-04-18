@@ -11,6 +11,7 @@
 #include "Logger.h"
 #include "OptionsManager.h"
 #include "shellapi.h"
+#include "PluginTest.h"
 
 /* Initialise static variables. These are all singletons */
 /* Process manager which keeps track of opened processes and their paths */
@@ -44,6 +45,8 @@ public:
 			printf("\n\nCould not acquire privileges. Make sure you are running Capture with Administrator rights\n");
 			exit(1);
 		}
+
+		printf("Starting Capture Client 2.1.1\n");
 
 		/* Create the log directories */
 		CreateDirectory(L"logs",NULL);
@@ -126,14 +129,7 @@ public:
 	{
 		DebugPrintTrace(L"CaptureClient::onConnectionStatusChanged(bool connectionStatus) start\n");
 		printf("Got connect status changed\n");
-#ifndef _DEBUG
-		if(!connectionStatus)
-		{
-			if(OptionsManager::getInstance()->getOption(L"server") != L"")
-				printf("Disconnected from server: Exiting client\n");
-			SetEvent(hStopRunning);
-		}
-#endif
+		DebugPrintTrace(L"CaptureClient::onConnectionStatusChanged(bool connectionStatus) end\n");
 		DebugPrintTrace(L"CaptureClient::onConnectionStatusChanged(bool connectionStatus) end\n");
 	}
 
@@ -148,7 +144,12 @@ public:
 			vector<Attribute> attributes;
 			attributes.push_back(Attribute(L"vm-server-id", OptionsManager::getInstance()->getOption(L"vm-server-id")));
 			attributes.push_back(Attribute(L"vm-id", OptionsManager::getInstance()->getOption(L"vm-id")));
-			server->sendXML(L"connect", attributes);
+			if(server->isReconnecting()) {
+				server->sendXML(L"reconnect", attributes);
+			} else {
+				server->sendXML(L"connect", attributes);
+			}
+
 		}
 		DebugPrintTrace(L"CaptureClient::onServerConnectEvent(const Element& element) endn");
 	}
@@ -312,6 +313,14 @@ int _tmain(int argc, WCHAR* argv[])
 
 	delete [] szFullPath;
 	
+	//allows to do some custom testing
+	std::wstring option = argv[1];
+	if(option == L"-t") {
+		PluginTest* test = new PluginTest();
+		test->loadTest();
+		exit(0);
+	}
+
 	std::wstring serverIp = L"";
 	std::wstring serverPort = L"7070";
 	std::wstring vmServerId = L"";

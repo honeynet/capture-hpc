@@ -54,7 +54,11 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
         this.port = port;
         this.username = username;
         this.password = password;
-        uniqueId = this.hashCode();
+        if(System.getProperty("fixIds") != null && System.getProperty("fixIds").equals("true")) {
+            uniqueId = 1;
+        } else {
+            uniqueId = this.hashCode();
+        }
         Thread t = new Thread(this, "VMwareServer-" + address + ":" + port);
         t.start();
 

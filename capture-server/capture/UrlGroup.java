@@ -23,6 +23,7 @@ public class UrlGroup extends Observable {
     private int visitTime = 5;
     private int identifier;
     private boolean initialGroup = true;
+    private int errorCount = 0;
 
 
     private static Random generator = new Random();
@@ -33,7 +34,7 @@ public class UrlGroup extends Observable {
 
     public UrlGroup(List<Url> urlList, boolean initialGroup) {
         urlGroupState = URL_GROUP_STATE.NONE;
-        this.identifier = generator.nextInt();
+        generateIdentifier();
         this.initialGroup = initialGroup;
         this.urlList = urlList;
 
@@ -55,6 +56,10 @@ public class UrlGroup extends Observable {
                 System.out.println("Invalid url group. Different visit times. Setting to " + this.visitTime);
             }
         }
+    }
+
+    public void generateIdentifier() {
+        this.identifier = generator.nextInt();
     }
 
     /**
@@ -100,6 +105,8 @@ public class UrlGroup extends Observable {
                     url.setUrlState(URL_STATE.ERROR);
                 }
             } else if (urlGroupState == URL_GROUP_STATE.ERROR) {
+                errorCount++;
+
                 if (url.getMajorErrorCode() == ERROR_CODES.OK) {
                     url.setMajorErrorCode(this.majorErrorCode.errorCode);
                 }
@@ -112,6 +119,10 @@ public class UrlGroup extends Observable {
         this.notifyObservers();
     }
 
+
+    public int getErrorCount() {
+        return errorCount;
+    }
 
     public URL_GROUP_STATE getUrlGroupState() {
         return urlGroupState;

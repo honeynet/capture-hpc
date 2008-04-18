@@ -1,6 +1,6 @@
 /*
  *	PROJECT: Capture
- *	FILE: ServerSend.h
+ *	FILE: PluginTest.h
  *	AUTHORS: Ramon Steenson (rsteenson@gmail.com) & Christian Seifert (christian.seifert@gmail.com)
  *
  *	Developed by Victoria University of Wellington and the New Zealand Honeynet Alliance
@@ -22,26 +22,22 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
-#include "Thread.h"
+#include <string>
+#include "Url.h"
+#include "VisitEvent.h"
+#include "ApplicationPlugin.h"
 
-class Server;
-
-/*
-	Class: ServerSend
-
-	See <Server>
-*/
-class ServerSend : public Runnable
+class PluginTest
 {
 public:
-	ServerSend(Server* s);
-	~ServerSend(void);
-	void start();
-	void stop();
 
-	void run();
+public:
+	PluginTest(void);
+	virtual ~PluginTest(void);
+	void loadTest();
 private:
-	Server* server;
-	Thread* sender;
-	bool running;
+	void loadIEPlugin();
+	ApplicationPlugin* createApplicationPluginObject(HMODULE hPlugin);
+
+	ApplicationPlugin* ie;
 };

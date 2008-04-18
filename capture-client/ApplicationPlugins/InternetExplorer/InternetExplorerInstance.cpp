@@ -35,17 +35,9 @@ InternetExplorerInstance::visitUrl(Url* url)
 
 	int blah = GetTickCount() % 1024;
 	
-	//printf("sleeping: %i\n", blah);
-	//Sleep(blah);
 	hr = internet_explorer_factory->CreateInstance(NULL, IID_IWebBrowser2, 
 							(void**)&pInternetExplorer);
-	//internet_explorer_factory->Release();
-	//hr = CoCreateInstance(CLSID_InternetExplorer,
-	//	NULL,
-	//	CLSCTX_SERVER,
-	//	IID_IWebBrowser2,
-	//	(void**)&pInternetExplorer );
-
+	
 	/* Create an IE window and connect this object to it so it can receive
 	   events from IE */
 	if ( SUCCEEDED ( hr ) )
@@ -72,7 +64,7 @@ InternetExplorerInstance::visitUrl(Url* url)
 				pInternetExplorer->put_Visible(TRUE);
 				_variant_t URL, Flag, TargetFrameName, PostData, Headers;
 				URL = url->getUrl().c_str();
-					
+
 				hr = pInternetExplorer->Navigate2(&URL,&Flag,&TargetFrameName,&PostData,&Headers);
 				
 				// Wait for the IE instance to visit the url
@@ -132,8 +124,6 @@ InternetExplorerInstance::Close()
 
 	DebugPrintTrace(L"InternetExplorerInstance::Close() end\n");
 	return (hr == S_OK);
-	
-	
 }
 
 HRESULT STDMETHODCALLTYPE
@@ -148,11 +138,13 @@ InternetExplorerInstance::Invoke(
 									 UINT *puArgErr)
  {
 	DebugPrintTrace(L"IInternetExplorerInstance::Invoke(...) start\n");
+	printf("Dispatch Event ID: %d\n",dispIdMember);
 	VARIANT * vt_statuscode;
 	VARIANT * url;
     switch (dispIdMember)
     {
 	case DISPID_BEFORENAVIGATE2:
+		DebugPrint(L"BeforeNavigate2");
 		/* Put the first url (the main one) into a variable */
 		if(mainURL.vt == VT_EMPTY)
 		{
@@ -160,11 +152,18 @@ InternetExplorerInstance::Invoke(
 		}
 		break;
 	case DISPID_NAVIGATECOMPLETE2:		
+		DebugPrint(L"NavigateComplete2");
+		break;
+	case 283:
+		DebugPrint(L"DocumentComplete");
+		SetEvent(hVisiting);
 		break;
 	case DISPID_DOCUMENTCOMPLETE:
+		DebugPrint(L"DocumentComplete");
 		SetEvent(hVisiting);
 		break;
 	case DISPID_NAVIGATEERROR:		
+		DebugPrint(L"NavigateError");
 		url = pDispParams->rgvarg[3].pvarVal;		
 		HRESULT result;
 		/* Compare the main url stored to the one this error msg is for
@@ -185,10 +184,12 @@ InternetExplorerInstance::Invoke(
 		}
 		break;
 	case DISPID_ONQUIT:
+		DebugPrint(L"onQuit");
 		exited = true;
 		SetEvent(hVisiting);
 		break;
 	default:
+		DebugPrint(L"default");
 		break;
 	}
 	DebugPrintTrace(L"IInternetExplorerInstance::Invoke(...) end\n");

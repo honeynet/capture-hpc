@@ -13,6 +13,9 @@
 +	Write	C:\\program Files\\capture\\7za\.exe	C:\\program files\\capture\\capture\.log
 +	Write	C:\\program Files\\capture\\7za\.exe	C:\\program files\\capture\\.+\.zip
 +	Delete	C:\\program Files\\capture\\7za\.exe	C:\\program files\\capture\\.+\.zip
++	Write	C:\\program Files\\capture\\7za\.exe	C:\\progra~1\\capture\\capture\.log
++	Write	C:\\program Files\\capture\\7za\.exe	C:\\progra~1\\capture\\.+\.zip
++	Delete	C:\\program Files\\capture\\7za\.exe	C:\\progra~1\\capture\\.+\.zip
 #Prefetch
 +	Write	C:\\WINDOWS\\system32\\svchost\.exe	C:\\WINDOWS\\Prefetch\\.+
 +	Write	System	C:\\WINDOWS\\Prefetch\\.+

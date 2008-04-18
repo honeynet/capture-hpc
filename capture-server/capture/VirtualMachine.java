@@ -33,7 +33,11 @@ public class VirtualMachine extends Observable implements Observer {
         password = pass;
         captureClientPath = cpath;
         lastContact = Calendar.getInstance().getTimeInMillis();
-        vmUniqueId = this.hashCode();
+        if(System.getProperty("fixIds") != null && System.getProperty("fixIds").equals("true")) {
+            vmUniqueId = 1;
+        } else {
+            vmUniqueId = this.hashCode();
+        }
         vmStateTimeChange = Calendar.getInstance().getTimeInMillis();
         vmState = VM_STATE.STOPPED;
     }

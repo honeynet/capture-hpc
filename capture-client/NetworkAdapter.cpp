@@ -46,15 +46,32 @@ NetworkAdapter::start()
 void
 NetworkAdapter::stop()
 {
-	printf("Stopping network adapter\n");
 	DebugPrintTrace(L"NetworkAdapter::stop() start\n");
+	printf("Stopping network adapter\n");
 	if(running)
 	{
+		DebugPrint(L"NetworkAdapter::stop() stopping adapterThread\n");
 		adapterThread->stop();
+		DWORD dwWaitResult;
+		dwWaitResult = adapterThread->wait(5000);
+		switch (dwWaitResult) 
+		{
+        // All thread objects were signaled
+        case WAIT_OBJECT_0: 
+            DebugPrint(L"NetworkAdapter::stop() stopped adapterThread\n");
+			break;
+		case WAIT_TIMEOUT:
+			DebugPrint(L"NetworkAdapter::stop() stopping adapterThread timed out. Attempting to terminate.\n");
+			adapterThread->terminate();
+			DebugPrint(L"NetworkAdapter::stop() terminated adapterThread.\n");
+			break;
+        // An error occurred
+        default: 
+            printf("NetworkAdapter stopping adapterThread failed (%d)\n", GetLastError());
+		} 
 		delete adapterThread;
 		if(dumpFile != NULL)
 			networkPacketDumper->pfn_pcap_dump_close(dumpFile);
-		//networkPacketDumper->pfn_pcap_close(adapter);
 		running = false;
 	}
 	DebugPrintTrace(L"NetworkAdapter::stop() end\n");
@@ -64,23 +81,19 @@ void
 NetworkAdapter::run()
 {
 	DebugPrintTrace(L"NetworkAdapter::run() start\n");
-	try {
-		int res;
-		struct pcap_pkthdr *header;
-		const u_char *pkt_data;
-		while((res = networkPacketDumper->pfn_pcap_next_ex( adapter, &header, &pkt_data)) >= 0)
-		{     
-			if(res > 0)
+	int res;
+	struct pcap_pkthdr *header;
+	const u_char *pkt_data;
+	while(!adapterThread->shouldStop() && (res = networkPacketDumper->pfn_pcap_next_ex( adapter, &header, &pkt_data)) >= 0)
+	{     
+		if(res > 0)
+		{
+			if(dumpFile != NULL)
 			{
-				if(dumpFile != NULL)
-				{
-					networkPacketDumper->pfn_pcap_dump((unsigned char *) dumpFile, header, pkt_data);
-				}
+				networkPacketDumper->pfn_pcap_dump((unsigned char *) dumpFile, header, pkt_data);
 			}
 		}
-	} catch (...) {
-		printf("NetworkAdapter::run exception\n");	
-		throw;
 	}
+
 	DebugPrintTrace(L"NetworkAdapter::run() start\n");
 }

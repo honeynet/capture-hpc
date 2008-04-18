@@ -91,7 +91,7 @@ public class UrlGroupsController extends Observable implements Observer {
             k = 5;
         } else if (maliciousPercentage < 0.095) {
             k = 4;
-        } else if (maliciousPercentage < 0.1) {
+        } else if (maliciousPercentage < 0.09) {
             k = 4;
         } else {
             k = 1;
@@ -138,11 +138,28 @@ public class UrlGroupsController extends Observable implements Observer {
             visitingList.remove(urlGroup);
 
             List<Url> urls = urlGroup.getUrlList();
+            boolean networkReset = true;
             for (Iterator<Url> iterator = urls.iterator(); iterator.hasNext();) {
                 Url url = iterator.next();
                 url.setMajorErrorCode(urlGroup.getMajorErrorCode().errorCode);
+                if(url.getMajorErrorCode()==ERROR_CODES.NETWORK_ERROR && url.getMinorErrorCode()==2148270085L) {
+                    networkReset = true;
+                }
                 url.setUrlState(URL_STATE.ERROR);
             }
+
+            //certain errors will be retried: vm_stalled, client inactivity, network reset
+            boolean retry    = networkReset;
+            if(urlGroup.getMajorErrorCode()==ERROR_CODES.VM_STALLED || urlGroup.getMajorErrorCode()==ERROR_CODES.CAPTURE_CLIENT_INACTIVITY || urlGroup.getMajorErrorCode()== ERROR_CODES.CAPTURE_CLIENT_CONNECTION_RESET) {
+                retry = true;
+            }
+
+            if(retry && urlGroup.getErrorCount()<1) {
+                System.out.println("Retrying to visit group " + urlGroup.getIdentifier());
+                urlGroup.getIdentifier();   //generate new identifier, so group can be differentiated in the log
+                urlGroupQueue.push(urlGroup);
+            }
+
         }
     }
 

@@ -7,7 +7,7 @@ Capture is written and distributed under the GNU General Public License.
 1.Prerequisites
 ---------------
 * Sun's Java JRE 1.6.0_02
-* VMWare Server 1.0.3 with VMware VIX (available at http://www.vmware.com/download/server/) 
+* VMWare Server 1.0.5 with VMware VIX (available at http://www.vmware.com/download/server/) 
 * Microsoft Windows XP, Microsoft Windows Vista or Linux (other OS might also be capable of running the server, but are not supported)
 
 1.1 Installing the VMware VIX
@@ -23,7 +23,7 @@ Unpack the capture-server zip file.
 Configuring the server component requires editing the config.xml file that was distributed with the capture-server release.
 
 * Open up the config.xml
-* Configure the global options, such as the time that is allowed to pass to retrieve a URL, the option to automatically retrieve malware or network captures (on benign and malicious URLs), and the directive to push the local exclusion list to the clients. 
+* Configure the global options, such as the time that is allowed to pass to retrieve a URL, the option to automatically retrieve malware or network captures (on benign and malicious URLs), and the directive to push the local exclusion list to the clients. The timeout_factor allows one to increase the various timeouts (e.g. the number of seconds it takes before a VM is reverted after client fails to connect to server after a revert)
 * The value p_m turns on the divide&conquer feature (see http://www.mcs.vuw.ac.nz/~cseifert/publications/cseifert_divide_and_conquer.pdf) in which client applications are started in parallel and if a malicious state change is detected, the set is divided in half and iterativly visited until the malicious URL is identified (Note there are some risks of missing attacks using this feature; in particular attacks that make use of ip tracking functionality. The paper http://www.mcs.vuw.ac.nz/~cseifert/publications/IFIP2008_CSeifert_Paper66.pdf describes the setup that can reduce this risk.
 The global option p_m determines how many instances of the client application are opened at the same time. The lower the value, the more instances are opened. A value of 1 will cause only 1 instance to be opened (just like Capture-HPC v 2.01 and prior). A value of 0.004 will cause 80 (max) instances to be opened. Note only certain client applications support this feature:
 	- IE: full support
@@ -44,6 +44,7 @@ Example:
 			capture-network-packets-benign="false"
 			send-exclusion-lists="false"
         	p_m="0.019"
+			timeout_factor="1.0"
 	/>
 
         <exclusion-list monitor="file" file="FileMonitor.exl" />
