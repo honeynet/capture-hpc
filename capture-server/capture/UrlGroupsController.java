@@ -154,7 +154,7 @@ public class UrlGroupsController extends Observable implements Observer {
                 retry = true;
             }
 
-            if(retry && urlGroup.getErrorCount()<1) {
+            if(retry && urlGroup.getErrorCount()<=1) {
                 System.out.println("Retrying to visit group " + urlGroup.getIdentifier());
                 urlGroup.getIdentifier();   //generate new identifier, so group can be differentiated in the log
                 urlGroupQueue.push(urlGroup);
