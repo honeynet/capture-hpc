@@ -153,7 +153,6 @@ public class UrlGroupsController extends Observable implements Observer {
             if(urlGroup.getMajorErrorCode()==ERROR_CODES.VM_STALLED || urlGroup.getMajorErrorCode()==ERROR_CODES.CAPTURE_CLIENT_INACTIVITY || urlGroup.getMajorErrorCode()== ERROR_CODES.CAPTURE_CLIENT_CONNECTION_RESET) {
                 retry = true;
             }
-
             if(retry && urlGroup.getErrorCount()<=1) {
                 System.out.println("Retrying to visit group " + urlGroup.getIdentifier());
                 urlGroup.getIdentifier();   //generate new identifier, so group can be differentiated in the log

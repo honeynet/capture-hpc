@@ -89,11 +89,15 @@ public class ClientEventController extends DefaultHandler implements Runnable {
                     if (vm.getVmUniqueId() == id) {
                         try {
                             client = vm.getClient();
-                            client.getClientSocket().close();
+                            if(client!=null) {
+                                client.getClientSocket().close();
+                            }
                         } catch (IOException e) {
                             e.printStackTrace(System.out);
                         }
-                        client.setSocket(clientSocket);
+                        if(client!=null) {
+                            client.setSocket(clientSocket);
+                        } 
                         break;
                     }
                 }
