@@ -92,11 +92,9 @@ public class UrlGroup extends Observable {
 
     public void setUrlGroupState(URL_GROUP_STATE newState) {
         urlGroupState = newState;
-
-        if(urlGroupState==URL_GROUP_STATE.ERROR) {
+	if(urlGroupState==URL_GROUP_STATE.ERROR) {
             errorCount++;
         }
-
         for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
             Url url = iterator.next();
             if (urlGroupState == URL_GROUP_STATE.VISITING) {
