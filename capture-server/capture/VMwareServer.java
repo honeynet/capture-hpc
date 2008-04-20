@@ -120,12 +120,11 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
 
                         class VixThread extends Thread {
                             public int returnCode = 1;
+			    Process vix = null;
 
                             public void run() {
-                                Process vix = null;
                                 BufferedReader stdInput = null;
                                 try {
-
                                     vix = Runtime.getRuntime().exec(revertCmd);
                                     stdInput = new BufferedReader(new InputStreamReader(vix.getInputStream()));
                                     returnCode = vix.waitFor();
@@ -137,12 +136,15 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                                 } catch (InterruptedException e) {
                                     returnCode = 17; //VIX_TIMEOUT
                                     if (vix != null) {
+					System.out.println("vix null");
                                         try {
                                             String line = stdInput.readLine();
                                             while (line != null) {
+						System.out.println("line");
                                                 System.out.println(line);
                                                 line = stdInput.readLine();
                                             }
+					    					System.out.println("line null");
                                         } catch (Exception ef) {
                                             System.out.println(ef.getMessage());
                                             ef.printStackTrace(System.out);
@@ -183,10 +185,12 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                         if (vixThread.isAlive()) {
                             vixThread.interrupt();
                         }
+			vixThread.join(1000); //wait for a chance of for thread to finish
+
                         int error = vixThread.returnCode;
 
                         synchronized(item.vm) {
-                            if (error == 0) { //timeout regularly occurs, since vix could get stuck. if runprg is successful, all goes well. if not, the vmware checker will catch it.
+                            if (error == 0) {
                                 item.vm.setLastContact(Calendar.getInstance().getTimeInMillis());
                                 item.vm.setState(VM_STATE.RUNNING);
                                 Date end = new Date(System.currentTimeMillis());
