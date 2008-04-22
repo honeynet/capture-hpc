@@ -162,7 +162,7 @@ public class UrlGroupsController extends Observable implements Observer {
         }
 
         if(urlGroup.getUrlGroupState()==URL_GROUP_STATE.ERROR || urlGroup.getUrlGroupState()==URL_GROUP_STATE.VISITED) {
-            if(urlGroup.getUrlList().size()==0 && urlGroupQueue.size()==0) {
+            if(urlGroupQueue.size()==0 && urlGroupQueue.size()==0) {
                 //processed all urls and url queues
                 System.out.println("Done processing all URLs and groups. Exiting in 10 secs ...");
                 try {

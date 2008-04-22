@@ -33,7 +33,7 @@ public class ClientsPinger extends TimerTask implements Observer {
             Client client = clientIterator.next();
             if (client.getClientState() != CLIENT_STATE.CONNECTING ||
                     client.getClientState() != CLIENT_STATE.DISCONNECTED) {
-                System.out.println(client.getVirtualMachine().getLogHeader() + " <ping/>");
+                System.out.println("Sending <ping/>");
                 client.send("<ping/>\n");
             }
 
