@@ -3,15 +3,41 @@ package capture;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingDeque;
 
-public class UrlGroupsController extends Observable implements Observer {
+public class UrlGroupsController extends Observable implements Runnable,Observer {
     private LinkedBlockingDeque<UrlGroup> urlGroupQueue;
     private List<UrlGroup> visitingList;
     private List<UrlGroup> visitedList;
+    private Thread queueMonitor;
 
     private UrlGroupsController() {
         urlGroupQueue = new LinkedBlockingDeque<UrlGroup>();
         visitedList = new ArrayList<UrlGroup>();
         visitingList = new ArrayList<UrlGroup>();
+
+        queueMonitor = new Thread(this, "QueueMonitor");
+        queueMonitor.start();
+    }
+
+    public void run() {
+        try {
+            Thread.sleep(60*1000*5); //dont quit in the first five minutes as queue is building
+
+            while(true) {
+                if(urlGroupQueue.size()==0 && UrlsController.getInstance().getQueueSize()==0) {
+                    System.out.println("No more urls in queues...exiting in 10 sec.");
+                    Thread.sleep(10000);
+                    if(urlGroupQueue.size()==0 && UrlsController.getInstance().getQueueSize()==0) {
+                        System.out.println("exiting.");
+                        System.exit(0);
+                    }
+                }
+            }
+            
+
+        } catch(InterruptedException e) {
+            e.printStackTrace(System.out);
+        }
+
     }
 
     private final static UrlGroupsController instance = new UrlGroupsController();
@@ -159,20 +185,6 @@ public class UrlGroupsController extends Observable implements Observer {
                 urlGroupQueue.push(urlGroup);
             }
 
-        }
-
-        if(urlGroup.getUrlGroupState()==URL_GROUP_STATE.ERROR || urlGroup.getUrlGroupState()==URL_GROUP_STATE.VISITED) {
-            if(urlGroupQueue.size()==0 && urlGroupQueue.size()==0) {
-                //processed all urls and url queues
-                System.out.println("Done processing all URLs and groups. Exiting in 10 secs ...");
-                try {
-                    Thread.sleep(10000); //
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                System.exit(0);
-
-            }
         }
     }
 
