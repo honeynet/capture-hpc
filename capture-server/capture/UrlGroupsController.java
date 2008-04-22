@@ -31,6 +31,7 @@ public class UrlGroupsController extends Observable implements Runnable,Observer
                         System.exit(0);
                     }
                 }
+                Thread.sleep(10000);
             }
             
 
