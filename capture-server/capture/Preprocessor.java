@@ -55,7 +55,7 @@ public abstract class Preprocessor {
                             } else {
                                 System.out.println("Waiting for input URLs...");
                                 try {
-                                    Thread.sleep(1000);
+                                    Thread.sleep(60000);
                                 } catch (InterruptedException e) {
                                 }
                             }
