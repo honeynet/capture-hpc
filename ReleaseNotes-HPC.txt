@@ -9,8 +9,8 @@ Changes
 
 Known Issues
 ------------
-XXX		When IE instance locks up, close method fails leading to a VM stalled error.
-XXX		
+XXX		When IE instance locks up, close method fails leading to a VM stalled error. (but those failures are now retried once)
+XXX		When Capture-Client crashes, it will lead to a client inactivity errors. (but those failures are now retried once)
 615		Registry monitoring can't handle a key named 
 690 	Capture is not able to detect file renames
 676 	Empty password on the user of the guest vm in the config.xml causes the capture server to crash (Windows only).
@@ -31,7 +31,7 @@ Changes
 + changed threading structure to be more stable (leads to less client inactivity errors)
 + changed IE plugin to close all IE windows (fixes pop ups hanging around)
 + optimized handling of zipping of files - leads to speedup if network capture is not enabled
-+ fixed bug 718
++ fixed bug 718,729
 
 Version 2.1
 -----------

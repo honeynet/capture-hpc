@@ -164,6 +164,34 @@ public class UrlGroupsController extends Observable implements Runnable,Observer
         } else if (urlGroup.getUrlGroupState() == URL_GROUP_STATE.ERROR) {
             visitingList.remove(urlGroup);
 
+            boolean split = false;
+            if (urlGroup.isMalicious() && urlGroup.size() > 1) {
+                List<Url> urls = urlGroup.getUrlList();
+                List<Url> urls1 = new ArrayList<Url>();
+                List<Url> urls2 = new ArrayList<Url>();
+
+                int b = urls.size() / 2;
+                for (int i = 0; i < urls.size(); i++) {
+                    if (i < b) {
+                        Url url = urls.get(i);
+                        urls1.add(url);
+                    } else {
+                        Url url = urls.get(i);
+                        urls2.add(url);
+                    }
+                }
+
+                UrlGroup urlGroup1 = new UrlGroup(urls1, false);
+                urlGroup1.addObserver(this);
+                urlGroupQueue.push(urlGroup1);
+
+                UrlGroup urlGroup2 = new UrlGroup(urls2, false);
+                urlGroup2.addObserver(this);
+                urlGroupQueue.push(urlGroup2);
+
+                split = true;
+            }
+
             List<Url> urls = urlGroup.getUrlList();
             boolean networkReset = true;
             for (Iterator<Url> iterator = urls.iterator(); iterator.hasNext();) {
@@ -180,7 +208,7 @@ public class UrlGroupsController extends Observable implements Runnable,Observer
             if(urlGroup.getMajorErrorCode()==ERROR_CODES.VM_STALLED || urlGroup.getMajorErrorCode()==ERROR_CODES.CAPTURE_CLIENT_INACTIVITY || urlGroup.getMajorErrorCode()== ERROR_CODES.CAPTURE_CLIENT_CONNECTION_RESET) {
                 retry = true;
             }
-            if(retry && urlGroup.getErrorCount()<=1) {
+            if(!split && retry && urlGroup.getErrorCount()<=1) {
                 System.out.println("Retrying to visit group " + urlGroup.getIdentifier());
                 urlGroup.generateIdentifier();   //generate new identifier, so group can be differentiated in the log
                 urlGroupQueue.push(urlGroup);
