@@ -42,6 +42,8 @@ public abstract class Preprocessor {
                                     line = line.trim();
 
                                     if(line.equalsIgnoreCase("end")) {
+                                        System.out.println(line);
+                                        System.out.println("Encounted end in input urls...stoppping processing input urls");
                                         hasMoreInputUrls = false;
                                         return;
                                     }
@@ -51,19 +53,19 @@ public abstract class Preprocessor {
                                     }
                                 }
                             } else {
+                                System.out.println("Waiting for input URLs...");
                                 try {
-                                    Thread.sleep(500);
+                                    Thread.sleep(1000);
                                 } catch (InterruptedException e) {
                                 }
                             }
                         } catch (IOException e) {
+                            System.out.println("Error reading input URLs...");
                             e.printStackTrace(System.out);
                         }
                     }
-                } catch (FileNotFoundException e) {
+                } catch (Exception e) {
                     e.printStackTrace(System.out);
-                } catch (UnsupportedEncodingException e1) {
-                    e1.printStackTrace(System.out);
                 }
             }
         });
