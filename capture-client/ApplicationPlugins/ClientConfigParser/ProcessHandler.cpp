@@ -256,6 +256,9 @@ DWORD ProcessHandler::executeProcess()
      {
 		 /* CreateProcess failed */
           iReturnVal = GetLastError();
+	 } else {
+		 WaitForInputIdle(m_piProcessInfo.hProcess, 2000);
+		 Sleep(1000);
 	 }
 
      /* Free memory */

@@ -36,6 +36,7 @@ public:
 		urlGroup = false;
 		malicious = false;
 		errorCode = CAPTURE_VISITATION_OK;
+		algorithm = L"seq";
 	}
 
 	virtual ~VisitEvent()
@@ -64,6 +65,11 @@ public:
 		program = prog;
 	}
 
+	void setAlgorithm(const std::wstring& alg)
+	{
+		algorithm = alg;
+	}
+	
 	void setMalicious(bool mal) { malicious = mal; }
 
 	Element toElement() const
@@ -75,6 +81,7 @@ public:
 		// TODO fix this. malicious attribute is added in the analyzer
 		//element.addAttribute(L"malicious", boost::lexical_cast<std::wstring>(malicious));
 		element.addAttribute(L"time", Time::getCurrentTime());
+		element.addAttribute(L"algorithm",algorithm);
 		for each(Url* url in urls)
 		{
 			Element* e = new Element(url->toElement());
@@ -104,6 +111,7 @@ private:
 	std::vector<Url*> urls;
 	std::wstring identifier;
 	std::wstring program;
+	std::wstring algorithm;
 
 	bool urlGroup;
 	bool malicious;

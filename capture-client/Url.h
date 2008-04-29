@@ -37,6 +37,7 @@ public:
 	Url(std::wstring u, std::wstring app, int vTime);
 	virtual ~Url(void);
 
+	void setProcessId(const DWORD pId) { processId = pId; }
 	void setUrl(const std::wstring& u) { url = u; }
 	void setProgram(const std::wstring & prog) { program = prog; }
 	void setVisitTime(int time) { visitTime = time; }
@@ -48,6 +49,7 @@ public:
 
 	inline const std::wstring getUrl() const { return url; }
 	inline const std::wstring getProgram() const { return program; }
+	inline const DWORD getProcessId() const { return processId; }
 	inline int getVisitTime() { return visitTime; }
 	inline bool isVisited() { return visited; }
 	inline unsigned long getMajorErrorCode() { return majorErrorCode; }
@@ -57,6 +59,7 @@ private:
 	std::wstring url;
 	std::wstring program;
 	int visitTime;
+	DWORD processId;
 
 	bool visited;
 	bool malicious;

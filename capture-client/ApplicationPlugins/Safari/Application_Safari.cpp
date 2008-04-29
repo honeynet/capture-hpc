@@ -14,6 +14,8 @@ Application_Safari::~Application_Safari(void)
 {
 }
 
+
+
 void
 Application_Safari::visitGroup(VisitEvent* visitEvent)
 {

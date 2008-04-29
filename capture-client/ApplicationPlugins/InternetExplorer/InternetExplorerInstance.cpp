@@ -42,7 +42,13 @@ InternetExplorerInstance::visitUrl(Url* url)
 	   events from IE */
 	if ( SUCCEEDED ( hr ) )
 	{
-		//hVisiting = CreateEvent(NULL, FALSE, FALSE, NULL);
+		HWND hwndIE;
+		DWORD dProcessId;
+		pInternetExplorer->get_HWND((SHANDLE_PTR*)&hwndIE);
+		
+		GetWindowThreadProcessId(hwndIE, &dProcessId);
+		
+
 		IConnectionPointContainer *pCPContainer; 
 		if(SUCCEEDED(pInternetExplorer->QueryInterface(IID_IConnectionPointContainer,
 			(void **)&pCPContainer)))

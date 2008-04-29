@@ -385,12 +385,14 @@ FileMonitor::run()
 				std::wstring fileEventPath;
 				std::wstring processModuleName;
 				std::wstring processPath;
+				DWORD processId;
 
 				if(getFileEventName(e, &fileEventName))
 				{
 					processPath = ProcessManager::getInstance()->getProcessPath(e->processId);
 					processModuleName = ProcessManager::getInstance()->getProcessModuleName(e->processId);
-					
+					processId = (DWORD) e->processId;
+
 					fileEventPath = e->filePath;
 					fileEventPath = convertFileObjectNameToDosName(fileEventPath);
 
@@ -414,7 +416,7 @@ FileMonitor::run()
 								}
 							}
 
-							signal_onFileEvent(fileEventName, Time::timefieldToString(e->time), processPath, fileEventPath);
+							signal_onFileEvent(fileEventName, Time::timefieldToString(e->time), processId, processPath, fileEventPath);
 						}
 					}
 				}

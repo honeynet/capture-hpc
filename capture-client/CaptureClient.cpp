@@ -46,14 +46,15 @@ public:
 			exit(1);
 		}
 
-		printf("Starting Capture Client 2.1.1\n");
+		printf("Starting Capture Client 2.5\n");
 
 		/* Create the log directories */
 		CreateDirectory(L"logs",NULL);
 
 		/* If logging to a file has been specified open the file for write access */
-		if(OptionsManager::getInstance()->getOption(L"log-system-events-file") != L"")
+		if(OptionsManager::getInstance()->getOption(L"log-system-events-file") != L"") {
 			Logger::getInstance()->openLogFile(OptionsManager::getInstance()->getOption(L"log-system-events-file"));
+		}
 
 		hStopRunning = CreateEvent(NULL, FALSE, FALSE, NULL);
 		std::wstring serverIp = OptionsManager::getInstance()->getOption(L"server");
@@ -314,11 +315,13 @@ int _tmain(int argc, WCHAR* argv[])
 	delete [] szFullPath;
 	
 	//allows to do some custom testing
-	std::wstring option = argv[1];
-	if(option == L"-t") {
-		PluginTest* test = new PluginTest();
-		test->loadTest();
-		exit(0);
+	if(argc>1) {
+		std::wstring option = argv[1];
+		if(option == L"-t") {
+			PluginTest* test = new PluginTest();
+			test->loadTest();
+			exit(0);
+		}
 	}
 
 	std::wstring serverIp = L"";

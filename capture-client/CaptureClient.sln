@@ -14,6 +14,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Application_ClientConfigMan
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Application_Safari", "ApplicationPlugins\Safari\Application_Safari.vcproj", "{9156126E-DEFD-44CD-8F8B-05879459F0B7}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Application_InternetExplorerBulk", "ApplicationPlugins\InternetExplorerBulk\Application_InternetExplorerBulk.vcproj", "{1C1EA2EE-9F60-44EC-8182-BDDB9D392967}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -40,6 +42,10 @@ Global
 		{9156126E-DEFD-44CD-8F8B-05879459F0B7}.Debug|Win32.Build.0 = Debug|Win32
 		{9156126E-DEFD-44CD-8F8B-05879459F0B7}.Release|Win32.ActiveCfg = Release|Win32
 		{9156126E-DEFD-44CD-8F8B-05879459F0B7}.Release|Win32.Build.0 = Release|Win32
+		{1C1EA2EE-9F60-44EC-8182-BDDB9D392967}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1C1EA2EE-9F60-44EC-8182-BDDB9D392967}.Debug|Win32.Build.0 = Debug|Win32
+		{1C1EA2EE-9F60-44EC-8182-BDDB9D392967}.Release|Win32.ActiveCfg = Release|Win32
+		{1C1EA2EE-9F60-44EC-8182-BDDB9D392967}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

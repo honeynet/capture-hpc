@@ -302,6 +302,7 @@ RegistryMonitor::run()
 				CopyMemory(szRegistryPath, e->registryData, e->registryPathLengthB);
 				std::wstring registryPath = convertRegistryObjectNameToHiveName(std::wstring(szRegistryPath));
 				std::wstring processPath = ProcessManager::getInstance()->getProcessPath((DWORD)e->processId);
+				DWORD processId = (DWORD)e->processId;
 				
 				/* If there is data stored retrieve it */
 				if(e->dataLengthB > 0)
@@ -316,7 +317,7 @@ RegistryMonitor::run()
 					//std::vector<std::wstring> data;
 					//processRegistryData(e, registryData, data);
 	
-					signal_onRegistryEvent(registryEventName, Time::timefieldToString(e->time), processPath, registryPath);
+					signal_onRegistryEvent(registryEventName, Time::timefieldToString(e->time), processId, processPath, registryPath);
 				}
 				if(registryData != NULL)
 					free(registryData);

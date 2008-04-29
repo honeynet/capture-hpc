@@ -67,6 +67,9 @@ Visitor::run()
 			DebugPrintTrace(L"Visitor::run() got App plugin\n");
 			if(applicationPlugin)
 			{
+				DebugPrint(L"Visitor::run() setting algorithm\n");
+				visitEvent->setAlgorithm(applicationPlugin->getAlgorithm());
+
 				DebugPrintTrace(L"Visitor::run() notify prestart\n");
 				notify(CAPTURE_VISITATION_PRESTART, *visitEvent);
 

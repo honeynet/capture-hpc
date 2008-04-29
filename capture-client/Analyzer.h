@@ -95,14 +95,14 @@ public:
 		ever a malcious registry event occurs
 	*/
 	void onRegistryEvent(const std::wstring& registryEventType, const std::wstring& time, 
-						 const std::wstring& processPath, const std::wstring& registryEventPath);
+						 const DWORD processId, const std::wstring& processPath, const std::wstring& registryEventPath);
 	/*
 		Function: onFileEvent
 
 		Method which binds to the <FileMonitor> file event slot. Called when
 		ever a malcious file event occurs
 	*/
-	void onFileEvent(const std::wstring& fileEventType, const std::wstring& time, 
+	void onFileEvent(const std::wstring& fileEventType, const std::wstring& time, const DWORD processId, 
 						 const std::wstring& processPath, const std::wstring& fileEventPath);
 
 	/*
@@ -141,7 +141,7 @@ private:
 		Helper method which parses the monitor events into a readible XML document
 		which can be saved to a file as a CSV or sent to the server.
 	*/
-	void sendSystemEvent(const std::wstring& type, const std::wstring& time, const std::wstring& process, const std::wstring& action, const std::wstring& object);
+	void sendSystemEvent(const std::wstring& type, const std::wstring& time, const DWORD processId, const std::wstring& process, const std::wstring& action, const std::wstring& object1, const std::wstring& object2);
 
 
 	std::wstring errorCodeToString(DWORD errorCode);

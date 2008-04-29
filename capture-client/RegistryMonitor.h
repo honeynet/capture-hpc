@@ -122,7 +122,7 @@ typedef struct  _REGISTRY_EVENT {
 class RegistryMonitor : public Runnable, public Monitor
 {
 public:
-	typedef boost::signal<void (const std::wstring&, const std::wstring&, const std::wstring&, const std::wstring&)> signal_registryEvent;
+	typedef boost::signal<void (const std::wstring&, const std::wstring&, const DWORD, const std::wstring&, const std::wstring&)> signal_registryEvent;
 public:
 	RegistryMonitor(void);
 	virtual ~RegistryMonitor(void);

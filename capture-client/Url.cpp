@@ -41,6 +41,7 @@ Url::Url(std::wstring u, std::wstring app, int vTime)
 	url = u;
 	visitTime = vTime;
 	program = app;
+	processId = (DWORD)0;
 	visited = false;
 	majorErrorCode = 0;
 	minorErrorCode = 0;
@@ -57,6 +58,7 @@ Url::toElement()
 	Element element;
 	element.setName(L"item");
 	element.addAttribute(L"url", Url::encode(url));
+	element.addAttribute(L"processId", boost::lexical_cast<std::wstring>(processId));
 	element.addAttribute(L"program", program);
 	element.addAttribute(L"major-error-code", boost::lexical_cast<std::wstring>(majorErrorCode));
 	element.addAttribute(L"minor-error-code", boost::lexical_cast<std::wstring>(minorErrorCode));

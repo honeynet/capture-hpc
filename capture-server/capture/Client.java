@@ -4,10 +4,8 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
-import java.util.Observable;
-import java.util.List;
-import java.util.Iterator;
-import java.util.HashMap;
+import java.util.*;
+import java.text.ParseException;
 
 enum CLIENT_STATE {
     CONNECTING,
@@ -56,16 +54,23 @@ enum CLIENT_STATE {
  */
 public class Client extends Observable implements Runnable, Comparable {
     private Socket clientSocket;
+    private BufferedWriter clientSocketOutput;
+
     private UrlGroup visitingUrlGroup;
     private CLIENT_STATE clientState;
     private VirtualMachine virtualMachine;
 
-    private BufferedWriter out;
 
     private Thread urlRetriever;
     private HashMap<String, ExclusionList> exclusionLists;
+    private String algorithm;
+    private StateChangeHandler stateChangeHandler;
 
     public Client(HashMap<String, ExclusionList> exclusionLists) {
+        if (stateChangeHandler == null) {
+            stateChangeHandler = new StateChangeHandler();
+        }
+
         this.exclusionLists = exclusionLists;
         clientState = CLIENT_STATE.CONNECTING;
 
@@ -81,7 +86,7 @@ public class Client extends Observable implements Runnable, Comparable {
     public void setSocket(Socket c) {
         try {
             clientSocket = c;
-            out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+            clientSocketOutput = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
         } catch (IOException e) {
             e.printStackTrace(System.out);
             if (visitingUrlGroup != null) {
@@ -108,8 +113,8 @@ public class Client extends Observable implements Runnable, Comparable {
                 if (!message.endsWith("\0")) {
                     message += '\0';
                 }
-                out.write(message);
-                out.flush();
+                clientSocketOutput.write(message);
+                clientSocketOutput.flush();
                 return true;
             } catch (IOException e) {
                 this.setClientState(CLIENT_STATE.DISCONNECTED);
@@ -147,7 +152,7 @@ public class Client extends Observable implements Runnable, Comparable {
             visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);
         }
         try {
-            out.close();
+            clientSocketOutput.close();
             clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace(System.out);
@@ -156,7 +161,7 @@ public class Client extends Observable implements Runnable, Comparable {
         finally {
             if (visitingUrlGroup != null) {
                 if (!visitingUrlGroup.isMalicious()) {
-                    visitingUrlGroup.setMalicious(false); //sets underlying url malicious, which will cause error to be written out down the line.
+                    visitingUrlGroup.setMalicious(false); //sets underlying url malicious, which will cause error to be written clientSocketOutput down the line.
                 }
                 visitingUrlGroup.setMajorErrorCode(ERROR_CODES.CAPTURE_CLIENT_CONNECTION_RESET.errorCode);
                 visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);
@@ -168,36 +173,69 @@ public class Client extends Observable implements Runnable, Comparable {
     public void parseEvent(Element element) {
         //only written to log if size of group is one
         if (this.getClientState() == CLIENT_STATE.VISITING) {
+
             String type = element.attributes.get("type");
             String time = element.attributes.get("time");
+            String processId = element.attributes.get("processId");
             String process = element.attributes.get("process");
             String action = element.attributes.get("action");
-            String object = element.attributes.get("object");
+            String object1 = element.attributes.get("object1");
+            String object2 = element.attributes.get("object2");
             visitingUrlGroup.setMalicious(true);
-            visitingUrlGroup.writeEventToLog("\"" + type + "\",\"" + time +
-                    "\",\"" + process + "\",\"" + action + "\",\"" +
-                    object + "\"");
 
-            //if we are visiting a group, we can reset right now,
-            // because we will revisit URLs later to get more detail info about state changes
-            if (visitingUrlGroup.size() > 1) {
-                System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
-                visitingUrlGroup.setVisitFinishTime(element.attributes.get("time"));
-
-                List<Url> urls = visitingUrlGroup.getUrlList();
-                for (Iterator<Url> urlIterator = urls.iterator(); urlIterator.hasNext();) {
-                    Url url = urlIterator.next();
-                    url.setVisitFinishTime(element.attributes.get("time"));
+            StateChange sc = null;
+            boolean added = false;
+            try {
+                sc = null;
+                if (type.equals("process")) {
+                    sc = new ProcessStateChange(type, time, processId, process, action, object1, object2);
+                } else {
+                    sc = new ObjectStateChange(type, time, processId, process, action, object1, object2);
                 }
-                visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
-                visitingUrlGroup = null;
-                this.setClientState(CLIENT_STATE.DISCONNECTED);
+                added = stateChangeHandler.addStateChange(sc);
+                if (!added) {
+                    System.out.println(virtualMachine.getLogHeader() + " - WARNING: Couldnt add state change " + sc.toCSV());
+                }
+            } catch (ParseException e) {
+                System.out.println(virtualMachine.getLogHeader() + " - WARNING: Couldnt parse state change.");
+            }
+
+
+            if (!algorithm.equals("bulk")) {
+                //if we are visiting a group, we can reset right now,
+                // because we will revisit URLs later to get more detail info about state changes
+                if (visitingUrlGroup.size() > 1) {
+                    System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
+                    visitingUrlGroup.setVisitFinishTime(element.attributes.get("time"));
+
+                    List<Url> urls = visitingUrlGroup.getUrlList();
+                    Map<String, Integer> urlProcessIdMap = new TreeMap<String, Integer>();
+                    for (Iterator<Url> urlIterator = urls.iterator(); urlIterator.hasNext();) {
+                        Url url = urlIterator.next();
+                        url.setVisitFinishTime(element.attributes.get("time"));
+                        urlProcessIdMap.put(url.getUrl().toString(), 0);
+                    }
+
+
+                    flushStateChangeHandler(urlProcessIdMap);
+
+                    visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
+                    visitingUrlGroup = null;
+                    this.setClientState(CLIENT_STATE.DISCONNECTED);
+                }
             }
         }
     }
 
+    private void flushStateChangeHandler(Map<String, Integer> urlProcessIdMap) {
+        //visitingUrlGroup.writeEventToLog("\"" + type + "\",\"" + time + "\",\"" + processId + "\",\"" + process + "\",\"" + action + "\",\"" + object1+ "\",\"" +object2 + "\"");
+        Map<String, String> urlCSVMap = stateChangeHandler.getStateChanges(urlProcessIdMap);
+        visitingUrlGroup.writeEventToLog(urlCSVMap);
+    }
+
     public void parseVisitEvent(Element element) {
         String type = element.attributes.get("type");
+        algorithm = element.attributes.get("algorithm");
         if (type.equals("start")) {
             if (visitingUrlGroup == null) {
                 System.out.println("visiting grp is null");
@@ -207,12 +245,13 @@ public class Client extends Observable implements Runnable, Comparable {
             }
             System.out.println(this.getVirtualMachine().getLogHeader() + " Visiting group " + visitingUrlGroup.getIdentifier());
             visitingUrlGroup.setVisitStartTime(element.attributes.get("time"));
+            visitingUrlGroup.setAlgorithm(algorithm);
 
             //iterate through url elements and set startvisitTime & visiting state
             List<Element> items = element.childElements;
             for (Iterator<Element> iterator = items.iterator(); iterator.hasNext();) {
                 Element item = iterator.next();
-                String uri = item.attributes.get("url");
+                String uri = item.attributes.get("url").toLowerCase();
                 Url url = visitingUrlGroup.getUrl(uri);
                 url.setVisitStartTime(item.attributes.get("time"));
             }
@@ -221,6 +260,8 @@ public class Client extends Observable implements Runnable, Comparable {
 
             this.setClientState(CLIENT_STATE.VISITING);
         } else if (type.equals("finish")) {
+
+
             if (visitingUrlGroup.isMalicious()) { // can already determine this here because the first state change will flip the switch
                 System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
             } else {
@@ -229,11 +270,14 @@ public class Client extends Observable implements Runnable, Comparable {
             visitingUrlGroup.setVisitFinishTime(element.attributes.get("time"));
 
             //iterate through url elements and set startvisitTime & visiting state
+            Map<String, Integer> urlProcessIdMap = new TreeMap<String, Integer>();
             List<Element> items = element.childElements;
             for (Iterator<Element> iterator = items.iterator(); iterator.hasNext();) {
                 Element item = iterator.next();
-                String uri = item.attributes.get("url");
+                String uri = item.attributes.get("url").toLowerCase();
                 Url url = visitingUrlGroup.getUrl(uri);
+                int processId = Integer.parseInt(item.attributes.get("processId"));
+                urlProcessIdMap.put(url.getUrl().toString(), processId);
                 url.setVisitFinishTime(item.attributes.get("time"));
                 String urlMajorErrorCode = item.attributes.get("major-error-code");
                 String urlMinorErrorCode = item.attributes.get("minor-error-code");
@@ -242,8 +286,10 @@ public class Client extends Observable implements Runnable, Comparable {
                     url.setMinorErrorCode(Long.parseLong(urlMinorErrorCode));
                 }
             }
+
             String malicious = element.attributes.get("malicious");
             if (malicious.equals("1")) {
+                flushStateChangeHandler(urlProcessIdMap);
                 visitingUrlGroup.setMalicious(true);
                 visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
                 visitingUrlGroup = null;
@@ -256,11 +302,14 @@ public class Client extends Observable implements Runnable, Comparable {
             }
         } else if (type.equals("error")) {
             String major = element.attributes.get("error-code");
+            Map<String, Integer> urlProcessIdMap = new TreeMap<String, Integer>();
             List<Element> items = element.childElements;
             for (Iterator<Element> iterator = items.iterator(); iterator.hasNext();) {
                 Element item = iterator.next();
-                String uri = item.attributes.get("url");
+                String uri = item.attributes.get("url").toLowerCase();
                 Url url = visitingUrlGroup.getUrl(uri);
+                int processId = Integer.parseInt(item.attributes.get("processId"));
+                urlProcessIdMap.put(url.getUrl().toString(), processId);
                 url.setVisitFinishTime(item.attributes.get("time"));
                 String urlMajorErrorCode = item.attributes.get("major-error-code");
                 String urlMinorErrorCode = item.attributes.get("minor-error-code");
@@ -270,7 +319,7 @@ public class Client extends Observable implements Runnable, Comparable {
                 }
             }
 
-            if (!(major.equals("268435730") || major.equals("268435731") || major.equals("268436224") || major.equals("268435728"))) {
+            if (isErrorToRetry(major)) {
                 System.out.println(this.getVirtualMachine().getLogHeader() + " ERROR " + visitingUrlGroup.getIdentifier());
 
                 if (ConfigManager.getInstance().getConfigOption("halt_on_revert") != null && ConfigManager.getInstance().getConfigOption("halt_on_revert").equals("true")) { //if option is set, vm is not reverted, but rather server is halted.
@@ -281,6 +330,7 @@ public class Client extends Observable implements Runnable, Comparable {
 
                 String malicious = element.attributes.get("malicious");
                 if (malicious.equals("1")) {
+                    flushStateChangeHandler(urlProcessIdMap);
                     visitingUrlGroup.setMalicious(true);
                 } else {
                     visitingUrlGroup.setMalicious(false);
@@ -310,6 +360,13 @@ public class Client extends Observable implements Runnable, Comparable {
         }
     }
 
+    public boolean isErrorToRetry(String majorErrorCode) {
+        if (majorErrorCode.equals("268435730") || majorErrorCode.equals("268435731") || majorErrorCode.equals("268436224") || majorErrorCode.equals("268435728")) {
+            return false;
+        } else {
+            return true;
+        }
+    }
 
     public CLIENT_STATE getClientState() {
         return clientState;

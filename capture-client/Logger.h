@@ -40,7 +40,7 @@ public:
 	void openLogFile(const std::wstring& file);
 
 	void writeToLog(const std::wstring& message);
-	void writeSystemEventToLog(const std::wstring& type, const std::wstring& time, const std::wstring& process, const std::wstring& action, const std::wstring& object);
+	void writeSystemEventToLog(const std::wstring& type, const std::wstring& time, const std::wstring& processId, const std::wstring& process, const std::wstring& action, const std::wstring& object1, const std::wstring& object2);
 
 	void closeLogFile();
 

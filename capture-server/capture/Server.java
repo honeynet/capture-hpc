@@ -5,8 +5,8 @@ public class Server
 	public Server(String[] args)
 	{
         System.out.println("PROJECT: Capture-HPC\n" +
-                "VERSION: 2.2\n" +
-                "DATE: Apr 13, 2008\n" +
+                "VERSION: 2.5\n" +
+                "DATE: Apr 25, 2008\n" +
                 "COPYRIGHT HOLDER: Victoria University of Wellington, NZ\n" +
                 "AUTHORS:\n" +
                 "\tChristian Seifert (christian.seifert@gmail.com)\n" +

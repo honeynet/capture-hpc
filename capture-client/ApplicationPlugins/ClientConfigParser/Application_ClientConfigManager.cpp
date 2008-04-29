@@ -78,6 +78,7 @@ Application_ClientConfigManager::visitGroup(VisitEvent* visitEvent)
 			processHandlers[i] = ph;
 
 			ph->executeProcess();
+			url->setProcessId(ph->getProcessId());
 
 			if(i==0) 
 			{
@@ -146,6 +147,7 @@ Application_ClientConfigManager::visitGroup(VisitEvent* visitEvent)
 		//url->setMinorErrorCode(CAPTURE_PE_PROCESS_PATH_NOT_FOUND);
 	}
 }
+
 
 void 
 Application_ClientConfigManager::loadApplicationsList()

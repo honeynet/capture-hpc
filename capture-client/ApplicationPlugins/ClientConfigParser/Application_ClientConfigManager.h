@@ -68,6 +68,7 @@ public:
 		return supportedApplications;
 	}
 	unsigned int getPriority() { return 0; };
+	std::wstring getAlgorithm() { return L"seq"; }
 private:
 	void loadApplicationsList();
 	wchar_t** supportedApplications;

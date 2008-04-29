@@ -31,6 +31,7 @@ public class UrlGroup extends Observable {
     private ERROR_CODES majorErrorCode = ERROR_CODES.OK;
     private Date visitStartTime;
     private Date visitFinishTime;
+    private String algorithm;
 
     public UrlGroup(List<Url> urlList, boolean initialGroup) {
         urlGroupState = URL_GROUP_STATE.NONE;
@@ -67,7 +68,7 @@ public class UrlGroup extends Observable {
      */
     public Url getUrl(String uri) {
         try {
-            String decodedURI = URLDecoder.decode(uri,"UTF-8");
+            String decodedURI = URLDecoder.decode(uri, "UTF-8");
             String encodedURI = URLEncoder.encode(decodedURI, "UTF-8");
 
 
@@ -92,7 +93,7 @@ public class UrlGroup extends Observable {
 
     public void setUrlGroupState(URL_GROUP_STATE newState) {
         urlGroupState = newState;
-	if(urlGroupState==URL_GROUP_STATE.ERROR) {
+        if (urlGroupState == URL_GROUP_STATE.ERROR) {
             errorCount++;
         }
         if (urlGroupState == URL_GROUP_STATE.ERROR) {
@@ -148,12 +149,33 @@ public class UrlGroup extends Observable {
     }
 
 
+    public void writeEventToLog(Map<String,String> urlCSVMap) {
+        for (Iterator<Url> urlIterator = urlList.iterator(); urlIterator.hasNext();) {
+            Url url = urlIterator.next();
+            String csv = urlCSVMap.get(url.getUrl());
+            if (csv == null || csv.equals("")) {
+                if(urlList.size() == 1 && urlCSVMap.size()==1) {
+                    csv = urlCSVMap.values().iterator().next();
+                    url = urlList.get(0);
+                    url.writeEventToLog(csv);
+                    break;
+                } else {
+                    System.out.println("WARNING: Couldnt find csv for URL " + url.getUrl());
+                }
+            } else {
+                url.writeEventToLog(csv);
+            }
+
+        }
+    }
+
     public void writeEventToLog(String event) {
         if (urlList.size() == 1) {
             Url url = urlList.get(0);
             url.writeEventToLog(event);
         }
     }
+
 
     public int getIdentifier() {
         return identifier;
@@ -189,7 +211,7 @@ public class UrlGroup extends Observable {
             }
         }
 
-        if(!validErrorCode) {
+        if (!validErrorCode) {
             System.out.println("Received invalid error code from client " + majorErrorCode);
             this.majorErrorCode = ERROR_CODES.INVALID_ERROR_CODE_FROM_CLIENT;
         }
@@ -240,5 +262,13 @@ public class UrlGroup extends Observable {
             Url url = iterator.next();
             url.setInitialGroup(b);
         }
+    }
+
+    public void setAlgorithm(String algorithm) {
+        this.algorithm = algorithm;
+    }
+
+    public String getAlgorithm() {
+        return algorithm;
     }
 }

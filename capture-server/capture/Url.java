@@ -125,7 +125,6 @@ public class Url extends Observable {
 
             setMalicious(true);
             logFile.write(event);
-            logFile.newLine();
             logFile.flush();
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace(System.out);
@@ -223,7 +222,7 @@ public class Url extends Observable {
 
     public String getEscapedUrl() {
         try {
-            return URLEncoder.encode(url.toString(), "UTF-8");
+            return URLEncoder.encode(url.toString(), "UTF-8").toLowerCase();
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace(System.out);
             return "";
@@ -231,7 +230,7 @@ public class Url extends Observable {
     }
 
     public String getUrl() {
-        return url.toString();
+        return url.toString().toLowerCase();
     }
 
     private String filenameEscape(String text) {

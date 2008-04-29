@@ -1,11 +1,12 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	xsi:noNamespaceSchemaLocation="config.xsd">
+	<!-- version 2.5 -->
 	<global collect-modified-files="false" 
 			client-default-visit-time="10"
 			capture-network-packets-malicious="false"
 			capture-network-packets-benign="false"
 			send-exclusion-lists="false"
-        	p_m="0.019"
+        	group_size="50"
 			timeout_factor="1.0"
 	/>
 	

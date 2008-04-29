@@ -36,7 +36,7 @@ public class ClientEventController extends DefaultHandler implements Runnable {
 
 
      public void contactClient() {
-        String message = "<connect server=\"2.1.1\" />";
+        String message = "<connect server=\"2.5\" />";
         if (this.clientSocket.isConnected()) {
             try {
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
@@ -186,18 +186,18 @@ public class ClientEventController extends DefaultHandler implements Runnable {
         //long startTime = System.nanoTime();
         if (currentElement.parent == null) {
             if (name.equals("system-event")) {
-                client.parseEvent(currentElement);
+                if(client!=null) client.parseEvent(currentElement);
             } else if (name.equals("connect")) {
                 parseConnectEvent(currentElement);
             } else if (name.equals("reconnect")) {
                 parseReconnectEvent(currentElement);
             } else if (name.equals("pong")) {
                 String where = "[unknown server]";
-                if (client.getVirtualMachine() != null)
+                if (client != null && client.getVirtualMachine() != null)
                     where = client.getVirtualMachine().getLogHeader();
                 System.out.println(where + " Got pong");
             } else if (name.equals("visit-event")) {
-                client.parseVisitEvent(currentElement);
+                if(client!=null) client.parseVisitEvent(currentElement);
             } else if (name.equals("client")) {
 
             } else if (name.equals("file")) {

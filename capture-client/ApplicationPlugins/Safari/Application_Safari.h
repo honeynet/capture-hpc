@@ -52,6 +52,7 @@ public:
 		return supportedApplications;
 	}
 	unsigned int getPriority() { return 100; };
+	std::wstring getAlgorithm() { return L"seq"; }
 private:
 	bool openDocument(const wstring& file, std::wstring& document);
 	void writeDocument(const wstring& file, const wstring& document);

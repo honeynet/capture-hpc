@@ -11,7 +11,7 @@ public class UrlFactory {
     public Url getUrl(Element event) throws URISyntaxException {
         //int visitTime = ((Integer) ConfigManager.getInstance().getConfigOption("client_default_visit_time")).intValue();
 
-        return getUrl(event.attributes.get("url"));
+        return getUrl(event.attributes.get("url").toLowerCase());
     }
 
     public Url getUrl(String tokenizedUrl) throws URISyntaxException {

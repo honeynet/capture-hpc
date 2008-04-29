@@ -285,6 +285,7 @@ DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* int
 	return iReturnVal;
 }
 
+
 //lookup process name of process with processID
 //compare to processName
 int Application_InternetExplorer::compareName(DWORD processID, std::wstring processName)

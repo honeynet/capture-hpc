@@ -2,7 +2,6 @@ package capture;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.Observable;
 import java.util.Observer;
 

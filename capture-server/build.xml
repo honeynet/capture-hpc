@@ -13,8 +13,18 @@
 	 <property environment="env"/>
      <property name="src" value="."/>
      <property name="build" value="build"/>
+	 <property name="lib" value="lib"/>
      <property name="release" value="release"/>
+	 <property name="classpath.build" value=".\lib\junit-4.4.jar"/>
+	 <property name="classpath.run" value="lib/junit-4.4.jar"/>
+
 	 
+	 <path id="classpath">
+		<fileset dir="${lib}">
+			<include name="*.jar"/>
+		</fileset>
+	 </path>
+	  
      <target name="init">
           <mkdir dir="${build}"/>
 		  <mkdir dir="${release}"/>
@@ -22,7 +32,7 @@
 
      <target name="compile" depends="init">
           <!-- Compile the java code -->         
-          <javac srcdir="${src}" destdir="${build}" debug="true" debuglevel="lines,vars,source"/>
+          <javac srcdir="${src}" destdir="${build}" debug="true" debuglevel="lines,vars,source" classpath="${classpath.build}"/>
 		  
 		  <!-- Compile the revert code -->
 		  <if>
@@ -41,6 +51,7 @@
         <mkdir dir="${build}/jar"/>
         <jar destfile="${build}/jar/CaptureServer.jar" basedir="${build}">
             <manifest>
+				<attribute name="Class-Path" value="${classpath.run}"/>
                 <attribute name="Main-Class" value="capture.Server"/>
             </manifest>
         </jar>
@@ -53,6 +64,9 @@
 		<copy file="./input_urls_example.txt" todir="${release}"/>
 		<copy file="./config.xsd" todir="${release}"/>
 		<copy file="./config.xml" todir="${release}"/>
+		<copy todir="${release}/${lib}">
+			<fileset dir="lib"/>
+		</copy>
 		
 		<if>
 		   <equals arg1="${os}" arg2="windows" />

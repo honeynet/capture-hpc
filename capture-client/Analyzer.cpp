@@ -121,8 +121,8 @@ Analyzer::start()
 		networkPacketDumper->start();
 	}
 	onProcessEventConnection = processMonitor->connect_onProcessEvent(boost::bind(&Analyzer::onProcessEvent, this, _1, _2, _3, _4, _5, _6));
-	onRegistryEventConnection = registryMonitor->connect_onRegistryEvent(boost::bind(&Analyzer::onRegistryEvent, this, _1, _2, _3, _4));
-	onFileEventConnection = fileMonitor->connect_onFileEvent(boost::bind(&Analyzer::onFileEvent, this, _1, _2, _3, _4));
+	onRegistryEventConnection = registryMonitor->connect_onRegistryEvent(boost::bind(&Analyzer::onRegistryEvent, this, _1, _2, _3, _4, _5));
+	onFileEventConnection = fileMonitor->connect_onFileEvent(boost::bind(&Analyzer::onFileEvent, this, _1, _2, _3, _4, _5));
 	DebugPrint(L"Analyzer: Registered with callbacks");
 	if(collectModifiedFiles)
 	{
@@ -317,24 +317,29 @@ Analyzer::update(int eventType, const VisitEvent& visitEvent)
 }
 
 void
-Analyzer::sendSystemEvent(const std::wstring& type, const std::wstring& time, 
-					const std::wstring& process, const std::wstring& action, 
-					const std::wstring& object)
+Analyzer::sendSystemEvent(const std::wstring& type, const std::wstring& time, const DWORD processId, 
+						  const std::wstring& process, const std::wstring& action, const std::wstring& object1,
+					const std::wstring& object2)
 {
 	DebugPrintTrace(L"Analyzer::sendSystemEvent(...) start\n");
 	vector<Attribute> attributes;
 	attributes.push_back(Attribute(L"time", time));
 	attributes.push_back(Attribute(L"type", type));
+
+	std::wstring sprocessId = boost::lexical_cast<std::wstring>(processId);
+
+	attributes.push_back(Attribute(L"processId", sprocessId)); //parent
 	attributes.push_back(Attribute(L"process", process));
 	attributes.push_back(Attribute(L"action", action));
-	attributes.push_back(Attribute(L"object", object));
+	attributes.push_back(Attribute(L"object1", object1));
+	attributes.push_back(Attribute(L"object2", object2));
 	if(OptionsManager::getInstance()->getOption(L"log-system-events-file") == L"")
 	{
 		// Output the event to stdout
-		printf("%ls: %ls %ls -> %ls\n", type.c_str(), action.c_str(), process.c_str(), object.c_str());
+		printf("%ls: %ls %ls %ls -> %ls %ls\n", type.c_str(), action.c_str(), sprocessId.c_str(), process.c_str(), object2.c_str(), object1.c_str());
 	} else {
 		// Send the event to the logger
-		Logger::getInstance()->writeSystemEventToLog(type, time, process, action, object);
+		Logger::getInstance()->writeSystemEventToLog(type, time, sprocessId, process, action, object1, object2);
 	}
 	server.sendXML(L"system-event", attributes);
 	DebugPrintTrace(L"Analyzer::sendSystemEvent(...) end\n");
@@ -355,34 +360,37 @@ Analyzer::onProcessEvent(BOOLEAN created, const std::wstring& time,
 	} else {
 		processType = L"terminated";
 	}
-	sendSystemEvent(processEvent, time, 
-					parentProcess, processType, 
+
+	std::wstring sprocessId = boost::lexical_cast<std::wstring>(processId);
+
+	sendSystemEvent(processEvent, time, parentProcessId,
+					parentProcess, processType, sprocessId, 
 					process);
 	DebugPrintTrace(L"Analyzer::onProcessEvent(...) end\n");
 }
 
 void 
 Analyzer::onRegistryEvent(const std::wstring& registryEventType, const std::wstring& time, 
-						  const std::wstring& processPath, const std::wstring& registryEventPath)
+						  const DWORD processId, const std::wstring& processPath, const std::wstring& registryEventPath)
 {
 	DebugPrintTrace(L"Analyzer::onRegistryEvent(...) start\n");
 	malicious = true;
+	std::wstring dummy = L"-1";
 	std::wstring registryEvent = L"registry";
-	sendSystemEvent(registryEvent, time, 
-					processPath, registryEventType, 
-					registryEventPath);
+	sendSystemEvent(registryEvent, time, processId,
+		processPath, registryEventType, registryEventPath, dummy);
 	DebugPrintTrace(L"Analyzer::onRegistryEvent(...) end\n");
 }
 
 void
-Analyzer::onFileEvent(const std::wstring& fileEventType, const std::wstring& time, 
+Analyzer::onFileEvent(const std::wstring& fileEventType, const std::wstring& time, const DWORD processId, 
 						 const std::wstring& processPath, const std::wstring& fileEventPath)
 {
 	DebugPrintTrace(L"Analyzer::onFileEvent(...) start\n");
 	malicious = true;
 	std::wstring fileEvent = L"file";
-	sendSystemEvent(fileEvent, time, 
-					processPath, fileEventType, 
-					fileEventPath);
+	std::wstring dummy = L"-1";
+	sendSystemEvent(fileEvent, time, processId,
+					processPath, fileEventType, fileEventPath, dummy);
 	DebugPrintTrace(L"Analyzer::onFileEvent(...) end\n");
 }

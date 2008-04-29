@@ -56,11 +56,7 @@ public class ClientsController extends Observable implements Runnable, EventObse
         ClientEventController clientEventController = new ClientEventController(clientSocket, exclusionLists, clientsPinger);
         clientEventController.contactClient();
 
-        //Client client = clientEventController.getClient();
-
-
         this.setChanged();
-    	//this.notifyObservers(client);
 	}
 	
 	

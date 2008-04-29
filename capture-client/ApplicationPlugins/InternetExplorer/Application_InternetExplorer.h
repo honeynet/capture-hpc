@@ -43,6 +43,7 @@ public:
 	void visitGroup(VisitEvent* visitEvent);
 	wchar_t** getSupportedApplicationNames();
 	unsigned int getPriority() { return 100; };
+	std::wstring getAlgorithm() { return L"dac"; }
 	DWORD closeAllInternetExplorers(IClassFactory* internet_explorer_factory);
 private:
 	static BOOL CALLBACK EnumWindowsProc(HWND hwnd,LPARAM lParam);

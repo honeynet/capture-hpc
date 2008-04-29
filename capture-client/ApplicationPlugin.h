@@ -44,5 +44,26 @@ public:
 	   The priority is used so Capture can determine what plugin to use
 	   if there are two which support the same application name */
 	virtual unsigned int getPriority() = 0;
+	/* Returns which algorithm is supported by this plugin. This is only 
+	   relevant when the group size is larger than 1. We currently support:
+	   bulk - here the state changes and the visit finish/error event contains
+	          process ID which allows the server to map a specific state change
+			  to a URL. A client can support Bulk if:
+			   - it can be started with multiple instances of which each instance 
+			     visits a URL
+			   - it can be started in its own process for each URL
+			   - it can be started in a way that allows one to derive its processID
+			   - processID of each URL needs to be set on the URL object
+	   dac -  here the urls are visited in bulk and if a unauthorized state change is
+	          detected, a divide-and-conquer algorithm is applied to find the specific
+			  malicious URL (note that since URLs are visited multiple times, there is
+			  a danger of loosing malicious URLs due to IP tracking functionality. A 
+			  caching mechanism needs to be applied). A client can support DAC if:
+			   - it can be started with multiple instances of which each instance 
+			     visits a URL
+	   seq -  here the urls are visited one after another. This is the slowest method, but 
+	          doesnt require special capabilities by the plugin.
 
+	*/
+	virtual std::wstring getAlgorithm() = 0;
 };

@@ -76,54 +76,7 @@ public class UrlGroupsController extends Observable implements Runnable,Observer
 
     private int getUrlGroupSize() {
         // e.g. 1.12%
-        double maliciousPercentage = Double.parseDouble(ConfigManager.getInstance().getConfigOption("p_m"));
-
-        int k = 80;
-
-        if (maliciousPercentage < 0.005) { //0.5%
-            k = 80;
-        } else if (maliciousPercentage < 0.010) {
-            k = 40;
-        } else if (maliciousPercentage < 0.015) {
-            k = 27;
-        } else if (maliciousPercentage < 0.020) {
-            k = 20;
-        } else if (maliciousPercentage < 0.025) {
-            k = 16;
-        } else if (maliciousPercentage < 0.030) {
-            k = 13;
-        } else if (maliciousPercentage < 0.035) {
-            k = 11;
-        } else if (maliciousPercentage < 0.040) {
-            k = 10;
-        } else if (maliciousPercentage < 0.045) {
-            k = 9;
-        } else if (maliciousPercentage < 0.050) {
-            k = 8;
-        } else if (maliciousPercentage < 0.055) {
-            k = 7;
-        } else if (maliciousPercentage < 0.060) {
-            k = 7;
-        } else if (maliciousPercentage < 0.065) {
-            k = 6;
-        } else if (maliciousPercentage < 0.070) {
-            k = 6;
-        } else if (maliciousPercentage < 0.075) {
-            k = 5;
-        } else if (maliciousPercentage < 0.080) {
-            k = 5;
-        } else if (maliciousPercentage < 0.085) {
-            k = 5;
-        } else if (maliciousPercentage < 0.090) {
-            k = 5;
-        } else if (maliciousPercentage < 0.095) {
-            k = 4;
-        } else if (maliciousPercentage < 0.09) {
-            k = 4;
-        } else {
-            k = 1;
-        }
-        return k;
+        return Integer.parseInt(ConfigManager.getInstance().getConfigOption("group_size"));
     }
 
     public void update(Observable o, Object arg) {
@@ -136,7 +89,7 @@ public class UrlGroupsController extends Observable implements Runnable,Observer
             visitingList.remove(urlGroup);
             visitedList.add(urlGroup);
 
-            if (urlGroup.isMalicious() && urlGroup.size() > 1) {
+            if (urlGroup.getAlgorithm().equals("dac") && urlGroup.isMalicious() && urlGroup.size() > 1) {
                 List<Url> urls = urlGroup.getUrlList();
                 List<Url> urls1 = new ArrayList<Url>();
                 List<Url> urls2 = new ArrayList<Url>();

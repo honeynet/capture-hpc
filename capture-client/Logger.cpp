@@ -46,22 +46,26 @@ Logger::convertToMultiByteString(const std::wstring& message, size_t& charsConve
 }
 
 void
-Logger::writeSystemEventToLog(const std::wstring& type, const std::wstring& time, 
-							  const std::wstring& process, const std::wstring& action, 
-							  const std::wstring& object)
+Logger::writeSystemEventToLog(const std::wstring& type, const std::wstring& time, const std::wstring& processId, 
+							  const std::wstring& process, const std::wstring& action, const std::wstring& object1, 
+							  const std::wstring& object2)
 {
 	if(isFileOpen())
 	{
 		std::wstring message = L"\"";
-		message += time;
-		message += L"\",\"";
 		message += type;
 		message += L"\",\"";
-		message += action;
+		message += time;
+		message += L"\",\"";
+		message += processId;
 		message += L"\",\"";
 		message += process;
 		message += L"\",\"";
-		message += object;
+		message += action;
+		message += L"\",\"";
+		message += object1;
+		message += L"\",\"";
+		message += object2;
 		message += L"\"\r\n";
 		writeToLog(message);
 	}
