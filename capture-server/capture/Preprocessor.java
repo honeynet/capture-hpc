@@ -40,7 +40,6 @@ public abstract class Preprocessor {
                             if (line != null) {
                                 if ((line.length() > 0)) {
                                     line = line.trim();
-
                                     if(line.equalsIgnoreCase("end")) {
                                         System.out.println(line);
                                         System.out.println("Encounted end in input urls...stoppping processing input urls");
