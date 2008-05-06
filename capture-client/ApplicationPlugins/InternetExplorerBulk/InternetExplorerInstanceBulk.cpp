@@ -28,6 +28,7 @@ InternetExplorerInstanceBulk::~InternetExplorerInstanceBulk(void)
 
 DWORD InternetExplorerInstanceBulk::executeProcess() 
 {
+	DebugPrintTrace(L"InternetExplorerInstanceBulk::executeProcess start\n");
 	size_t iMyCounter = 0; 
 	DWORD iReturnVal = 0; 
     DWORD dwExitCode = 0;
@@ -45,9 +46,27 @@ DWORD InternetExplorerInstanceBulk::executeProcess()
 		/* CreateProcess failed */
 		iReturnVal = GetLastError();
 	 } else {
-		 WaitForInputIdle(m_piProcessInfo.hProcess, 2000);
-		 Sleep(1000);
+		WaitForInputIdle(m_piProcessInfo.hProcess, 20000);
+		double maxWaitTimeInSec = 20;
+		double waitTimeInSec = 0;
+
+		bool isOpen = this->isOpen();
+		while(!isOpen && waitTimeInSec < maxWaitTimeInSec) 
+		{
+			Sleep(100);
+			waitTimeInSec = waitTimeInSec + 0.1;
+			isOpen = this->isOpen();
+		}
+		if(waitTimeInSec >= maxWaitTimeInSec) {
+			iReturnVal = -5;
+		} else {
+			printf("Created browser window with processId %d\n",this->getProcessId());
+			DebugPrint(L"InternetExplorerInstanceBulk::executeProcess created Process\n");
+		}
+
+		
 	 }
+	 DebugPrintTrace(L"InternetExplorerInstanceBulk::executeProcess end\n");
      return iReturnVal;
 }
 
@@ -56,51 +75,93 @@ DWORD InternetExplorerInstanceBulk::getProcessId(void)
 	return m_piProcessInfo.dwProcessId;
 }
 
+bool InternetExplorerInstanceBulk::isOpen()
+{
+	bool open = false;
+
+	DWORD aProcesses[1024], cbNeeded, cProcesses;
+    unsigned int i;
+
+    if ( !EnumProcesses( aProcesses, sizeof(aProcesses), &cbNeeded ) )
+        return false;
+
+    // Calculate how many process identifiers were returned.
+
+    cProcesses = cbNeeded / sizeof(DWORD);
+
+    for ( i = 0; i < cProcesses; i++ )
+	{
+        if( aProcesses[i] != 0 )
+		{
+			if(aProcesses[i]==this->getProcessId()) 
+			{
+				setCurrentWebBrowserIF(); //check whether we can attach to browser
+				if(pInternetExplorer!=NULL) {
+					open = true;
+				}
+				
+			}
+
+		}
+	}
+	return open;
+}
 
 bool InternetExplorerInstanceBulk::setCurrentWebBrowserIF()
 {
-
+	DebugPrintTrace(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF() start\n");
+	CoInitializeEx(NULL,COINIT_MULTITHREADED);
     HRESULT hr;
     SHDocVw::IShellWindowsPtr spSHWinds; 
     hr = spSHWinds.CreateInstance (__uuidof(SHDocVw::ShellWindows)); 
     
-    if (FAILED (hr))
+	if (FAILED (hr)) {
+		DWORD error = GetLastError();
+		DebugPrint(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF unable to create shellWindows\n");    
+		printf("Unable to create shellWindows%d\n",error);
         return false;
+	}
 
     _ASSERT (spSHWinds != NULL);
 	DebugPrint(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF created shellWindows\n");    
     
 	long nCount = spSHWinds->GetCount ();
+	
+	printf("Iterating through %d windows to find browser.\n",spSHWinds->GetCount());
 
     IDispatchPtr spDisp;
-    
     for (long i = 0; i < nCount; i++)
     {
-		DebugPrint(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF iterating window\n");
-        _variant_t va (i, VT_I4);
+		_variant_t va (i, VT_I4);
         spDisp = spSHWinds->Item (va);
         
         IWebBrowser2 * pWebBrowser = NULL;
         hr = spDisp.QueryInterface (IID_IWebBrowser2, & pWebBrowser);
         
-        if (pWebBrowser != NULL)
+        if (SUCCEEDED(hr) && pWebBrowser != NULL)
         {
-			DebugPrint(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF found browser window\n");
             HWND hwndIE;
 			DWORD dProcessId;
 			pWebBrowser->get_HWND((SHANDLE_PTR*)&hwndIE);
 			GetWindowThreadProcessId(hwndIE, &dProcessId);
 
+			printf("InternetExplorerInstanceBulk::setCurrentWebBrowserIF found browser window with processId %d. Want %d\n",dProcessId, m_piProcessInfo.dwProcessId);
 			//check pid of pWebBrowser
 			if(dProcessId==m_piProcessInfo.dwProcessId) {
 				DebugPrint(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF found our window\n");
 				pInternetExplorer = pWebBrowser;
+				DebugPrintTrace(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF() end1\n");
 				return true;
 			}
+			CloseHandle( hwndIE );
+
             pWebBrowser->Release ();
-        }
+			pWebBrowser = NULL;
+		}
+		
     }
-    
+	printf("Didnt find created browser windows with processId %d\n",this->getProcessId());
+    DebugPrintTrace(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF() end2\n");
     return false;
 }
 
@@ -108,6 +169,11 @@ void
 InternetExplorerInstanceBulk::visitUrl(Url* url)
 {
 	DebugPrintTrace(L"InternetExplorerInstanceBulk::visitUrl(Url* url) start\n");
+	hVisiting = CreateEvent(NULL, false, NULL, NULL);
+	dwNetworkErrorCode = 0;
+	major = CAPTURE_VISITATION_OK;
+	mainURL.vt = VT_EMPTY;
+
 	bool wait = true;
 	HRESULT hr;
 	DWORD iReturnVal = executeProcess();
@@ -146,6 +212,7 @@ InternetExplorerInstanceBulk::visitUrl(Url* url)
 					
 					if(dwWait == WAIT_TIMEOUT)
 					{
+						DebugPrint(L"Timeout visiting URL");
 						url->setMajorErrorCode(CAPTURE_VISITATION_TIMEOUT_ERROR);
 						wait = false;
 					} else {
@@ -179,7 +246,7 @@ InternetExplorerInstanceBulk::visitUrl(Url* url)
 			}
 		} else {
 			printf("Error: Unable to find created IE window.\n");
-			url->setMajorErrorCode(CAPTURE_VISITATION_PROCESS_ERROR);
+			url->setMajorErrorCode(CAPTURE_VISITATION_ATTACH_PROCESS_ERROR);
 		}
 	
 	} else {
@@ -204,6 +271,7 @@ InternetExplorerInstanceBulk::Close()
 		return false;
 	}
 
+	CoUninitialize();
 	DebugPrintTrace(L"InternetExplorerInstanceBulk::Close() end\n");
 	return true;
 }
@@ -245,7 +313,7 @@ InternetExplorerInstanceBulk::Invoke(
 		/* Put the first url (the main one) into a variable */
 		if(mainURL.vt == VT_EMPTY)
 		{
-			mainURL = pDispParams->rgvarg[5].pvarVal;
+			mainURL = pDispParams->rgvarg[5].pvarVal;			
 		}
 		break;
 	case DISPID_NAVIGATECOMPLETE2:		

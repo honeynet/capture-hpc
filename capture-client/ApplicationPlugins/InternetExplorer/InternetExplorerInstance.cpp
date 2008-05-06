@@ -156,6 +156,7 @@ InternetExplorerInstance::Invoke(
 		{
 			mainURL = pDispParams->rgvarg[5].pvarVal;
 		}
+		
 		break;
 	case DISPID_NAVIGATECOMPLETE2:		
 		DebugPrint(L"NavigateComplete2");

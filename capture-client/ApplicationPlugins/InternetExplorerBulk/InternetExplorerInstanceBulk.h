@@ -8,6 +8,7 @@
 #include <comutil.h>
 #include <exdispid.h>
 #include <objbase.h>
+#include <psapi.h>
 #include <shlwapi.h>
 #import <shdocvw.dll> 
 
@@ -18,6 +19,7 @@ public:
 	~InternetExplorerInstanceBulk(void);
 	DWORD executeProcess();
 	void visitUrl(Url* url);
+	bool isOpen();
 	DWORD getProcessId(void);
 	bool close(void);
 

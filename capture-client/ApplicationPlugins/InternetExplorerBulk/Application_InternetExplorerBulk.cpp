@@ -146,6 +146,7 @@ Application_InternetExplorerBulk::visitGroup(VisitEvent* visitEvent)
 				worker_thread_busy[i] = true;
 				n_visiting++;
 				SetEvent(worker_has_data[i]);	
+				Sleep(1000); //to do with kernel bug that freaks out when processes are started at the same time
 			}
 		}
 
