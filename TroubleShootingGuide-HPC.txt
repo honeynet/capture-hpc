@@ -39,3 +39,6 @@ If you continue to have problems, check whether connectivity between the Capture
 
 10.	Starting the Capture Server, I get the error: VIX_E_INVALID_ARG
 This error occurs when the wrong VIX library is installed on the system. VMware offers two versions. Version 1.1.0 and the one that comes with the client package of the VMware server. You need to have the one that comes with VMware server installed.
+
+11. The browser starts, but sites are visted.
+This can happen when using the Internet Explorer Bulk algorithm. This algorithm starts IE as its own process and then attaches to the process to obtain events from the browser. In order for this mechanism to work, you need to be logged in as the user on the guest OS that is used to start the browser (configured in config.xml)
