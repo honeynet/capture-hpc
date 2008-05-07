@@ -36,7 +36,7 @@ public class VirtualMachinesStateChecker extends TimerTask {
                         }
 
                         diff = currentTime - vm.getTimeOfLastStateChange();
-                        if (diff >= (300000 * Double.parseDouble(ConfigManager.getInstance().getConfigOption("timeout_factor")))) {
+                        if (diff >= (700000 * Double.parseDouble(ConfigManager.getInstance().getConfigOption("timeout_factor")))) {
                             Stats.vmStalled++;
                             System.out.println(vm.getLogHeader() + " VM stalled during operation, reverting VM");
                             setError(vm, ERROR_CODES.VM_STALLED);

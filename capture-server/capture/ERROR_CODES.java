@@ -18,7 +18,9 @@ public enum ERROR_CODES {
     CAPTURE_CLIENT_INACTIVITY (0x10004000),
     VM_STALLED (0x10004100),    
     CAPTURE_CLIENT_CONNECTION_RESET (0x10004200),   //when client suddently drops the connection
-    INVALID_URL (0x10007000),   
+    SOCKET_ERROR  (0x10004300),
+    INVALID_URL (0x10007000),
+
 
     /* Visitation minor events */
 	PE_PROCESS_TERMINATED_FORCEFULLY		(0x10005000),

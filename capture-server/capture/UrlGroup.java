@@ -96,9 +96,6 @@ public class UrlGroup extends Observable {
         if (urlGroupState == URL_GROUP_STATE.ERROR) {
             errorCount++;
         }
-        if (urlGroupState == URL_GROUP_STATE.ERROR) {
-            errorCount++;
-        }
 
         for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
             Url url = iterator.next();

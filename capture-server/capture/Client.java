@@ -344,6 +344,7 @@ public class Client extends Observable implements Runnable, Comparable {
                 System.out.print(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + "\n");
                 String malicious = element.attributes.get("malicious");
                 if (malicious.equals("1")) {
+                    flushStateChangeHandler(urlProcessIdMap);
                     visitingUrlGroup.setMalicious(true);
                     visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);   //will set underlying url state
                     System.out.println(this.getVirtualMachine().getLogHeader() + " MALICIOUS " + visitingUrlGroup.getIdentifier());

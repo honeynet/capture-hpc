@@ -179,7 +179,7 @@ public class Url extends Observable {
                 Stats.addFirstStateChangeTime(firstStateChange, visitFinishTime, visitTime);
                 Logger.getInstance().writeToMaliciousUrlLog("\"" + date + "\",\"malicious\",\"" + groupID + "\",\"" + url +
                         "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
-            } else if (this.malicious != null && !this.malicious) {
+            } else if ((this.malicious != null && !this.malicious) || this.malicious==null) {
                 Stats.safe++;
                 Logger.getInstance().writeToSafeUrlLog("\"" + date + "\",\"benign\",\"" + groupID + "\",\"" + url +
                         "\",\"" + clientProgram + "\",\"" + visitTime + "\"");

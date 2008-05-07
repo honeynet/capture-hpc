@@ -32,10 +32,9 @@ public class ClientEventController extends DefaultHandler implements Runnable {
         Thread receiver = new Thread(this, "ClientEC");
         receiver.start();
     }
-    
 
 
-     public void contactClient() {
+    public void contactClient() {
         String message = "<connect server=\"2.5\" />";
         if (this.clientSocket.isConnected()) {
             try {
@@ -78,31 +77,31 @@ public class ClientEventController extends DefaultHandler implements Runnable {
     }
 
     public void parseReconnectEvent(Element element) {
-            String vmServerId = element.attributes.get("vm-server-id");
-            String vmId = element.attributes.get("vm-id");
-            if ((vmServerId != null && vmId != null) &&
-                    (vmServerId != "" && vmId != "")) {
-                VirtualMachineServer vmServer = VirtualMachineServerController.getInstance().getVirtualMachineServer(vmServerId);
+        String vmServerId = element.attributes.get("vm-server-id");
+        String vmId = element.attributes.get("vm-id");
+        if ((vmServerId != null && vmId != null) &&
+                (vmServerId != "" && vmId != "")) {
+            VirtualMachineServer vmServer = VirtualMachineServerController.getInstance().getVirtualMachineServer(vmServerId);
 
-                int id = Integer.parseInt(vmId);
-                for (VirtualMachine vm : vmServer.getVirtualMachines()) {
-                    if (vm.getVmUniqueId() == id) {
-                        try {
-                            client = vm.getClient();
-                            if(client!=null) {
-                                client.getClientSocket().close();
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace(System.out);
+            int id = Integer.parseInt(vmId);
+            for (VirtualMachine vm : vmServer.getVirtualMachines()) {
+                if (vm.getVmUniqueId() == id) {
+                    try {
+                        client = vm.getClient();
+                        if (client != null) {
+                            client.getClientSocket().close();
                         }
-                        if(client!=null) {
-                            client.setSocket(clientSocket);
-                        } 
-                        break;
+                    } catch (IOException e) {
+                        e.printStackTrace(System.out);
                     }
+                    if (client != null) {
+                        client.setSocket(clientSocket);
+                    }
+                    break;
                 }
             }
         }
+    }
 
 
     public void run() {
@@ -130,13 +129,21 @@ public class ClientEventController extends DefaultHandler implements Runnable {
             }
         } catch (SocketException e) {
             String where = "[unknown server]";
-            if (client != null && client.getVirtualMachine() != null)
+            if (client != null && client.getVirtualMachine() != null) {
                 where = client.getVirtualMachine().getLogHeader();
+                if (client.getVisitingUrlGroup() != null) {
+                    client.getVisitingUrlGroup().setMajorErrorCode(ERROR_CODES.SOCKET_ERROR.errorCode);
+                }
+            }
             System.out.println(where + " " + e.getMessage());
         } catch (IOException e) {
             String where = "[unknown server]";
-            if (client != null && client.getVirtualMachine() != null)
+            if (client != null && client.getVirtualMachine() != null) {
                 where = client.getVirtualMachine().getLogHeader();
+                if (client.getVisitingUrlGroup() != null) {
+                    client.getVisitingUrlGroup().setMajorErrorCode(ERROR_CODES.SOCKET_ERROR.errorCode);
+                }
+            }
             System.out.println(where + " " + e.getMessage());
             System.out.println(where + "\nIOException: Buffer=" +
                     buffer + "\n\n" + e.toString());
@@ -151,8 +158,12 @@ public class ClientEventController extends DefaultHandler implements Runnable {
             e.printStackTrace(System.out);
         } catch (Exception e) {
             String where = "[unknown server]";
-            if (client != null && client.getVirtualMachine() != null)
+            if (client != null && client.getVirtualMachine() != null) {
                 where = client.getVirtualMachine().getLogHeader();
+                if (client.getVisitingUrlGroup() != null) {
+                    client.getVisitingUrlGroup().setMajorErrorCode(ERROR_CODES.SOCKET_ERROR.errorCode);
+                }
+            }
             System.out.println(where + " " + e.getMessage());
             System.out.println(where + "\nException: Buffer=" +
                     buffer + "\n\n" + e.toString());
@@ -186,7 +197,7 @@ public class ClientEventController extends DefaultHandler implements Runnable {
         //long startTime = System.nanoTime();
         if (currentElement.parent == null) {
             if (name.equals("system-event")) {
-                if(client!=null) client.parseEvent(currentElement);
+                if (client != null) client.parseEvent(currentElement);
             } else if (name.equals("connect")) {
                 parseConnectEvent(currentElement);
             } else if (name.equals("reconnect")) {
@@ -197,7 +208,7 @@ public class ClientEventController extends DefaultHandler implements Runnable {
                     where = client.getVirtualMachine().getLogHeader();
                 System.out.println(where + " Got pong");
             } else if (name.equals("visit-event")) {
-                if(client!=null) client.parseVisitEvent(currentElement);
+                if (client != null) client.parseVisitEvent(currentElement);
             } else if (name.equals("client")) {
 
             } else if (name.equals("file")) {

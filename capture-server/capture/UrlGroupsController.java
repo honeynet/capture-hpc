@@ -118,7 +118,7 @@ public class UrlGroupsController extends Observable implements Runnable,Observer
             visitingList.remove(urlGroup);
 
             boolean split = false;
-            if (urlGroup.isMalicious() && urlGroup.size() > 1) {
+            if (urlGroup.getAlgorithm().equals("dac") && urlGroup.isMalicious() && urlGroup.size() > 1) {
                 List<Url> urls = urlGroup.getUrlList();
                 List<Url> urls1 = new ArrayList<Url>();
                 List<Url> urls2 = new ArrayList<Url>();

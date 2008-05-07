@@ -68,6 +68,7 @@ public abstract class Preprocessor {
                 }
             }
         });
+        fileTail.setPriority(Thread.NORM_PRIORITY + 1);
         fileTail.start();
     }
 
