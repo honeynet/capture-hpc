@@ -94,6 +94,8 @@ typedef struct _PROCESS_HASH_ENTRY
 	KSPIN_LOCK  lProcessSpinLock;
 } PROCESS_HASH_ENTRY, * PPROCESS_HASH_ENTRY;
 
+ 
+
 /* Structure to be passed to the kernel driver using openevent */
 typedef struct _PROCESS_EVENT
 {
@@ -105,11 +107,12 @@ typedef struct _PROCESS_EVENT
 	WCHAR processPath[1024];
 } PROCESS_EVENT, *PPROCESS_EVENT;
 
-typedef struct  _PROCESS_EVENT_PACKET {
+typedef struct _PROCESS_EVENT_PACKET
+{
     LIST_ENTRY     Link;
 	PROCESS_EVENT processEvent;
+} PROCESS_EVENT_PACKET, *PPROCESS_EVENT_PACKET; 
 
-} PROCESS_EVENT_PACKET, * PPROCESS_EVENT_PACKET; 
 
 typedef NTSTATUS (*QUERY_INFO_PROCESS) (
     __in HANDLE ProcessHandle,
@@ -129,6 +132,9 @@ typedef struct _CAPTURE_PROCESS_MANAGER
 	PKEVENT eNewProcessEvent;
 	HANDLE  hNewProcessEvent;
 	PPROCESS_EVENT pCurrentProcessEvent;
+	LIST_ENTRY lQueuedProcessEvents;
+	KSPIN_LOCK lQueuedProcessEventsSpinLock;
+	ULONG nQueuedProcessEvents;
 	FAST_MUTEX mProcessWaitingSpinLock;
 	ULONG lastContactTime;
 } CAPTURE_PROCESS_MANAGER, * PCAPTURE_PROCESS_MANAGER;
@@ -212,6 +218,9 @@ NTSTATUS DriverEntry(
     /* Assign global pointer to the device object for use by the callback functions */
     pProcessManager->pDeviceObject = pDeviceObject;
 	ExInitializeFastMutex(&pProcessManager->mProcessWaitingSpinLock);
+	KeInitializeSpinLock(&pProcessManager->lQueuedProcessEventsSpinLock);
+	InitializeListHead(&pProcessManager->lQueuedProcessEvents);
+	pProcessManager->nQueuedProcessEvents = 0;
 
 	/* Create event for user-mode processes to monitor */
     RtlInitUnicodeString(&uszProcessEventString, L"\\BaseNamedObjects\\CaptureProcDrvProcessEvent");
@@ -357,6 +366,7 @@ VOID ProcessCallback(
 	LARGE_INTEGER currentLocalTime;
 	TIME_FIELDS timeFields;
 	UNICODE_STRING processImagePath;
+	PROCESS_EVENT_PACKET* processEventPacket;
 	PCAPTURE_PROCESS_MANAGER pProcessManager;
 
 	/* Get the current time */
@@ -367,14 +377,14 @@ VOID ProcessCallback(
     /* Get the process manager from the device extension */
     pProcessManager = gpDeviceObject->DeviceExtension;
 
-	pProcessManager->pCurrentProcessEvent = ExAllocatePoolWithTag(NonPagedPool, sizeof(PROCESS_EVENT), PROCESS_POOL_TAG);
+	processEventPacket = ExAllocatePoolWithTag(NonPagedPool, sizeof(PROCESS_EVENT_PACKET), PROCESS_POOL_TAG);
 
-	if(pProcessManager->pCurrentProcessEvent == NULL)
+	if(processEventPacket == NULL)
 	{
 		return;
 	}
 
-	RtlCopyMemory(&pProcessManager->pCurrentProcessEvent->time, &timeFields, sizeof(TIME_FIELDS));
+	RtlCopyMemory(&processEventPacket->processEvent.time, &timeFields, sizeof(TIME_FIELDS));
 
 	processImagePath.Length = 0;
 	processImagePath.MaximumLength = 0;
@@ -389,15 +399,21 @@ VOID ProcessCallback(
 			if(NT_SUCCESS(status))
 			{
 				DbgPrint("CaptureProcessMonitor: %i %i=>%i:%wZ\n", bCreate, hParentId, hProcessId, &processImagePath);
-				RtlStringCbCopyUnicodeString(pProcessManager->pCurrentProcessEvent->processPath, 1024, &processImagePath);
+				RtlStringCbCopyUnicodeString(processEventPacket->processEvent.processPath, 1024, &processImagePath);
 			}
 			ExFreePoolWithTag(processImagePath.Buffer,PROCESS_POOL_TAG);
 		}
 	}
 
-	pProcessManager->pCurrentProcessEvent->hParentProcessId = hParentId;
-	pProcessManager->pCurrentProcessEvent->hProcessId = hProcessId;
-	pProcessManager->pCurrentProcessEvent->bCreated = bCreate;
+
+	processEventPacket->processEvent.hParentProcessId = hParentId;
+	processEventPacket->processEvent.hProcessId = hProcessId;
+	processEventPacket->processEvent.bCreated = bCreate;
+		
+	// Queue the process event
+	ExInterlockedInsertTailList(&pProcessManager->lQueuedProcessEvents, &processEventPacket->Link, &pProcessManager->lQueuedProcessEventsSpinLock);
+
+	pProcessManager->nQueuedProcessEvents++;
 
 	KeSetEvent(pProcessManager->eNewProcessEvent, 0, FALSE);
 	KeClearEvent(pProcessManager->eNewProcessEvent);
@@ -432,29 +448,37 @@ NTSTATUS KDispatchIoctl(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 					ProbeForWrite(pOutputBuffer, 
 								irpStack->Parameters.DeviceIoControl.OutputBufferLength,
 								__alignof (PROCESS_EVENT));
-					ExAcquireFastMutex(&pProcessManager->mProcessWaitingSpinLock);
-					if(pProcessManager->pCurrentProcessEvent != NULL)
-					{
-						RtlCopyMemory(pOutputBuffer+done, pProcessManager->pCurrentProcessEvent, sizeof(PROCESS_EVENT));
-						done += sizeof(PROCESS_EVENT);
-						ExFreePoolWithTag(pProcessManager->pCurrentProcessEvent, PROCESS_POOL_TAG);
-						pProcessManager->pCurrentProcessEvent = NULL;
-					}
-					ExReleaseFastMutex(&pProcessManager->mProcessWaitingSpinLock);
-					/*
-					while(!IsListEmpty(&pProcessManager->lQueuedProcessEvents) && (done < left))
+					//ExAcquireFastMutex(&pProcessManager->mProcessWaitingSpinLock);
+					//if(pProcessManager->pCurrentProcessEvent != NULL)
+					//{
+					//	RtlCopyMemory(pOutputBuffer+done, pProcessManager->pCurrentProcessEvent, sizeof(PROCESS_EVENT));
+					//	done += sizeof(PROCESS_EVENT);
+					//	ExFreePoolWithTag(pProcessManager->pCurrentProcessEvent, PROCESS_POOL_TAG);
+					//	pProcessManager->pCurrentProcessEvent = NULL;
+					//}
+					//ExReleaseFastMutex(&pProcessManager->mProcessWaitingSpinLock);
+					
+					if(!IsListEmpty(&pProcessManager->lQueuedProcessEvents))
 					{
 						PLIST_ENTRY head;
 						PPROCESS_EVENT_PACKET pProcessEventPacket;
 						head = ExInterlockedRemoveHeadList(&pProcessManager->lQueuedProcessEvents, &pProcessManager->lQueuedProcessEventsSpinLock);
+						pProcessManager->nQueuedProcessEvents--;
 						pProcessEventPacket = CONTAINING_RECORD(head, PROCESS_EVENT_PACKET, Link);
 						
-						RtlCopyMemory(pOutputBuffer+done, &pProcessEventPacket->processEvent, sizeof(PROCESS_EVENT));
-						done += sizeof(PROCESS_EVENT);
+						RtlCopyMemory(pOutputBuffer, &pProcessEventPacket->processEvent, sizeof(PROCESS_EVENT));
+						done = sizeof(PROCESS_EVENT);
 
 						ExFreePool(pProcessEventPacket);
+
+						// Notify that we still have process events queued
+						if( pProcessManager->nQueuedProcessEvents )
+						{
+							KeSetEvent(pProcessManager->eNewProcessEvent, 0, FALSE);
+							KeClearEvent(pProcessManager->eNewProcessEvent);
+						}
 					}
-					*/
+					
 					dwDataWritten = done;
 					status = STATUS_SUCCESS;
 				} __except( EXCEPTION_EXECUTE_HANDLER ) {
