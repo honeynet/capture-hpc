@@ -234,6 +234,13 @@ DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* int
 				DebugPrint(L"IE CloseAll unable to terminate 1.\n");
 			}
 		}
+
+		if( hProc != NULL) {
+			CloseHandle( hProc );
+		}
+		if (hwndIE !=NULL) {
+			CloseHandle( hwndIE );
+		}
 	}
 	if(pInternetExplorer!=NULL) {
 		pInternetExplorer->Release();
@@ -259,8 +266,7 @@ DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* int
 			std::wstring processName = L"c:\\Program Files\\Internet Explorer\\iexplore.exe";
 			size_t iPos = processName.find_last_of(L"\\");
 			processName.erase(0, iPos +1);
-			//wprintf(processName.c_str());
-
+			
 			if(compareName(aProcesses[i], processName)==0) 
 			{
 				DebugPrint(L"IE CloseAll IE process left over. Closing....\n");
@@ -272,15 +278,14 @@ DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* int
 					iReturnVal = GetLastError();
 					DebugPrint(L"IE CloseAll unable to terminate 2.\n");
 				}
+
+				if( hPro != NULL ) {
+					CloseHandle (hPro);
+				}
 			}
 		}
 	}
 
-	
-
-	if(iReturnVal!=0) {
-		printf("IE CloseAll Error (%d)\n",iReturnVal);
-	}
 	DebugPrintTrace(L"Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* internet_explorer_factory) end\n");
 	return iReturnVal;
 }
@@ -310,12 +315,14 @@ int Application_InternetExplorer::compareName(DWORD processID, std::wstring proc
             GetModuleBaseName( hProcess, hMod, szProcessName, 
                                sizeof(szProcessName)/sizeof(TCHAR) );
         }
+		
+		CloseHandle( hProcess );
     }
 
 	//_tprintf( TEXT("%s  (PID: %u)\n"), szProcessName, processID );
 	int comparison;
 	comparison = wcsicmp(szProcessName, processName.c_str());
-    CloseHandle( hProcess );
+    
 
 	return comparison;
 }

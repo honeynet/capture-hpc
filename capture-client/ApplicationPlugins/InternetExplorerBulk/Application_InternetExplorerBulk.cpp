@@ -146,7 +146,6 @@ Application_InternetExplorerBulk::visitGroup(VisitEvent* visitEvent)
 				worker_thread_busy[i] = true;
 				n_visiting++;
 				SetEvent(worker_has_data[i]);	
-				Sleep(1000); //to do with kernel bug that freaks out when processes are started at the same time
 			}
 		}
 
@@ -215,8 +214,7 @@ DWORD Application_InternetExplorerBulk::closeAllInternetExplorers() {
 			std::wstring processName = L"c:\\Program Files\\Internet Explorer\\iexplore.exe";
 			size_t iPos = processName.find_last_of(L"\\");
 			processName.erase(0, iPos +1);
-			//wprintf(processName.c_str());
-
+			
 			if(compareName(aProcesses[i], processName)==0) 
 			{
 				DebugPrint(L"IE CloseAll IE process left over. Closing....\n");
@@ -228,15 +226,15 @@ DWORD Application_InternetExplorerBulk::closeAllInternetExplorers() {
 					iReturnVal = GetLastError();
 					DebugPrint(L"IE CloseAll unable to terminate 2.\n");
 				}
+
+				if(hPro!=NULL) {
+					CloseHandle(hPro);
+				}
+
 			}
 		}
 	}
 
-	
-
-	if(iReturnVal!=0) {
-		printf("IE CloseAll Error (%d)\n",iReturnVal);
-	}
 	DebugPrintTrace(L"Application_InternetExplorerBulk::closeAllInternetExplorers(IClassFactory* internet_explorer_factory) end\n");
 	return iReturnVal;
 }
@@ -265,12 +263,14 @@ int Application_InternetExplorerBulk::compareName(DWORD processID, std::wstring 
             GetModuleBaseName( hProcess, hMod, szProcessName, 
                                sizeof(szProcessName)/sizeof(TCHAR) );
         }
+
+		CloseHandle(hProcess);
     }
 
 	//_tprintf( TEXT("%s  (PID: %u)\n"), szProcessName, processID );
 	int comparison;
 	comparison = wcsicmp(szProcessName, processName.c_str());
-    CloseHandle( hProcess );
+    
 
 	return comparison;
 }

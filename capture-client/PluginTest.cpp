@@ -9,28 +9,53 @@ PluginTest::~PluginTest(void)
 }
 
 void PluginTest::loadTest() {
-	loadIEPlugin();
+	loadIEBulkPlugin();
 
-	for(int i=0;i<100;i++) {
+	for(int i=0;i<1;i++) {
 		VisitEvent* visitEvent = new VisitEvent();
 		visitEvent->setIdentifier(L"1");
-		visitEvent->setProgram(L"iexplore");
+		visitEvent->setProgram(L"iexplorebulk");
+
+
+		for(int i = 0; i < 50; i++) {
+			std::wstring urlStr = L"http://www.google.com/search?q=";
+			urlStr += i;
+			Url* url = new Url(urlStr,L"iexplorebulk",60);
+			visitEvent->addUrl(url);
+		}
 		
-		Url* url = new Url(L"http://www.google.com",L"iexplore",10);
-		visitEvent->addUrl(url);
-		
-		Url* url2 = new Url(L"http://www.google.de",L"iexplore",10);
-		visitEvent->addUrl(url2);
-		
-		ie->visitGroup(visitEvent);
-		
+		ie->visitGroup(visitEvent); 
+
 		if(visitEvent->isError()) {
-			printf("Visit Event Error");
+			
+			printf("PLUGIN TEST: Visit Event Error %d", visitEvent->getErrorCode());
+		}
+		
+		
+		for each(Url* url in visitEvent->getUrls())
+		{
+			if(url->getMajorErrorCode()!=0) {
+				printf("PLUGIN TEST: URL ERROR %d\n",url->getMajorErrorCode());
+			}
 		}
 
+
 		delete visitEvent; //will delete url as well
+
 	}
 }
+
+std::wstring
+PluginTest::errorCodeToString(DWORD errorCode)
+{
+	DebugPrintTrace(L"Analyzer::errorCodeToString(DWORD errorCode) start\n");
+	wchar_t szTemp[16];
+	swprintf_s(szTemp, 16, L"%08x", errorCode);
+	std::wstring error = szTemp;
+	DebugPrintTrace(L"Analyzer::errorCodeToString(DWORD errorCode) end\n");
+	return error;
+}
+
 
 void
 PluginTest::loadIEPlugin()
@@ -42,6 +67,40 @@ PluginTest::loadIEPlugin()
 	wchar_t pluginDirectoryPath[1024];
 
 	GetFullPathName(L"plugins\\Application_InternetExplorer.dll", 1024, pluginDirectoryPath, NULL);
+	DebugPrint(L"Capture-Visitor: Plugin directory - %ls\n", pluginDirectoryPath);
+	hFind = FindFirstFile(pluginDirectoryPath, &FindFileData);
+
+	if (hFind != INVALID_HANDLE_VALUE) 
+	{
+		typedef void (*AppPlugin)(void*);
+		std::wstring pluginDir = L"plugins\\";
+		pluginDir += FindFileData.cFileName;			
+		HMODULE hPlugin = LoadLibrary(pluginDir.c_str());
+
+		if(hPlugin != NULL)
+		{
+			ie = createApplicationPluginObject(hPlugin);
+			if(ie == NULL) {
+				FreeLibrary(hPlugin);
+			} else {
+				printf("Loaded plugin: %ls\n", FindFileData.cFileName);
+			}
+		}
+		FindClose(hFind);
+	}
+	printf("loadIEPlugin() end\n");
+}
+
+void
+PluginTest::loadIEBulkPlugin()
+{
+	printf("loadIEBulkPlugin() start\n");
+
+	WIN32_FIND_DATA FindFileData;
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+	wchar_t pluginDirectoryPath[1024];
+
+	GetFullPathName(L"plugins\\Application_InternetExplorerBulk.dll", 1024, pluginDirectoryPath, NULL);
 	DebugPrint(L"Capture-Visitor: Plugin directory - %ls\n", pluginDirectoryPath);
 	hFind = FindFirstFile(pluginDirectoryPath, &FindFileData);
 

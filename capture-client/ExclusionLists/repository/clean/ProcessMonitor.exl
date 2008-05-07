@@ -27,4 +27,5 @@
 +	AdobeUpdater.exe	.*	C:\\Program Files\\Common Files\\Adobe\\Updater5\\AdobeUpdater.exe
 +	reader_sl.exe	.*	C:\\Program Files\\Adobe\\Reader 8.0\\Reader\\reader_sl.exe
 +	msiexec.exe	.*	C:\\WINDOWS\\system32\\msiexec.exe
++	msvsmon.exe	.*	C:\\Program Files\\Microsoft Visual Studio 9.0\\Common7\\IDE\\Remote Debugger\\x86\\msvsmon.exe
 

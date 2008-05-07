@@ -172,9 +172,13 @@ Visitor::loadClientPlugins()
 						}
 					}
 				}
+			} else {
+				printf("Unable to load library.\n");
 			}
 		} while(FindNextFile(hFind, &FindFileData) != 0);
 		FindClose(hFind);
+	} else {
+		printf("Unable to open first plugin.\n");
 	}
 	DebugPrintTrace(L"Visitor::loadClientPlugins() end\n");
 }

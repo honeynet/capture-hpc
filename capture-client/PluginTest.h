@@ -37,7 +37,9 @@ public:
 	void loadTest();
 private:
 	void loadIEPlugin();
+	void loadIEBulkPlugin();
 	ApplicationPlugin* createApplicationPluginObject(HMODULE hPlugin);
+	std::wstring errorCodeToString(DWORD errorCode);
 
 	ApplicationPlugin* ie;
 };
