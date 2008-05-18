@@ -117,7 +117,7 @@ public class ClientEventController extends DefaultHandler implements Runnable {
                 //buffer = buffer.substring(0, buffer.length());
                 //System.out.println(buffer);
                 //buffer = buffer.trim();
-                System.out.println(buffer);
+                System.out.println("Received msg from client: "+buffer);
 
                 if (buffer.length() > 0) {
                     XMLReader xr = XMLReaderFactory.createXMLReader();

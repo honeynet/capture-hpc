@@ -48,6 +48,11 @@ public class UrlGroupsController extends Observable implements Runnable,Observer
         return instance;
     }
 
+
+    public int getAvailableURLSize() {
+        return UrlsController.getInstance().getQueueSize();
+    }
+
     public UrlGroup takeUrlGroup() throws InterruptedException {
         UrlGroup urlGroup = null;
         if (urlGroupQueue.size() == 0) {

@@ -178,17 +178,29 @@ public class UrlGroup extends Observable {
         return identifier;
     }
 
-    public void setMalicious(boolean malicious) {
+    public void setMalicious(String algorithm, boolean malicious, Map<String,String> urlMaliciousMap) {
         this.malicious = malicious;
-        if (!this.malicious) {
-            for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
-                Url url = iterator.next();
-                url.setMalicious(false);
+        if(!algorithm.equals("bulk")) {
+            if (!this.malicious) {
+                for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
+                    Url url = iterator.next();
+                    url.setMalicious(false);
+                }
+            } else {
+                if (size() == 1) {
+                    Url url = urlList.get(0);
+                    url.setMalicious(true);
+                }
             }
         } else {
-            if (size() == 1) {
-                Url url = urlList.get(0);
-                url.setMalicious(true);
+            for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
+                Url url = iterator.next();
+                String stateChanges = urlMaliciousMap.get(url.getUrl().toString());
+                if(stateChanges.equals("")) {
+                    url.setMalicious(false);
+                } else {
+                    url.setMalicious(true);
+                }
             }
         }
 

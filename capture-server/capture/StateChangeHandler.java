@@ -110,7 +110,7 @@ public class StateChangeHandler {
     public String getStateChangesCSV(int processId) {
         for (Iterator<ProcessStateChange> processStateChangeIterator = processTrees.iterator(); processStateChangeIterator.hasNext();) {
             ProcessStateChange processStateChange = processStateChangeIterator.next();
-            if (processStateChange.getProcessId() == processId) {
+            if (processStateChange.getProcessId() == processId || processStateChange.getParentProcessId() == processId) {
                 return getCSVofTree(processStateChange);
             }
         }
