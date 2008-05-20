@@ -238,9 +238,7 @@ DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* int
 		if( hProc != NULL) {
 			CloseHandle( hProc );
 		}
-		if (hwndIE !=NULL) {
-			CloseHandle( hwndIE );
-		}
+
 	}
 	if(pInternetExplorer!=NULL) {
 		pInternetExplorer->Release();
