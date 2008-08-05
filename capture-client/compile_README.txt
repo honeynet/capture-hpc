@@ -12,7 +12,7 @@ One needs the following software installed:
 	- Visual C++ 2008 (available at http://msdn.microsoft.com/vstudio/express/visualc/default.aspx)
 	- expatpp XML library v1.95.6 (available at http://www.oofile.com.au/downloads.html#DownloadXML)
 	- DDK Build v7.2 (available at http://www.osronline.com/article.cfm?article=43)
-	- NSIS 2.29 (available from http://nsis.sourceforge.net/)
+	- NSIS 2.38 (available from http://nsis.sourceforge.net/)
 
 Ensure that the following environment variables are set:
 	INCLUDE  - should be set to point to relevant include directories of VC++ libraries, Boost C++ libraries, Windows Server 2003 Platform SDK, Windows 2003 WDK, expatpp XML library and the WinPcap Developer's Pack. For example, INCLUDE could be set to: C:\Program Files\Microsoft Visual Studio 9.0\VC\include;C:\Boost\include\boost-1_35;C:\Program Files\Microsoft Platform SDK\Include;C:\WinDDK\6000\inc\api;c:\expatpp\src_pp;C:\WpdPack\Include;C:\expatpp\expat\lib

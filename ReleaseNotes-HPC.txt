@@ -6,18 +6,19 @@ Version 2.2
 Changes
 -------
 + added preprocessor plugin architecture. Preprocessor plugins allow to handle the input urls before they are passed onto capture. For instance, this could be used to create a crawler or filtering plugin.
++ upgraded vmware server to 1.0.6, java 6 update 7, NSIS 2.38
 
 Known Issues
 ------------
-XXX		When IE instance locks up, close method fails leading to a VM stalled error. (but those failures are now retried once)
-XXX		When Capture-Client crashes, it will lead to a client inactivity errors. (but those failures are now retried once)
-615		Registry monitoring can't handle a key named 
+XXX	When IE instance locks up, close method fails leading to a VM stalled error. (but those failures are now retried once)
+XXX	When Capture-Client crashes, it will lead to a client inactivity errors. (but those failures are now retried once)
+615	Registry monitoring can't handle a key named 
 690 	Capture is not able to detect file renames
 676 	Empty password on the user of the guest vm in the config.xml causes the capture server to crash (Windows only).
 706 	Capture seems to ignore the VM server port.
-709		sending of exclusion list from server doesnt appear to be working (only affects process exclusion list)
-719 	closing a browser during visitation does not cause this event to be reported back to the server
-721		filedownloader writes to const file name preventing dac algorithm to be applied for applications that make use of this feature
+709	sending of exclusion list from server doesnt appear to be working (only affects process exclusion list)
+719 	Closing a browser during visitation does not cause this event to be reported back to the server
+721	filedownloader writes to const file name preventing dac algorithm to be applied for applications that make use of this feature
 
 Version 2.1.1
 -----------
@@ -25,9 +26,7 @@ Changes
 -------
 + added timeout factor that allows one to increase the factor of the various timeouts (e.g. vm revert)
 + implemented staggering revert of virtual machines. If server is configured with multiple VMs, they are not all reverted at the same time.
-+ upgraded vmware server to 1.0.5
-+ upgraded to boost 1.35.0
-+ upgraded to visual studio 2008 (requires new VC++ Redist Libraries!)
++ upgraded vmware server to 1.0.5, boost 1.35.0, visual studio 2008 (requires new VC++ Redist Libraries!)
 + changed threading structure to be more stable (leads to less client inactivity errors)
 + changed IE plugin to close all IE windows (fixes pop ups hanging around)
 + optimized handling of zipping of files - leads to speedup if network capture is not enabled
