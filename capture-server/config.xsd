@@ -57,7 +57,12 @@
 			<xs:attribute name="capture-network-packets-benign" type="xs:boolean" use="required"></xs:attribute>
     		<xs:attribute name="send-exclusion-lists" type="xs:boolean" use="required"></xs:attribute>
             <xs:attribute name="group_size" type="xs:integer" use="required"></xs:attribute>
-			<xs:attribute name="timeout_factor" type="xs:double" use="required"></xs:attribute>
-    	</xs:complexType>
+			<xs:attribute name="client_inactivity_timeout" type="xs:integer" use="required"></xs:attribute>
+            <xs:attribute name="revert_timeout" type="xs:integer" use="required"></xs:attribute>
+            <xs:attribute name="vm_stalled_after_revert_timeout" type="xs:integer" use="required"></xs:attribute>
+            <xs:attribute name="vm_stalled_during_operation_timeout" type="xs:integer" use="required"></xs:attribute>
+            <xs:attribute name="same_vm_revert_delay" type="xs:integer" use="required"></xs:attribute>
+            <xs:attribute name="different_vm_revert_delay" type="xs:integer" use="required"></xs:attribute>
+        </xs:complexType>
     </xs:element>
 </xs:schema>

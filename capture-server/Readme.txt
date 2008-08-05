@@ -6,8 +6,8 @@ Capture is written and distributed under the GNU General Public License.
 
 1.Prerequisites
 ---------------
-* Sun's Java JRE 1.6.0_02
-* VMWare Server 1.0.5 with VMware VIX (available at http://www.vmware.com/download/server/) 
+* Sun's Java JRE 1.6.0 - update 7
+* VMWare Server 1.0.6 with VMware VIX (do not download VIX separately) (available at http://www.vmware.com/download/server/) 
 * Microsoft Windows XP, Microsoft Windows Vista or Linux (other OS might also be capable of running the server, but are not supported)
 
 1.1 Installing the VMware VIX
@@ -23,11 +23,18 @@ Unpack the capture-server zip file.
 Configuring the server component requires editing the config.xml file that was distributed with the capture-server release.
 
 * Open up the config.xml
-* Configure the global options, such as the time that is allowed to pass to retrieve a URL, the option to automatically retrieve malware or network captures (on benign and malicious URLs), and the directive to push the local exclusion list to the clients. The timeout_factor allows one to increase the various timeouts (e.g. the number of seconds it takes before a VM is reverted after client fails to connect to server after a revert)
-* The value p_m turns on the divide&conquer feature (see http://www.mcs.vuw.ac.nz/~cseifert/publications/cseifert_divide_and_conquer.pdf) in which client applications are started in parallel and if a malicious state change is detected, the set is divided in half and iterativly visited until the malicious URL is identified (Note there are some risks of missing attacks using this feature; in particular attacks that make use of ip tracking functionality. The paper http://www.mcs.vuw.ac.nz/~cseifert/publications/IFIP2008_CSeifert_Paper66.pdf describes the setup that can reduce this risk.
-The global option group size determines how many instances of the client application are opened at the same time. The lower the value, the more instances are opened. A value of 1 will cause only 1 instance to be opened (just like Capture-HPC v 2.01 and prior). A value of 0.004 will cause 80 (max) instances to be opened. Note only certain client applications support this feature:
-	- IE: full support
-	- Firefox: full support; however, firefox needs to be configured to open a blank page and not restore from previous sessions. In addition, because firefox does not have a callback that notifies the server when a page has successfully been retrieved, the client-default-visit-time needs to be increased to accommodate loading X firefox instances and retrieving the web pages. Some testing might be required to determine the appropriate value.
+* Configure the global options, such as the time that is allowed to pass to retrieve a URL, the option to automatically retrieve malware or network captures (on benign and malicious URLs), and the directive to push the local exclusion list to the clients. 
+  Various timeout/delay options can also be configured via the global option (all in seconds):
+  - client_inactivity_timeout: the capture client indicates that it is still alive via responding to a ping by the server. This happens every 10 seconds. If no pong is received by the client for the duration of the client_inactivity_timeout, the client inactivity error is thrown and the VM reverted. An example when this could happen is when a malicious site causes a blue screen.
+  - revert_timeout: the vix code that the revert function makes use of, at times hangs, but functions properly if restarted. If the revert has not completed during the revert_timeout duration, the revert timeout error is thrown and the revert of the VM attempted once again.
+  - vm_stalled_after_revert_timeout: identical to the revert_timeout, but the start criteria is not communicated by the VIX api, but rather by the capture client sending a visit command.
+  - vm_stalled_during_operation_timeout: When client (e.g. Internet Explorer) locks up, the capture client is still able to respond to pings, but doesnt progress visitation of URLs. This vm_stalled_during_operation_timeout sets how often the capture server should at least expect a visitation event (this is highly dependent on speed of the network and how many URLs are being visited). If no visitation event is received during the timeout period, the VM stalled error is thrown and the VM is reverted.
+  - same_vm_revert_delay: the vix library and vmware server have a difficult time reverting vms at the same time. the code already prevents the same VM from reverting at the same time. the delay specified by this variable is automatically applied when reverting the same vm.
+  - different_vm_revert_delay: the vix library and vmware server have a difficult time reverting vms at the same time. the delay specified by this variable is automatically applied when reverting a different vm. This delay is larger because theoretically it would be possible to delay two VMs at the same time.
+* The global option group size determines how many instances of the client application are opened at the same time. A value of 1 will cause only 1 instance to be opened (just like Capture-HPC v 2.01 and prior). Note only certain client plug-ins support this feature:
+	- internetexplorer (applies divide-and-conquer algorithm): full support (max group size of 80)
+	- internetexplorerbulk (applies bulk algorithm): full support (max group size of 54)
+	- Firefox (applies divide-and-conquer algorithm): full support; however, firefox needs to be configured to open a blank page and not restore from previous sessions. In addition, because firefox does not have a callback that notifies the server when a page has successfully been retrieved, the client-default-visit-time needs to be increased to accommodate loading X firefox instances and retrieving the web pages. Some testing might be required to determine the appropriate value.
 	- Other: not supported at this point
 * Add the local exclusion lists that would be pushed to the clients if that option is enabled 
 * Add vmware servers
@@ -44,7 +51,12 @@ Example:
 			capture-network-packets-benign="false"
 			send-exclusion-lists="false"
         		group_size="50"
-			timeout_factor="1.0"
+				vm_stalled_after_revert_timeout="120"
+            	revert_timeout="120"
+            	client_inactivity_timeout="60"
+            	vm_stalled_during_operation_timeout="300"
+            	same_vm_revert_delay="6"
+            	different_vm_revert_delay="24"
 	/>
 
         <exclusion-list monitor="file" file="FileMonitor.exl" />

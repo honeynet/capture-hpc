@@ -40,7 +40,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
     private String username;
     private String password;
     private int uniqueId;
-    private static int REVERT_TIMEOUT = 120;
+    private static int REVERT_TIMEOUT = (1000 * Integer.parseInt(ConfigManager.getInstance().getConfigOption("revert_timeout")));
 
     private LinkedList<VirtualMachine> virtualMachines;
     private LinkedBlockingDeque<WorkItem> queuedWorkItems;
@@ -54,7 +54,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
         this.port = port;
         this.username = username;
         this.password = password;
-        if(System.getProperty("fixIds") != null && System.getProperty("fixIds").equals("true")) {
+        if (System.getProperty("fixIds") != null && System.getProperty("fixIds").equals("true")) {
             uniqueId = 1;
         } else {
             uniqueId = this.hashCode();
@@ -120,7 +120,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
 
                         class VixThread extends Thread {
                             public int returnCode = 1;
-			    Process vix = null;
+                            Process vix = null;
 
                             public void run() {
                                 BufferedReader stdInput = null;
@@ -136,15 +136,15 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                                 } catch (InterruptedException e) {
                                     returnCode = 17; //VIX_TIMEOUT
                                     if (vix != null) {
-					System.out.println("vix null");
+                                        System.out.println("vix null");
                                         try {
                                             String line = stdInput.readLine();
                                             while (line != null) {
-						System.out.println("line");
+                                                System.out.println("line");
                                                 System.out.println(line);
                                                 line = stdInput.readLine();
                                             }
-					    					System.out.println("line null");
+                                            System.out.println("line null");
                                         } catch (Exception ef) {
                                             System.out.println(ef.getMessage());
                                             ef.printStackTrace(System.out);
@@ -185,11 +185,11 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                         if (vixThread.isAlive()) {
                             vixThread.interrupt();
                         }
-			vixThread.join(1000); //wait for a chance of for thread to finish
+                        vixThread.join(1000); //wait for a chance of for thread to finish
 
                         int error = vixThread.returnCode;
 
-                        synchronized(item.vm) {
+                        synchronized (item.vm) {
                             if (error == 0) {
                                 item.vm.setLastContact(Calendar.getInstance().getTimeInMillis());
                                 item.vm.setState(VM_STATE.RUNNING);
@@ -203,11 +203,11 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                             if (lastVM == item.vm.getVmUniqueId()) {
                                 //identical VM. Occurs, for example if malicious URLs are encountered; dont slow things down much
                                 System.out.println("Reverting same VM...just waiting a bit");
-                                Thread.sleep((long) (6000 * Double.parseDouble(ConfigManager.getInstance().getConfigOption("timeout_factor"))));
+                                Thread.sleep(1000 * Integer.parseInt(ConfigManager.getInstance().getConfigOption("same_vm_revert_delay")));
                             } else {
                                 System.out.println("Reverting different VM...waiting considerably");
                                 //reverting different VMs (for instance during startup); this needs to be throttled considerably
-                                Thread.sleep((long) (24000 * Double.parseDouble(ConfigManager.getInstance().getConfigOption("timeout_factor"))));
+                                Thread.sleep(1000 * Integer.parseInt(ConfigManager.getInstance().getConfigOption("different_vm_revert_delay")));
                             }
                             lastVM = item.vm.getVmUniqueId();
                         }

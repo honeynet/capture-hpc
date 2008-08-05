@@ -21,7 +21,7 @@ public class VirtualMachinesStateChecker extends TimerTask {
                     long currentTime = Calendar.getInstance().getTimeInMillis();
                     if (vm.getState() == VM_STATE.RUNNING) {
                         long diff = currentTime - vm.getLastContact();
-                        if (diff >= (60000 * Double.parseDouble(ConfigManager.getInstance().getConfigOption("timeout_factor")))) {
+                        if (diff >= (1000 * Integer.parseInt(ConfigManager.getInstance().getConfigOption("client_inactivity_timeout")))) {
                             Stats.clientInactivity++;
                             System.out.println(vm.getLogHeader() + " Client inactivity, reverting VM");
                             setError(vm, ERROR_CODES.CAPTURE_CLIENT_INACTIVITY);
@@ -36,7 +36,7 @@ public class VirtualMachinesStateChecker extends TimerTask {
                         }
 
                         diff = currentTime - vm.getTimeOfLastStateChange();
-                        if (diff >= (500000 * Double.parseDouble(ConfigManager.getInstance().getConfigOption("timeout_factor")))) {
+                        if (diff >= (1000 * Integer.parseInt(ConfigManager.getInstance().getConfigOption("vm_stalled_during_operation_timeout")))) {
                             Stats.vmStalled++;
                             System.out.println(vm.getLogHeader() + " VM stalled during operation, reverting VM");
                             setError(vm, ERROR_CODES.VM_STALLED);
@@ -54,7 +54,7 @@ public class VirtualMachinesStateChecker extends TimerTask {
                             vm.setLastContact(Calendar.getInstance().getTimeInMillis());
                         }
                         long diff = currentTime - vm.getTimeOfLastStateChange();
-                        if (diff >= (300000 * Double.parseDouble(ConfigManager.getInstance().getConfigOption("timeout_factor")))) {
+                        if (diff >= (1000 * Integer.parseInt(ConfigManager.getInstance().getConfigOption("vm_stalled_after_revert_timeout")))) {
                             Stats.vmStalled++;
                             System.out.println(vm.getLogHeader() + " VM stalled, reverting VM");
                             setError(vm, ERROR_CODES.VM_STALLED);

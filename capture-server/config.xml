@@ -7,8 +7,13 @@
 			capture-network-packets-benign="false"
 			send-exclusion-lists="false"
         	group_size="50"
-			timeout_factor="1.0"
-	/>
+			vm_stalled_after_revert_timeout="120"
+            revert_timeout="120"
+            client_inactivity_timeout="60"
+            vm_stalled_during_operation_timeout="300"
+            same_vm_revert_delay="6"
+            different_vm_revert_delay="24"
+    />
 	
 	<exclusion-list monitor="file" file="FileMonitor.exl" />
 	<exclusion-list monitor="process" file="ProcessMonitor.exl" />
