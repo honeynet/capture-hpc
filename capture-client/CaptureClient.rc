@@ -7,8 +7,7 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
-
+#include "afxres.h"
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -57,7 +56,7 @@ BEGIN
             VALUE "FileDescription", "Capture"
             VALUE "FileVersion", "2.5.0"
             VALUE "InternalName", "CaptureClient.exe"
-            VALUE "LegalCopyright", "GNU General Public License"
+            VALUE "LegalCopyright", "GNU General Public License, V2"
             VALUE "OriginalFilename", "CaptureClient.exe"
             VALUE "ProductName", "Capture"
             VALUE "ProductVersion", "2.2.0"

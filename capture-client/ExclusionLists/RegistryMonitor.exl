@@ -9,6 +9,9 @@
 +	EnumerateValueKey	.*	.*
 +	QueryValueKey	.*	.*
 +	QueryKey	.*	.*
+#issue in the way process path information is communicated to capture client
++	SetValueKey	UNKNOWN	.*
++	DeleteValueKey	UNKNOWN	.*
 +	SetValueKey	.*	HKU\\.+\\SessionInformation\\ProgramCount
 +	SetValueKey	.*	HKCU\\Software\\Microsoft\\Windows\\ShellNoRoam.*
 +	SetValueKey	.*	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\.+

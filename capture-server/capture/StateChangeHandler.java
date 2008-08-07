@@ -136,4 +136,18 @@ public class StateChangeHandler {
     public int getProcessTreeCount() {
         return processTrees.size();
     }
+
+    //get the state changes that do not map to any of the processIds
+    public String getRemainderStateChangesCSV(List<Integer> processIds) {
+        String remainder = "";
+        for (Iterator<ProcessStateChange> processStateChangeIterator = processTrees.iterator(); processStateChangeIterator.hasNext();) {
+            ProcessStateChange processStateChange = processStateChangeIterator.next();
+            if (!processIds.contains(processStateChange.getProcessId())) {
+                remainder = remainder + getCSVofTree(processStateChange);
+            }
+        }
+        return remainder;
+    }
+
+
 }

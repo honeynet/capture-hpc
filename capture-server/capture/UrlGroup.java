@@ -79,7 +79,7 @@ public class UrlGroup extends Observable {
                 }
             }
 
-            System.out.println("URL " + encodedURI + " not found. Looking through group.");
+            System.out.println("URL " + encodedURI + " not found. Looking through group " + identifier + ".");
             for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
                 Url url = iterator.next();
                 System.out.println("URL: " + url.getEscapedUrl());
@@ -146,19 +146,12 @@ public class UrlGroup extends Observable {
     }
 
 
-    public void writeEventToLog(Map<String,String> urlCSVMap) {
+    public void writeEventToLog(Map<String, String> urlCSVMap) {
         for (Iterator<Url> urlIterator = urlList.iterator(); urlIterator.hasNext();) {
             Url url = urlIterator.next();
             String csv = urlCSVMap.get(url.getUrl());
             if (csv == null || csv.equals("")) {
-                if(urlList.size() == 1 && urlCSVMap.size()==1) {
-                    csv = urlCSVMap.values().iterator().next();
-                    url = urlList.get(0);
-                    url.writeEventToLog(csv);
-                    break;
-                } else {
-                    System.out.println("WARNING: Couldnt find csv for URL " + url.getUrl());
-                }
+                System.out.println("WARNING: Couldnt find csv for URL " + url.getUrl());
             } else {
                 url.writeEventToLog(csv);
             }
@@ -178,9 +171,9 @@ public class UrlGroup extends Observable {
         return identifier;
     }
 
-    public void setMalicious(String algorithm, boolean malicious, Map<String,String> urlMaliciousMap) {
+    public void setMalicious(String algorithm, boolean malicious, Map<String, String> urlMaliciousMap) {
         this.malicious = malicious;
-        if(!algorithm.equals("bulk")) {
+        if (!algorithm.equals("bulk")) {
             if (!this.malicious) {
                 for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
                     Url url = iterator.next();
@@ -196,7 +189,7 @@ public class UrlGroup extends Observable {
             for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
                 Url url = iterator.next();
                 String stateChanges = urlMaliciousMap.get(url.getUrl().toString());
-                if(stateChanges.equals("")) {
+                if (stateChanges.equals("")) {
                     url.setMalicious(false);
                 } else {
                     url.setMalicious(true);

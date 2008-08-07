@@ -57,14 +57,15 @@ public:
 
 	
 
-	stdext::hash_map<DWORD, std::wstring> getProcessMap() { return processMap; }
+	stdext::hash_map<DWORD, std::wstring> getProcessMap();
+	HANDLE syncEvent;
 
 private:
+	
 	static bool instanceCreated;
     static ProcessManager *processManager;
 	
 	ProcessManager(void);
-
 	int cacheHits;
 	int cacheMisses;
 	int cacheFailures;

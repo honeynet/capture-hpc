@@ -283,6 +283,27 @@ private:
 
 int _tmain(int argc, WCHAR* argv[])
 {
+	printf("PROJECT: Capture-HPC\n");
+    printf("VERSION: 2.5\n");
+    printf("DATE: August 6, 2008\n");
+    printf("COPYRIGHT HOLDER: Victoria University of Wellington, NZ\n");
+    printf("AUTHORS:\n");
+    printf("\tChristian Seifert (christian.seifert@gmail.com)\n");
+    printf("\tRamon Steenson(ramon.steenson@gmail.com)\n");
+    printf("\n");
+    printf("Capture-HPC is free software; you can redistribute it and/or modify\n");
+    printf("it under the terms of the GNU General Public License, V2 as published by\n");
+    printf("the Free Software Foundation.\n");
+    printf("\n");
+    printf("Capture-HPC is distributed in the hope that it will be useful,\n");
+    printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");
+    printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");
+    printf("GNU General Public License for more details.\n");
+    printf("\n");
+    printf("You should have received a copy of the GNU General Public License\n");
+    printf("along with Capture-HPC; if not, write to the Free Software\n");
+    printf("Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301,USA\n\n");
+
 	DebugPrintTrace(L"CaptureClient::main start\n");
 	/* Set the current directory to the where the CaptureClient.exe is found */
 	/* This is a bug fix for the VIX library as the runProgramInGuest function

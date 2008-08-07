@@ -5,6 +5,10 @@
 +	Read	.*	.*
 +	Create	.*	.*
 +	Open	.*	.*
+#issue in the way process path information is communicated to capture client
++	Write	UNKNOWN	.*
++	Delete	UNKNOWN	.*
+#capture
 +	Write	.*	C:\\program files\\capture\\logs\\.+
 +	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\.+\.zip
 +	Delete	C:\\program Files\\capture\\captureclient\.exe	C:\\program files\\capture\\logs

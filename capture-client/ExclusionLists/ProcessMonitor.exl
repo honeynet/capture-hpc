@@ -2,6 +2,12 @@
 ###################################################
 ### Clean Windows XP SP 2 System		###
 ###################################################
+#issue in the way process path information is communicated to capture client
++	UNKNOWN	.*	UNKNOWN
+#capture client itself
++	CaptureClient.exe	.*	C:\\Program Files\\Capture\\CaptureClient\.exe
++	CaptureClient.bat	.*	C:\\Program Files\\Capture\\CaptureClient\.bat
++	7za.exe	.*	C:\\Program Files\\Capture\\7za\.exe
 #Windows update (it runs even if disabled)
 +	wuauclt.exe	.*	C:\\WINDOWS\\system32\\wuauclt\.exe
 #
@@ -16,6 +22,8 @@
 #mapping
 +	wmiadap.exe	.*	C:\\WINDOWS\\system32\\wbem\\wmiadap\.exe
 +	wmiprvse.exe	.*	C:\\WINDOWS\\system32\\wbem\\wmiprvse\.exe
+#vmware tools
++	VMwareUser.exe	.*	C:\\Program Files\\VMware\\VMware Tools\\VMwareUser\.exe
 ###################################################
 ### Microsoft Internet Explorer 6.0		###
 ###################################################
@@ -25,3 +33,5 @@
 #messenger activeX
 +	msmsgs.exe	.*	C:\\Program Files\\Messenger\\msmsgs.exe
 +	rundll32.exe	.*	C:\\WINDOWS\\system32\\rundll32.exe
+#imapi
++	imapi.exe	.*	c:\\WINDOWS\\system32\\imapi\.exe

@@ -253,23 +253,18 @@ public class Client extends Observable implements Runnable, Comparable {
 
             this.setClientState(CLIENT_STATE.VISITING);
         } else if (type.equals("finish")) {
-
-
-            if (visitingUrlGroup.isMalicious()) { // can already determine this here because the first state change will flip the switch
-                System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
-            } else {
-                System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " BENIGN");
-            }
             visitingUrlGroup.setVisitFinishTime(element.attributes.get("time"));
 
             //iterate through url elements and set startvisitTime & visiting state
             Map<String, String> urlStateChangesMap = new TreeMap<String, String>();
             List<Element> items = element.childElements;
+            List<Integer> processIds = new ArrayList<Integer>();
             for (Iterator<Element> iterator = items.iterator(); iterator.hasNext();) {
                 Element item = iterator.next();
                 String uri = item.attributes.get("url").toLowerCase();
                 Url url = visitingUrlGroup.getUrl(uri);
                 int processId = Integer.parseInt(item.attributes.get("processId"));
+                processIds.add(processId);
                 urlStateChangesMap.put(url.getUrl().toString(), stateChangeHandler.getStateChangesCSV(processId));
                 url.setVisitFinishTime(item.attributes.get("time"));
                 String urlMajorErrorCode = item.attributes.get("major-error-code");
@@ -280,14 +275,20 @@ public class Client extends Observable implements Runnable, Comparable {
                 }
             }
 
+
             String malicious = element.attributes.get("malicious");
-            if (malicious.equals("1")) {
+            if (visitingUrlGroup.isMalicious() || malicious.equals("1")) {
+                if(!stateChangeHandler.getRemainderStateChangesCSV(processIds).equals("")) {
+                    System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " WARNING: No state changes were logged to url log file.");
+                }
+                System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
                 flushStateChangeHandler(urlStateChangesMap);
                 visitingUrlGroup.setMalicious(algorithm,true,urlStateChangesMap);
                 visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
                 visitingUrlGroup = null;
                 this.setClientState(CLIENT_STATE.DISCONNECTED);
             } else {
+                System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " BENIGN");
                 visitingUrlGroup.setMalicious(algorithm,false,urlStateChangesMap);
                 visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
                 visitingUrlGroup = null;

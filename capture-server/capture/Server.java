@@ -13,9 +13,8 @@ public class Server
                 "\tRamon Steenson(ramon.steenson@gmail.com)\n" +
                 "\n" +
                 "Capture-HPC is free software; you can redistribute it and/or modify\n" +
-                "it under the terms of the GNU General Public License as published by\n" +
-                "the Free Software Foundation; either version 2 of the License, or\n" +
-                "(at your option) any later version.\n" +
+                "it under the terms of the GNU General Public License, V2 as published by\n" +
+                "the Free Software Foundation.\n" +
                 "\n" +
                 "Capture-HPC is distributed in the hope that it will be useful,\n" +
                 "but WITHOUT ANY WARRANTY; without even the implied warranty of\n" +
@@ -98,7 +97,7 @@ public class Server
 
     private static String getUsageString() {
         StringBuffer usageString = new StringBuffer();
-        usageString.append("\nUsage: java -cp [classpath] -Xmx[memory] -Djava.net.preferIPv4Stack=true capture.Server -s listen address [-f input_urls]");
+        usageString.append("\nUsage: java -cp [classpath] -Xmx[memory] [-DfixIds=false] -Djava.net.preferIPv4Stack=true capture.Server -s listen address -f input_urls [-r false]");
         usageString.append("\nExample java -cp ./CaptureServer.jar -Xmx1024m -Djava.net.preferIPv4Stack=true capture.Server -s 192.168.1.100:7070 -f input_urls.txt");
         return usageString.toString();
     }

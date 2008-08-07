@@ -77,6 +77,8 @@ ProcessMonitor::~ProcessMonitor(void)
 boost::signals::connection 
 ProcessMonitor::connect_onProcessEvent(const signal_processEvent::slot_type& s)
 { 
+	DebugPrintTrace(L"ProcessMonitor::connect_onProcessEvent start\n");
+	DebugPrintTrace(L"ProcessMonitor::connect_onProcessEvent end\n");
 	return signalProcessEvent.connect(s); 
 }
 
@@ -104,26 +106,35 @@ ProcessMonitor::onProcessExclusionReceived(const Element& element)
 void
 ProcessMonitor::initialiseKernelDriverProcessMap()
 {
-	stdext::hash_map<DWORD, std::wstring> processMap;
+	DebugPrintTrace(L"ProcessMonitor::initialiseKernelDriverProcessMap start\n");
+	ProcessManager* processManager = ProcessManager::getInstance();
+	if(WaitForSingleObject(processManager->syncEvent,INFINITE)==0) {
+		DebugPrint(L"ProcessMonitor::initialiseKernelDriverProcessMap signaled\n");
+		stdext::hash_map<DWORD, std::wstring> processMap;
 
-	processMap = ProcessManager::getInstance()->getProcessMap();
-	stdext::hash_map<DWORD, std::wstring>::iterator it;
-	for(it = processMap.begin(); it != processMap.end(); it++)
-	{
-		DWORD dwReturn;
-		PROCESS_TUPLE pTuple;
-		ZeroMemory(&pTuple, sizeof(PROCESS_TUPLE));
-		pTuple.processID = it->first;
-		memcpy(pTuple.name, it->second.c_str(), it->second.length()*sizeof(wchar_t));
-		DeviceIoControl(hDriver,
-			IOCTL_CAPTURE_PROC_LIST, 
-			&pTuple, 
-			sizeof(PROCESS_TUPLE), 
-			0, 
-			0, 
-			&dwReturn, 
-			NULL);
+		processMap = processManager->getProcessMap();
+		stdext::hash_map<DWORD, std::wstring>::iterator it;
+		for(it = processMap.begin(); it != processMap.end(); it++)
+		{
+			DWORD dwReturn;
+			PROCESS_TUPLE pTuple;
+			ZeroMemory(&pTuple, sizeof(PROCESS_TUPLE));
+			pTuple.processID = it->first;
+			memcpy(pTuple.name, it->second.c_str(), it->second.length()*sizeof(wchar_t));
+			DeviceIoControl(hDriver,
+				IOCTL_CAPTURE_PROC_LIST, 
+				&pTuple, 
+				sizeof(PROCESS_TUPLE), 
+				0, 
+				0, 
+				&dwReturn, 
+				NULL);
+		}
+		SetEvent(processManager->syncEvent);
+	} else {
+		DebugPrint(L"ProcessMonitor::initialiseKernelDriverProcessMap signaled incorrectly\n");
 	}
+	DebugPrintTrace(L"ProcessMonitor::initialiseKernelDriverProcessMap end\n");
 }
 
 void
@@ -171,13 +182,17 @@ ProcessMonitor::stop()
 void
 ProcessMonitor::run()
 {
+	DebugPrintTrace(L"ProcessMonitor::run() start\n");
 	ProcessInfo tempP;
 	ZeroMemory(&tempP, sizeof(tempP));
 	monitorRunning = true;
 	DWORD      dwBytesReturned = 0;
 	while(!processMonitorThread->shouldStop() && isMonitorRunning())
 	{
+
+		DebugPrint(L"Capture-ProcessMonitor: waiting for hEvent signal\n");
 		WaitForSingleObject(hEvent, INFINITE);
+		DebugPrint(L"Capture-ProcessMonitor: hEvent signal received\n");
 		BOOL       bReturnCode = FALSE;
 		
 		ProcessInfo p;
@@ -198,6 +213,8 @@ ProcessMonitor::run()
 				p.ParentId != tempP.ParentId ||
 				p.ProcessId != tempP.ProcessId)
 			{		
+				DebugPrint(L"Capture-ProcessMonitor: onEvent1 %i %i -> %i\n", p.bCreate, p.ParentId, p.ProcessId); 
+
 				std::wstring processPath;
 				std::wstring processModuleName;
 				std::wstring parentProcessPath;
@@ -214,15 +231,28 @@ ProcessMonitor::run()
 				// Get parent process name and path
 				parentProcessModuleName = ProcessManager::getInstance()->getProcessModuleName(p.ParentId);
 				parentProcessPath = ProcessManager::getInstance()->getProcessPath(p.ParentId);
+				DebugPrint(L"Capture-ProcessMonitor: onEvent %i %i:%ls -> %i:%ls\n", p.bCreate, p.ParentId, parentProcessPath.c_str(), p.ProcessId, processPath.c_str()); 
 				if(!Monitor::isEventAllowed(processModuleName,parentProcessModuleName,processPath))
 				{
-					
-					DebugPrint(L"Capture-ProcessMonitor: %i %i:%ls -> %i:%ls\n", p.bCreate, p.ParentId, parentProcessPath.c_str(), p.ProcessId, processPath.c_str()); 
-					signalProcessEvent(p.bCreate, time, p.ParentId, parentProcessPath, p.ProcessId, processPath);
+					//work around
+					//if(p.bCreate) { //TODO: remove and fix the issue around terminating processes not showing process paths
+						DebugPrint(L"Capture-ProcessMonitor: onEvent not allowed %i %i:%ls -> %i:%ls\n", p.bCreate, p.ParentId, parentProcessPath.c_str(), p.ProcessId, processPath.c_str()); 
+						signalProcessEvent(p.bCreate, time, p.ParentId, parentProcessPath, p.ProcessId, processPath);
+					//}
 				}
 				tempP = p;
-			}		
+			} else {
+				DebugPrint(L"Capture-ProcessMonitor: onEvent2 %i %i -> %i\n", p.bCreate, p.ParentId, p.ProcessId); 
+
+				std::wstring processPath;
+				std::wstring parentProcessPath;
+				processPath = ProcessManager::getInstance()->getProcessPath(p.ProcessId);
+				parentProcessPath = ProcessManager::getInstance()->getProcessPath(p.ParentId);
+				
+				DebugPrint(L"Capture-ProcessMonitor: onEvent already processed %i %i:%ls -> %i:%ls\n", p.bCreate, p.ParentId, parentProcessPath.c_str(), p.ProcessId, processPath.c_str()); 
+			}
 		}
 	}
 	SetEvent(hMonitorStoppedEvent);
+	DebugPrintTrace(L"ProcessMonitor::run() stop\n");
 }
