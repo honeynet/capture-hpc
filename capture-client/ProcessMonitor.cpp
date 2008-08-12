@@ -83,9 +83,11 @@ ProcessMonitor::connect_onProcessEvent(const signal_processEvent::slot_type& s)
 void
 ProcessMonitor::onProcessExclusionReceived(const Element& element)
 {
+	DebugPrintTrace(L"ProcessMonitor::onProcessExclusionReceived start\n");
 	std::wstring excluded = L"";
 	std::wstring parentProcessPath = L"";
 	std::wstring processPath = L"";
+	std::wstring action = L"";
 
 	std::vector<Attribute>::const_iterator it;
 	for(it = element.getAttributes().begin(); it != element.getAttributes().end(); it++)
@@ -96,9 +98,14 @@ ProcessMonitor::onProcessExclusionReceived(const Element& element)
 			processPath = (*it).getValue();
 		} else if((*it).getName() == L"excluded") {
 			excluded = (*it).getValue();
+		} else if((*it).getName() == L"action") {
+			action = (*it).getValue();
 		}
 	}
-	Monitor::addExclusion(excluded, L"process", parentProcessPath, processPath);
+
+
+	Monitor::addExclusion(excluded, action, parentProcessPath, processPath);
+	DebugPrintTrace(L"ProcessMonitor::onProcessExclusionReceived end\n");
 }
 
 void

@@ -197,6 +197,7 @@ FileMonitor::isDirectory(std::wstring filePath)
 void
 FileMonitor::onFileExclusionReceived(const Element& element)
 {
+	DebugPrintTrace(L"FileMonitor::onFileExclusionReceived start\n");
 	std::wstring excluded = L"";
 	std::wstring fileEventType = L"";
 	std::wstring processPath = L"";
@@ -216,6 +217,7 @@ FileMonitor::onFileExclusionReceived(const Element& element)
 		}
 	}
 	Monitor::addExclusion(excluded, fileEventType, processPath, filePath);
+	DebugPrintTrace(L"FileMonitor::onFileExclusionReceived end\n");
 }
 
 void

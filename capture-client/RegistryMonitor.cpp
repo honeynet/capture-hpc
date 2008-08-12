@@ -142,6 +142,7 @@ RegistryMonitor::connect_onRegistryEvent(const signal_registryEvent::slot_type& 
 void
 RegistryMonitor::onRegistryExclusionReceived(const Element& element)
 {
+	DebugPrintTrace(L"RegistryMonitor::onRegistryExclusionReceived start\n");
 	std::wstring excluded = L"";
 	std::wstring registryEventType = L"";
 	std::wstring processPath = L"";
@@ -161,6 +162,7 @@ RegistryMonitor::onRegistryExclusionReceived(const Element& element)
 		}
 	}
 	Monitor::addExclusion(excluded, registryEventType, processPath, registryPath);
+	DebugPrintTrace(L"RegistryMonitor::onRegistryExclusionReceived end\n");
 }
 
 void
