@@ -6,7 +6,7 @@ import java.text.SimpleDateFormat;
 import java.security.InvalidParameterException;
 import java.net.URLEncoder;
 import java.net.URLDecoder;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 
 enum URL_GROUP_STATE {
     NONE,
@@ -24,6 +24,8 @@ public class UrlGroup extends Observable {
     private int identifier;
     private boolean initialGroup = true;
     private int errorCount = 0;
+    private BufferedWriter logFile;
+
 
 
     private static Random generator = new Random();
@@ -163,9 +165,30 @@ public class UrlGroup extends Observable {
         if (urlList.size() == 1) {
             Url url = urlList.get(0);
             url.writeEventToLog(event);
+        } else {
+            try {
+                if (logFile == null) {
+                    String logFileName = identifier + "_" + this.getLogfileDate(visitStartTime.getTime());
+                    logFile = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("log" + File.separator + logFileName + ".log"), "UTF-8"));
+                }
+
+
+
+                logFile.write(event);
+                logFile.flush();
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace(System.out);
+            } catch (IOException e) {
+                e.printStackTrace(System.out);
+            } 
         }
     }
 
+
+    private String getLogfileDate(long time) {
+        SimpleDateFormat sf = new SimpleDateFormat("ddMMyyyy_HHmmss");
+        return sf.format(new Date(time));
+    }
 
     public int getIdentifier() {
         return identifier;

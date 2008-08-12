@@ -172,9 +172,8 @@ public class Client extends Observable implements Runnable, Comparable {
     }
 
     public void parseEvent(Element element) {
-        //only written to log if size of group is one
+        //only written to log if not (bulk and size of group is one
         if (this.getClientState() == CLIENT_STATE.VISITING) {
-
             String type = element.attributes.get("type");
             String time = element.attributes.get("time");
             String processId = element.attributes.get("processId");
@@ -182,44 +181,53 @@ public class Client extends Observable implements Runnable, Comparable {
             String action = element.attributes.get("action");
             String object1 = element.attributes.get("object1");
             String object2 = element.attributes.get("object2");
+            if (algorithm.equals("bulk") && visitingUrlGroup.size() > 1) {
 
-            StateChange sc = null;
-            boolean added = false;
-            try {
-                sc = null;
-                if (type.equals("process")) {
-                    sc = new ProcessStateChange(type, time, processId, process, action, object1, object2);
-                } else {
-                    sc = new ObjectStateChange(type, time, processId, process, action, object1, object2);
+
+                StateChange sc = null;
+                boolean added = false;
+                try {
+                    sc = null;
+                    if (type.equals("process")) {
+                        sc = new ProcessStateChange(type, time, processId, process, action, object1, object2);
+                    } else {
+                        sc = new ObjectStateChange(type, time, processId, process, action, object1, object2);
+                    }
+                    added = stateChangeHandler.addStateChange(sc);
+                    if (!added) {
+                        System.out.println(virtualMachine.getLogHeader() + " - WARNING: Couldnt add state change " + sc.toCSV());
+                    }
+                } catch (ParseException e) {
+                    System.out.println(virtualMachine.getLogHeader() + " - WARNING: Couldnt parse state change.");
                 }
-                added = stateChangeHandler.addStateChange(sc);
-                if (!added) {
-                    System.out.println(virtualMachine.getLogHeader() + " - WARNING: Couldnt add state change " + sc.toCSV());
-                }
-            } catch (ParseException e) {
-                System.out.println(virtualMachine.getLogHeader() + " - WARNING: Couldnt parse state change.");
-            }
-
-
-            if (!algorithm.equals("bulk")) {
+           } else if (algorithm.equals("dac") && visitingUrlGroup.size() > 1) {
                 visitingUrlGroup.setMalicious("dac",true,null);
                 //if we are visiting a group, we can reset right now,
                 // because we will revisit URLs later to get more detail info about state changes
-                if (visitingUrlGroup.size() > 1) {
-                    System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
-                    visitingUrlGroup.setVisitFinishTime(element.attributes.get("time"));
+                System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
 
-                    List<Url> urls = visitingUrlGroup.getUrlList();
-                    for (Iterator<Url> urlIterator = urls.iterator(); urlIterator.hasNext();) {
-                        Url url = urlIterator.next();
-                        url.setVisitFinishTime(element.attributes.get("time"));
-                    }
+                visitingUrlGroup.writeEventToLog("\"" + type + "\",\"" + time +
+                    "\",\"" + process + "\",\"" + action + "\",\"" + object1 + "\",\"" +
+                    object2 + "\"");
+                visitingUrlGroup.setVisitFinishTime(element.attributes.get("time"));
 
-                    visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
-                    visitingUrlGroup = null;
-                    this.setClientState(CLIENT_STATE.DISCONNECTED);
+                List<Url> urls = visitingUrlGroup.getUrlList();
+                for (Iterator<Url> urlIterator = urls.iterator(); urlIterator.hasNext();) {
+                    Url url = urlIterator.next();
+                    url.setVisitFinishTime(element.attributes.get("time"));
                 }
+
+                visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
+                visitingUrlGroup = null;
+                this.setClientState(CLIENT_STATE.DISCONNECTED);
+            } else { //must be seq or group size of 1
+                visitingUrlGroup.setMalicious(algorithm,true,null);
+                System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
+                visitingUrlGroup.writeEventToLog("\"" + type + "\",\"" + time +
+                    "\",\"" + process + "\",\"" + action + "\",\"" + object1 + "\",\"" +
+                    object2 + "\"");
             }
+
         }
     }
 
@@ -279,11 +287,14 @@ public class Client extends Observable implements Runnable, Comparable {
 
             String malicious = element.attributes.get("malicious");
             if (visitingUrlGroup.isMalicious() || malicious.equals("1")) {
-                if(!stateChangeHandler.getRemainderStateChangesCSV(processIds).equals("")) {
-                    System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " WARNING: No state changes were logged to url log file.");
-                }
                 System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
-                flushStateChangeHandler(urlStateChangesMap);
+                if(visitingUrlGroup.size()>1 && algorithm.equals("bulk")) {
+                    if(!stateChangeHandler.getRemainderStateChangesCSV(processIds).equals("")) {
+                        System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " WARNING: No state changes were logged to url log file.");
+                    }
+                    flushStateChangeHandler(urlStateChangesMap);
+                }
+
                 visitingUrlGroup.setMalicious(algorithm,true,urlStateChangesMap);
                 visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.VISITED);  //will set underlying url state
                 visitingUrlGroup = null;
@@ -299,11 +310,13 @@ public class Client extends Observable implements Runnable, Comparable {
             String major = element.attributes.get("error-code");
             Map<String, String> urlStateChangesMap = new TreeMap<String, String>();
             List<Element> items = element.childElements;
+            List<Integer> processIds = new ArrayList<Integer>();
             for (Iterator<Element> iterator = items.iterator(); iterator.hasNext();) {
                 Element item = iterator.next();
                 String uri = item.attributes.get("url").toLowerCase();
                 Url url = visitingUrlGroup.getUrl(uri);
                 int processId = Integer.parseInt(item.attributes.get("processId"));
+                processIds.add(processId);
                 urlStateChangesMap.put(url.getUrl().toString(), stateChangeHandler.getStateChangesCSV(processId));
                 url.setVisitFinishTime(item.attributes.get("time"));
                 String urlMajorErrorCode = item.attributes.get("major-error-code");
@@ -325,7 +338,13 @@ public class Client extends Observable implements Runnable, Comparable {
 
                 String malicious = element.attributes.get("malicious");
                 if (malicious.equals("1")) {
-                    flushStateChangeHandler(urlStateChangesMap);
+                    if(visitingUrlGroup.size()>1 && algorithm.equals("bulk")) {
+                        if(!stateChangeHandler.getRemainderStateChangesCSV(processIds).equals("")) {
+                            System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " WARNING: No state changes were logged to url log file.");
+                        }
+                        flushStateChangeHandler(urlStateChangesMap);
+                    }
+
                     visitingUrlGroup.setMalicious(algorithm,true,urlStateChangesMap);
                 } else {
                     visitingUrlGroup.setMalicious(algorithm,false,urlStateChangesMap);

@@ -52,18 +52,12 @@ Application_Safari::visitGroup(VisitEvent* visitEvent)
 	delete [] piProcessInfo;
 }
 	
-DWORD
-Application_Safari::visitUrl(Url* url, PROCESS_INFORMATION* piProcessInfo)
-{
-	DWORD status = 0;
-	wchar_t* userDataPath = new wchar_t[MAX_PATH];
-	HRESULT result = SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, SHGFP_TYPE_CURRENT, userDataPath);
-	std::wstring safariPath;
-	if(result == S_OK)
-	{
-		safariPath = userDataPath;
-		safariPath += L"\\Apple Computer\\Safari\\Preferences.plist";
-	}
+void Application_Safari::setHomePage(wchar_t* userDataPath, std::wstring safariPath, std::wstring url) {
+	
+	
+		safariPath = userDataPath + safariPath;
+
+	
 	std::wstring document;
 	bool opened = openDocument(safariPath, document);
 	if(!opened)
@@ -71,7 +65,7 @@ Application_Safari::visitUrl(Url* url, PROCESS_INFORMATION* piProcessInfo)
 		// If file was not opened use a blank preferences file and go from there ...
 		document = safariBlankPreferences;
 	}
-	delete [] userDataPath;
+	
 
 	const std::wstring startString = L"<string>";
 	const std::wstring endString = L"</string>";
@@ -88,7 +82,7 @@ Application_Safari::visitUrl(Url* url, PROCESS_INFORMATION* piProcessInfo)
 		// TODO probably need to at least XML escape the url
 		if(homepageValueStart != std::wstring::npos && homepageValueEnd != std::wstring::npos)
 		{
-			document.replace(homepageValueStart+startString.length(), homepageValueEnd-homepageValueStart-startString.length(), url->getUrl());
+			document.replace(homepageValueStart+startString.length(), homepageValueEnd-homepageValueStart-startString.length(), url);
 		}
 	} else {
 		// Could not find the homepage key so add it
@@ -100,7 +94,7 @@ Application_Safari::visitUrl(Url* url, PROCESS_INFORMATION* piProcessInfo)
 			std::wstring homepage = L"\t\t";
 			homepage = homepageTag;
 			homepage += L"\n\t\t<string>";
-			homepage += url->getUrl();
+			homepage += url;
 			homepage += L"</string>\n";
 			document.insert(lastTagStart, homepage);
 		} else {
@@ -110,6 +104,21 @@ Application_Safari::visitUrl(Url* url, PROCESS_INFORMATION* piProcessInfo)
 
 	// Write the document back
 	writeDocument(safariPath, document);
+}
+
+DWORD
+Application_Safari::visitUrl(Url* url, PROCESS_INFORMATION* piProcessInfo)
+{
+	DWORD status = 0;
+	wchar_t* userDataPath = new wchar_t[MAX_PATH];
+	HRESULT result = SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, SHGFP_TYPE_CURRENT, userDataPath);
+
+	if(result == S_OK)
+	{
+		setHomePage(userDataPath,L"\\Apple Computer\\Safari\\Preferences.plist",url->getUrl());
+		setHomePage(userDataPath,L"\\Apple Computer\\Safari\\Preferences\\com.apple.Safari.plist",url->getUrl());
+	}
+	delete [] userDataPath;
 
 	// Open the actual Safari process
 	STARTUPINFO siStartupInfo;

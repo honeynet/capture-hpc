@@ -53,6 +53,7 @@ public:
 	}
 	unsigned int getPriority() { return 100; };
 	std::wstring getAlgorithm() { return L"seq"; }
+	void setHomePage(wchar_t* userDataPath, std::wstring safariPath, std::wstring url);
 private:
 	bool openDocument(const wstring& file, std::wstring& document);
 	void writeDocument(const wstring& file, const wstring& document);
