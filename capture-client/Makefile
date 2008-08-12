@@ -5,6 +5,7 @@
 
 
 INSTALL_DIR = $(MAKEDIR)\install
+INSTALL_DIR_DEBUG = $(MAKEDIR)\install-debug
 !CMDSWITCHES +s
 !CMDSWITCHES +i
 
@@ -32,7 +33,8 @@ release-bat: clean \
 prepare :
 	if not exist $(INSTALL_DIR) mkdir $(INSTALL_DIR)
 	if not exist $(INSTALL_DIR)\plugins mkdir $(INSTALL_DIR)\plugins
-
+	if not exist $(INSTALL_DIR_DEBUG) mkdir $(INSTALL_DIR_DEBUG)
+	if not exist $(INSTALL_DIR_DEBUG)\plugins mkdir $(INSTALL_DIR_DEBUG)\plugins
 build : 
 	@vcbuild CaptureClient.sln /u
 
@@ -54,6 +56,25 @@ copy-bat :
 	move $(INSTALL_DIR)\CaptureBAT-Setup.exe $(MAKEDIR)
 		
 copy-hpc :
+	copy $(MAKEDIR)\Readme-HPC.txt $(INSTALL_DIR_DEBUG)\Readme.txt
+	copy $(MAKEDIR)\COPYING $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\7za.exe $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\CaptureClient.bat $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\ApplicationConfig\Applications.conf $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\ExclusionLists\*exl $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\Debug\CaptureClient.exe $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\Debug\CaptureClient.pdb $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\Debug\plugins\Application_*.dll $(INSTALL_DIR_DEBUG)\plugins
+	copy $(MAKEDIR)\Debug\plugins\Application_*.pdb $(INSTALL_DIR_DEBUG)\plugins
+	copy $(MAKEDIR)\FileMonitorInstallation.inf $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\i386\*.sys $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\i386\*.sys $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\i386\*.sys $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\SetupScript\CaptureClient-Setup.nsi $(INSTALL_DIR_DEBUG)
+	cd $(INSTALL_DIR_DEBUG)
+	makensis.exe CaptureClient-Setup.nsi
+	cd ..
+	move $(INSTALL_DIR_DEBUG)\CaptureClient-Setup.exe $(MAKEDIR)\CaptureClient-Setup-Debug.exe
 	copy $(MAKEDIR)\Readme-HPC.txt $(INSTALL_DIR)\Readme.txt
 	copy $(MAKEDIR)\COPYING $(INSTALL_DIR)
 	copy $(MAKEDIR)\7za.exe $(INSTALL_DIR)
@@ -61,7 +82,9 @@ copy-hpc :
 	copy $(MAKEDIR)\ApplicationConfig\Applications.conf $(INSTALL_DIR)
 	copy $(MAKEDIR)\ExclusionLists\*exl $(INSTALL_DIR)
 	copy $(MAKEDIR)\Release\CaptureClient.exe $(INSTALL_DIR)
+	copy $(MAKEDIR)\Release\CaptureClient.pdb $(INSTALL_DIR)
 	copy $(MAKEDIR)\Release\plugins\Application_*.dll $(INSTALL_DIR)\plugins
+	copy $(MAKEDIR)\Release\plugins\Application_*.pdb $(INSTALL_DIR)\plugins
 	copy $(MAKEDIR)\FileMonitorInstallation.inf $(INSTALL_DIR)
 	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\i386\*.sys $(INSTALL_DIR)
 	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\i386\*.sys $(INSTALL_DIR)
@@ -79,6 +102,12 @@ clean:
 	rmdir $(MAKEDIR)\ApplicationPlugins\InternetExplorer\Release /s /q
 	del $(MAKEDIR)\ApplicationPlugins\InternetExplorer\Debug /f /s /q
 	rmdir $(MAKEDIR)\ApplicationPlugins\InternetExplorer\Debug /s /q
+	del $(MAKEDIR)\install-debug\plugins /f /s /q
+	rmdir $(MAKEDIR)\install-debug\plugins /s /q
+	del $(MAKEDIR)\install-debug\logs /f /s /q
+	rmdir $(MAKEDIR)\install-debug\logs /s /q
+	del $(MAKEDIR)\install-debug /f /s /q
+	rmdir $(MAKEDIR)\install-debug /s /q
 	del $(MAKEDIR)\install\plugins /f /s /q
 	rmdir $(MAKEDIR)\install\plugins /s /q
 	del $(MAKEDIR)\install\logs /f /s /q

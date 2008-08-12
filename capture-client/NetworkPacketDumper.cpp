@@ -103,6 +103,25 @@ NetworkPacketDumper::start()
 	}
 }
 
+void NetworkPacketDumper::deleteAdapterFiles() {
+	DebugPrintTrace(L"NetworkdPacketDumper deleteAdapterFiles start\n");
+	std::list<NetworkAdapter*>::iterator it;
+	for(it = adapterList.begin(); it != adapterList.end(); it++)
+	{
+		string adapterName = (*it)->getAdapterName();
+		char* szLogFileName = new char[1024];
+		string logName = "logs\\";
+		logName += adapterName;
+		logName += ".pcap";
+		GetFullPathNameA(logName.c_str(), 1024, szLogFileName, NULL);
+		DebugPrint(L"NetworkdPacketDumper deleteAdapterFiles - deleting %s\n",logName.c_str());
+		DeleteFileA(szLogFileName);
+		delete [] szLogFileName;
+	}
+	DebugPrintTrace(L"NetworkdPacketDumper deleteAdapterFiles end\n");
+	
+}
+
 void
 NetworkPacketDumper::stop()
 {	

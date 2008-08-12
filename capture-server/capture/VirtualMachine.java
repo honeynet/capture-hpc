@@ -84,14 +84,16 @@ public class VirtualMachine extends Observable implements Observer {
      * @return VM_STATE - The current state of the virtual machine
      */
     public void setState(VM_STATE newState) {
-        vmStateTimeChange = Calendar.getInstance().getTimeInMillis();
-        if (newState == vmState) {
-            return;
-        }
-        vmState = newState;
-        if (vmState == VM_STATE.WAITING_TO_BE_REVERTED) {
-            if (client != null && client.getClientState() != CLIENT_STATE.DISCONNECTED) {
-                client.setClientState(CLIENT_STATE.DISCONNECTED);
+            vmStateTimeChange = Calendar.getInstance().getTimeInMillis();
+        synchronized (this) {  // so we dont trample onto vms that have been reverted and are in waiting state
+            if (newState == vmState) {
+                return;
+            }
+            vmState = newState;
+            if (vmState == VM_STATE.WAITING_TO_BE_REVERTED) {
+                if (client != null && client.getClientState() != CLIENT_STATE.DISCONNECTED) {
+                    client.setClientState(CLIENT_STATE.DISCONNECTED);
+                }
             }
         }
         System.out.println(this.getLogHeader() + " VMSetState: " + newState.toString());

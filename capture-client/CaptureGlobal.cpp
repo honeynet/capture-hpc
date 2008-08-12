@@ -2,8 +2,6 @@
 #include <strsafe.h>
 #include <boost/lexical_cast.hpp>
 
-#define WARN
-
 #ifdef CAPTURE_DEBUG
 #define FUNCTION_TRACE
 #endif

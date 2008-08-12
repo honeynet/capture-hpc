@@ -175,20 +175,6 @@ int ProcessHandler::compareName(DWORD processID, std::wstring processName)
 	return comparison;
 }
 
-void ProcessHandler::DebugPrintTrace(LPCTSTR pszFormat, ... )
-{
-	
-		wchar_t szOutput[MAX_PATH * 2];
-		va_list argList;
-		va_start(argList, pszFormat);
-		StringCchVPrintf(szOutput, MAX_PATH*2, pszFormat, argList);
-		va_end(argList);
-		printf("%ls\n", szOutput);
-		//OutputDebugString(szOutput);
-	
-	
-}
-
 DWORD ProcessHandler::getProcessId(void) 
 {
 	return m_piProcessInfo.dwProcessId;

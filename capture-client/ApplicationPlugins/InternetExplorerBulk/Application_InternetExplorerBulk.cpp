@@ -117,15 +117,15 @@ Application_InternetExplorerBulk::visitGroup(VisitEvent* visitEvent)
 
 	DWORD *error = NULL;
 	
-	unsigned int n_visited_urls = 0;
-	unsigned int to_visit = 0;
-	unsigned int n_visiting = 0;
+	int n_visited_urls = 0;
+	int to_visit = 0;
+	int n_visiting = 0;
 	int n_urls = visitEvent->getUrls().size();
 
 	// Allocate on the heap so threads can use the information
 	std::wstring process_path = L"c:\\Program Files\\Internet Explorer\\iexplore.exe";
 	InternetExplorerInstanceBulk** iexplore_instances = (InternetExplorerInstanceBulk**)malloc(sizeof(InternetExplorerInstanceBulk*)*n_urls);
-	for(unsigned int i = 0; i < n_urls; i++)
+	for(int i = 0; i < n_urls; i++)
 	{
 		iexplore_instances[i] = new InternetExplorerInstanceBulk(process_path);
 	}
@@ -135,7 +135,7 @@ Application_InternetExplorerBulk::visitGroup(VisitEvent* visitEvent)
 	// Loop until all urls have been visited
 	while(n_visited_urls < n_urls)
 	{
-		for(unsigned int i = 0; i < MAX_WORKER_THREADS; i++)
+		for(int i = 0; i < MAX_WORKER_THREADS; i++)
 		{
 			if(!worker_thread_busy[i] && n_visiting < n_urls)
 			{
@@ -163,7 +163,7 @@ Application_InternetExplorerBulk::visitGroup(VisitEvent* visitEvent)
 	DebugPrint(L"IE: Finished visiting %i URLs\n", n_visited_urls);		
 
 	// Give the visit event a success or error code based on the visitaion of each url
-	for(unsigned int i = 0; i < n_urls; i++)
+	for(int i = 0; i < n_urls; i++)
 	{
 		Url* url = visitEvent->getUrls().at(i);
 		visitEvent->setErrorCode(url->getMajorErrorCode());
@@ -179,7 +179,7 @@ Application_InternetExplorerBulk::visitGroup(VisitEvent* visitEvent)
 
 	//Delete all IE instance objects
 	delete [] visit_information;
-	for(unsigned int i = 0; i < n_urls; i++)
+	for(int i = 0; i < n_urls; i++)
 	{
 		delete iexplore_instances[i];
 	}
@@ -197,7 +197,7 @@ DWORD Application_InternetExplorerBulk::closeAllInternetExplorers() {
 
 	//then all processes that match the exe
 	DWORD aProcesses[1024], cbNeeded, cProcesses;
-	unsigned int i;
+	int i;
 
 	if ( !EnumProcesses( aProcesses, sizeof(aProcesses), &cbNeeded ) ) {
 		DebugPrint(L"IE CloseAll couldn't enum processes.\n");

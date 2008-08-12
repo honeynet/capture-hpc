@@ -20,17 +20,19 @@ public class ClientFileReceiver {
 		fileName = element.attributes.get("name");
 		fileSize = Integer.parseInt(element.attributes.get("size"));
 		fileType = element.attributes.get("type");
-		if(client.getVisitingUrlGroup() != null)
-		{		
-			fileName = "log" + File.separator + client.getVisitingUrlGroup().getGroupAsFileName() + "." + fileType;
-		}
-		try {
-			outputFile = new BufferedOutputStream(new FileOutputStream(new File(fileName)));
-			this.client.send("<file-accept name=\"" + fileName + "\" />");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace(System.out);
-		}	
-	}
+		if(client!=null) {
+            if(client.getVisitingUrlGroup() != null)
+            {
+                fileName = "log" + File.separator + client.getVisitingUrlGroup().getGroupAsFileName() + "." + fileType;
+            }
+            try {
+                outputFile = new BufferedOutputStream(new FileOutputStream(new File(fileName)));
+                this.client.send("<file-accept name=\"" + fileName + "\" />");
+            } catch (FileNotFoundException e) {
+                e.printStackTrace(System.out);
+            }
+        }
+    }
 
 	public void receiveFilePart(Element element) {
 		int partStart = Integer.parseInt(element.attributes.get("part-start"));

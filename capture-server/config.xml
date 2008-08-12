@@ -2,6 +2,7 @@
 	xsi:noNamespaceSchemaLocation="config.xsd">
 	<!-- version 2.5 -->
 	<global collect-modified-files="false" 
+			client-default="iexplorer"
 			client-default-visit-time="10"
 			capture-network-packets-malicious="false"
 			capture-network-packets-benign="false"

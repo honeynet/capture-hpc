@@ -14,7 +14,8 @@ enum CLIENT_STATE {
     UPLOADING,
     WAITING,
     VISITING,
-    DISCONNECTED
+    AWAITING_VISITING,
+    DISCONNECTED;
 }
 
 
@@ -422,10 +423,13 @@ public class Client extends Observable implements Runnable, Comparable {
     public void setVisitingUrlGroup(UrlGroup visitingUrlGroup) {
         this.visitingUrlGroup = visitingUrlGroup;
         boolean success = this.send(this.visitingUrlGroup.toVisitEvent());
+        System.out.println(this.getVirtualMachine().getLogHeader() + " Sending to visit group " + visitingUrlGroup.getIdentifier());
         if (!success) {
             System.out.println("Sent URL to disconnected client");
             this.visitingUrlGroup.setMajorErrorCode(0x10000111);
             this.visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);
+        } else {
+            setClientState(CLIENT_STATE.AWAITING_VISITING);
         }
     }
 

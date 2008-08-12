@@ -2,6 +2,7 @@
 #include "Server.h"
 #include "Visitor.h"
 #include "ProcessMonitor.h"
+#include "ProcessManager.h"
 #include "RegistryMonitor.h"
 #include "FileMonitor.h"
 #include "NetworkPacketDumper.h"
@@ -32,6 +33,10 @@ Analyzer::Analyzer(Visitor& v, Server& s) : visitor(v), server(s)
 	
 
 	processMonitor->start();
+	ProcessManager* processManager = ProcessManager::getInstance();
+	processManager->setProcessMonitor(processMonitor);
+
+
 	registryMonitor->start();
 	fileMonitor->start();
 
@@ -149,64 +154,106 @@ Analyzer::stop()
 		DebugPrint(L"Analyzer::stop() stopped network dumper\n");
 	}
 
-	if(collectModifiedFiles || captureNetworkPackets)
+	if(collectModifiedFiles) 
 	{
-		SYSTEMTIME st;
-		GetLocalTime(&st);
-		if(collectModifiedFiles) 
-		{
-			fileMonitor->setMonitorModifiedFiles(false);
-			fileMonitor->copyCreatedFiles();
-		}
-
-		
-
-		if(collectModifiedFiles || (!malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") == L"true")) ||
-			(malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") == L"true")))
-		{
-			
-			wchar_t* szLogFileName = new wchar_t[1024];
-
-			std::wstring log = L"capture_";
-			log += boost::lexical_cast<std::wstring>(st.wDay);
-			log += boost::lexical_cast<std::wstring>(st.wMonth);
-			log += boost::lexical_cast<std::wstring>(st.wYear);
-			log += L"_";
-			log += boost::lexical_cast<std::wstring>(st.wHour);
-			log += boost::lexical_cast<std::wstring>(st.wMinute);
-			log += L".zip";
-			GetFullPathName(log.c_str(), 1024, szLogFileName, NULL);
-
-			bool compressed = compressLogDirectory(szLogFileName);
-			if(server.isConnected() && compressed)
-			{
-				printf("Sending log file to server\n");
-				FileUploader uploader(server);
-				uploader.sendFile(szLogFileName);
-				
-			}
-			if(compressed) 
-			{
-				DeleteFile(szLogFileName);
-			}
-			delete [] szLogFileName;
-		}
+		fileMonitor->setMonitorModifiedFiles(false);
+		fileMonitor->copyCreatedFiles();
 	}
 
-	/* Delete the log directory */
-	DebugPrint(L"Analyzer::stop() deleting logs\n");
-	wchar_t* szFullPath = new wchar_t[1024];
-	GetFullPathName(L"logs", 1024, szFullPath, NULL);
-	SHFILEOPSTRUCT deleteLogDirectory;
-	deleteLogDirectory.hwnd = NULL;
-	deleteLogDirectory.pTo = NULL;
-	deleteLogDirectory.lpszProgressTitle = NULL;
-	deleteLogDirectory.wFunc = FO_DELETE;
-	deleteLogDirectory.pFrom = szFullPath;
-	deleteLogDirectory.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
-	SHFileOperation(&deleteLogDirectory);
-	delete [] szFullPath;
-	DebugPrint(L"Analyzer::stop() deleted logs\n");
+	if(OptionsManager::getInstance()->getOption(L"server") != L"") { //only when connected to server
+		if(collectModifiedFiles || captureNetworkPackets) //then we zip what we have and send to server
+		{
+			//if malicious && capture malicious set to false, then delete pcap
+			if(malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") == L"false")) {
+				networkPacketDumper->deleteAdapterFiles();	
+			}
+			//if benign && capture benign set to false, then delete pcap
+			if(!malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") == L"false")) {
+				networkPacketDumper->deleteAdapterFiles();
+			}
+
+			if(!malicious) {
+				DebugPrint(L"Analyzer::stop() deleting deleted_files\n");
+				wchar_t* szFullPathDF = new wchar_t[1024];
+				GetFullPathName(L"logs\\deleted_files", 1024, szFullPathDF, NULL);
+				SHFILEOPSTRUCT deleteDeletedFilesDirectory;
+				deleteDeletedFilesDirectory.hwnd = NULL;
+				deleteDeletedFilesDirectory.pTo = NULL;
+				deleteDeletedFilesDirectory.lpszProgressTitle = NULL;
+				deleteDeletedFilesDirectory.wFunc = FO_DELETE;
+				deleteDeletedFilesDirectory.pFrom = szFullPathDF;
+				deleteDeletedFilesDirectory.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
+				SHFileOperation(&deleteDeletedFilesDirectory);
+				delete [] szFullPathDF;
+				DebugPrint(L"Analyzer::stop() deleted deleted_files\n");
+
+				DebugPrint(L"Analyzer::stop() deleting modified_files\n");
+				wchar_t* szFullPathMF = new wchar_t[1024];
+				GetFullPathName(L"logs\\modified_files", 1024, szFullPathMF, NULL);
+				SHFILEOPSTRUCT deleteModifiedFilesDirectory;
+				deleteModifiedFilesDirectory.hwnd = NULL;
+				deleteModifiedFilesDirectory.pTo = NULL;
+				deleteModifiedFilesDirectory.lpszProgressTitle = NULL;
+				deleteModifiedFilesDirectory.wFunc = FO_DELETE;
+				deleteModifiedFilesDirectory.pFrom = szFullPathMF;
+				deleteModifiedFilesDirectory.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
+				SHFileOperation(&deleteModifiedFilesDirectory);
+				delete [] szFullPathMF;
+				DebugPrint(L"Analyzer::stop() deleted modified_files\n");
+
+			}
+			
+			SYSTEMTIME st;
+			GetLocalTime(&st);
+
+			
+			if((malicious && collectModifiedFiles) || (!malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") == L"true")) ||
+				(malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") == L"true")))
+			{
+				
+				wchar_t* szLogFileName = new wchar_t[1024];
+
+				std::wstring log = L"capture_";
+				log += boost::lexical_cast<std::wstring>(st.wDay);
+				log += boost::lexical_cast<std::wstring>(st.wMonth);
+				log += boost::lexical_cast<std::wstring>(st.wYear);
+				log += L"_";
+				log += boost::lexical_cast<std::wstring>(st.wHour);
+				log += boost::lexical_cast<std::wstring>(st.wMinute);
+				log += L".zip";
+				GetFullPathName(log.c_str(), 1024, szLogFileName, NULL);
+
+				bool compressed = compressLogDirectory(szLogFileName);
+				if(server.isConnected() && compressed)
+				{
+					printf("Sending log file to server\n");
+					FileUploader uploader(server);
+					uploader.sendFile(szLogFileName);
+					
+				}
+				if(compressed) 
+				{
+					DeleteFile(szLogFileName);
+				}
+				delete [] szLogFileName;
+			}
+		}
+
+		/* Delete the log directory */
+		DebugPrint(L"Analyzer::stop() deleting logs\n");
+		wchar_t* szFullPath = new wchar_t[1024];
+		GetFullPathName(L"logs", 1024, szFullPath, NULL);
+		SHFILEOPSTRUCT deleteLogDirectory;
+		deleteLogDirectory.hwnd = NULL;
+		deleteLogDirectory.pTo = NULL;
+		deleteLogDirectory.lpszProgressTitle = NULL;
+		deleteLogDirectory.wFunc = FO_DELETE;
+		deleteLogDirectory.pFrom = szFullPath;
+		deleteLogDirectory.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
+		SHFileOperation(&deleteLogDirectory);
+		delete [] szFullPath;
+		DebugPrint(L"Analyzer::stop() deleted logs\n");
+	}
 	DebugPrintTrace(L"Analyzer::stop() end\n");
 }
 

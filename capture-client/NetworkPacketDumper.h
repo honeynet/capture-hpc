@@ -81,6 +81,7 @@ public:
 
 	bool isMonitorRunning() { return monitorRunning; }
 	bool isDriverInstalled() { return driverInstalled; }
+	void deleteAdapterFiles();
 
 private:
 	bool monitorRunning;

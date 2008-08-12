@@ -54,7 +54,7 @@ public:
 	inline bool isDriverInstalled() { return driverInstalled; }
 
 	void onProcessExclusionReceived(const Element& pElement);
-
+	void onProcessEvent(BOOLEAN create, DWORD processId, DWORD parentProcessId, std::wstring time);
 	boost::signals::connection connect_onProcessEvent(const signal_processEvent::slot_type& s);
 private:
 

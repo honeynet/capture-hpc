@@ -116,9 +116,9 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 
 	DWORD *error = NULL;
 	
-	unsigned int n_visited_urls = 0;
-	unsigned int to_visit = 0;
-	unsigned int n_visiting = 0;
+	int n_visited_urls = 0;
+	int to_visit = 0;
+	int n_visiting = 0;
 	int n_urls = visitEvent->getUrls().size();
 
 
@@ -134,7 +134,7 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 
 	// Allocate on the heap so threads can use the information
 	InternetExplorerInstance** iexplore_instances = (InternetExplorerInstance**)malloc(sizeof(InternetExplorerInstance*)*n_urls);
-	for(unsigned int i = 0; i < n_urls; i++)
+	for(int i = 0; i < n_urls; i++)
 	{
 		iexplore_instances[i] = new InternetExplorerInstance(internet_explorer_factory);
 	}
@@ -144,7 +144,7 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 	// Loop until all urls have been visited
 	while(n_visited_urls < n_urls)
 	{
-		for(unsigned int i = 0; i < MAX_WORKER_THREADS; i++)
+		for(int i = 0; i < MAX_WORKER_THREADS; i++)
 		{
 			if(!worker_thread_busy[i] && n_visiting < n_urls)
 			{
@@ -172,7 +172,7 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 	DebugPrint(L"IE: Finished visiting %i URLs\n", n_visited_urls);		
 
 	// Give the visit event a success or error code based on the visitaion of each url
-	for(unsigned int i = 0; i < n_urls; i++)
+	for(int i = 0; i < n_urls; i++)
 	{
 		Url* url = visitEvent->getUrls().at(i);
 		visitEvent->setErrorCode(url->getMajorErrorCode());
@@ -188,7 +188,7 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 
 	//Delete all IE instance objects
 	delete [] visit_information;
-	for(unsigned int i = 0; i < n_urls; i++)
+	for(int i = 0; i < n_urls; i++)
 	{
 		delete iexplore_instances[i];
 	}

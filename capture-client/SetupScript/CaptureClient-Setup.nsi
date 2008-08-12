@@ -41,6 +41,7 @@ Section ""
   File COPYING
   File CaptureClient.bat
   File *.exl
+  File *.pdb
   File *.sys
   File *.conf
   File FileMonitorInstallation.inf
@@ -49,6 +50,7 @@ Section ""
 
   SetOutPath $INSTDIR\plugins
   File plugins\*.dll
+  File plugins\*.pdb
 
   SetOutPath $INSTDIR
   WriteUninstaller "uninstall.exe"

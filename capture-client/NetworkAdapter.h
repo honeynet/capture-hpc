@@ -52,6 +52,7 @@ public:
 	void run();
 
 	inline pcap_t* getAdapter() { return adapter; }
+	string getAdapterName();
 private:
 	bool running;
 	string adapterName;

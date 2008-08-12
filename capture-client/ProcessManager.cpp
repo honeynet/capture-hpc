@@ -1,5 +1,8 @@
 #include "ProcessManager.h"
 #include <Psapi.h>
+#include <tlhelp32.h>
+#include <Windows.h>
+#include <stdio.h>
 
 ProcessManager::ProcessManager(void)
 {
@@ -12,6 +15,8 @@ ProcessManager::ProcessManager(void)
 
 ProcessManager::~ProcessManager(void)
 {
+	processMonitor = NULL;
+		
 	DebugPrint(L"Process Manager Statistics\n");
 	DebugPrint(L"\tCache Hits: %i\n", cacheHits);
 	DebugPrint(L"\tCache Misses: %i\n", cacheMisses);
@@ -43,13 +48,14 @@ ProcessManager::onProcessEvent(BOOLEAN created, const std::wstring& time,
 	// We only delete when we encounter the same process id being created again
 	if(created == TRUE)
 	{
-		insertProcess(processId, process);
+		insertProcess(processId, convertFileObjectPathToDOSPath(process));
 	}
 }
 
 void 
 ProcessManager::insertProcess(DWORD processId, const std::wstring& processPath)
 {
+	DebugPrint(L"ProcessManager::insertProcess start\n");
 	stdext::hash_map<DWORD, std::wstring>::iterator it;
 	it = processMap.find(processId);
 	if(it !=  processMap.end()) {
@@ -59,6 +65,7 @@ ProcessManager::insertProcess(DWORD processId, const std::wstring& processPath)
 	DebugPrint(L"Capture-ProcessManager: Insert process %i -> %ls\n", processId, processCompletePath.c_str()); 
 	processMap.insert(std::pair<DWORD, std::wstring>(processId, processCompletePath));
 	SetEvent(hProcessCreated);
+	DebugPrint(L"ProcessManager::insertProcess end\n");
 }
 
 std::wstring
@@ -80,21 +87,70 @@ ProcessManager::convertDevicePathToDOSDrive(const std::wstring& devicePath)
 std::wstring
 ProcessManager::convertFileObjectPathToDOSPath(const std::wstring& fileObjectPath)
 {
-	if(fileObjectPath.length() > 23)
-	{
-		wchar_t szTemp[2048];
-		size_t pathOffset = fileObjectPath.find(L'\\', fileObjectPath.find(L'\\',1)+1);
-		std::wstring devicePath = fileObjectPath.substr(0, pathOffset);
-		std::wstring dosDrive = convertDevicePathToDOSDrive(devicePath);
-		std::wstring dosPath = dosDrive;
-		dosPath += fileObjectPath.substr(pathOffset);
-		if(GetLongPathName(dosPath.c_str(),szTemp,2048) > 0)
+	size_t startsWith = fileObjectPath.find(L'\\');
+	if(startsWith==0) {
+		if(fileObjectPath.length() > 23)
 		{
-			dosPath = szTemp;
+			wchar_t szTemp[2048];
+			size_t pathOffset = fileObjectPath.find(L'\\', fileObjectPath.find(L'\\',1)+1);
+			std::wstring devicePath = fileObjectPath.substr(0, pathOffset);
+			std::wstring dosDrive = convertDevicePathToDOSDrive(devicePath);
+			std::wstring dosPath = dosDrive;
+			dosPath += fileObjectPath.substr(pathOffset);
+			if(GetLongPathName(dosPath.c_str(),szTemp,2048) > 0)
+			{
+				dosPath = szTemp;
+			}
+			return dosPath;
 		}
-		return dosPath;
 	}
 	return fileObjectPath;
+}
+
+DWORD ProcessManager::getParentProcessId(DWORD processId) {
+	HANDLE hProcessSnap;
+	HANDLE hProcess;
+	PROCESSENTRY32 pe32;
+	DWORD dwParentProcessId = -1;
+
+	// Take a snapshot of all processes in the system.
+	hProcessSnap = CreateToolhelp32Snapshot( TH32CS_SNAPPROCESS, 0 );
+	if( hProcessSnap == INVALID_HANDLE_VALUE )
+	{
+		return -1;
+	}
+
+	// Set the size of the structure before using it.
+	pe32.dwSize = sizeof( PROCESSENTRY32 );
+
+	// Retrieve information about the first process,
+	// and exit if unsuccessful
+	if( !Process32First( hProcessSnap, &pe32 ) )
+	{
+		CloseHandle( hProcessSnap );          // clean the snapshot object
+		return -1;
+	}
+
+	// Now walk the snapshot of processes, and
+	// display information about each process in turn
+	do
+	{
+		hProcess = OpenProcess( PROCESS_ALL_ACCESS, FALSE, pe32.th32ProcessID );
+		if( hProcess != NULL ) {
+			CloseHandle( hProcess );
+		}
+
+		if(pe32.th32ProcessID==processId) {
+			dwParentProcessId = pe32.th32ParentProcessID;
+		}
+	} while( Process32Next( hProcessSnap, &pe32 ) );
+
+	CloseHandle( hProcessSnap );
+	return dwParentProcessId;
+}
+
+void ProcessManager::setProcessMonitor(ProcessMonitor* pm) {
+	processMonitor = pm;
 }
 
 std::wstring
@@ -144,10 +200,9 @@ ProcessManager::getProcessPath(DWORD processId)
 	if(!hProc)
 	{
 		cacheFailures++;
-		DebugPrint(L"Capture-ProcessManager: Cache failure - process id = %i\n", processId); 
-		_ltow_s(processId, szTemp, 256, 10);
-		processPath = szTemp;
-		return processPath;
+		DebugPrint(L"Capture-ProcessManager: Cache failure1 - process id = %i\n", processId); 
+		processPath = L"UNKNOWN";
+		return convertFileObjectPathToDOSPath(processPath);
 	}
 	// Cannot use GetModuleFileName because the module list won't be
 	// updated in time ... only happens on rare occasions.
@@ -156,16 +211,25 @@ ProcessManager::getProcessPath(DWORD processId)
 	if(ret > 0)
 	{
 		processPath = szTemp;
-		DebugPrint(L"Capture-ProcessManager: Cache miss %i -> %ls\n", processId, szTemp); 
+		//this occurs when the process monitor is slower than the registry/file monitor
+		DebugPrint(L"Capture-ProcessManager: Cache miss %i -> %ls\n", processId, processPath.c_str()); 
 		insertProcess(processId, processPath);
+
+		if(processMonitor != NULL) {
+			DWORD parentProcessId = getParentProcessId(processId);
+			SYSTEMTIME st;
+			GetLocalTime(&st);
+			std::wstring time = Time::systemtimeToString(st);
+			processMonitor->onProcessEvent(true,processId,parentProcessId,time);
+		}
+
 	} else {
 		cacheFailures++;
-		DebugPrint(L"Capture-ProcessManager: Cache failure - process id = %i\n", processId); 
-		_ltow_s(processId, szTemp, 256, 10);
-		processPath = szTemp;
+		processPath=L"UNKNOWN";
+		DebugPrint(L"Capture-ProcessManager: Cache failure2 - process id = %i\n", processId); 
 	}
-	
-	return processPath;
+	DebugPrint(L"ProcessManager::getProcessPath end4\n");
+	return convertFileObjectPathToDOSPath(processPath);		
 }
 
 

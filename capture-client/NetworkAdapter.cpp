@@ -43,6 +43,10 @@ NetworkAdapter::start()
 	DebugPrintTrace(L"NetworkAdapter::start() end\n");
 }
 
+string NetworkAdapter::getAdapterName() {
+	return adapterName;
+}
+
 void
 NetworkAdapter::stop()
 {

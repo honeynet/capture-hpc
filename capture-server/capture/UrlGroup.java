@@ -19,7 +19,7 @@ enum URL_GROUP_STATE {
 public class UrlGroup extends Observable {
     private URL_GROUP_STATE urlGroupState;
     private List<Url> urlList = new ArrayList<Url>();
-    private String clientProgram = "iexplorer";
+    private String clientProgram = ConfigManager.getInstance().getConfigOption("client-default");
     private int visitTime = 5;
     private int identifier;
     private boolean initialGroup = true;

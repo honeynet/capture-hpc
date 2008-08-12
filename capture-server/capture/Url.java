@@ -61,7 +61,7 @@ public class Url extends Observable {
         this.priority = priority;
         malicious = null;
         if (cProgram == null || cProgram == "") {
-            clientProgram = "iexplore";
+            clientProgram = ConfigManager.getInstance().getConfigOption("client-default");
         } else {
             clientProgram = cProgram;
         }

@@ -23,6 +23,7 @@
  */
 #pragma once
 #include "CaptureGlobal.h"
+#include "ProcessMonitor.h"
 #include <string>
 #include <hash_map>
 
@@ -58,10 +59,10 @@ public:
 	
 
 	stdext::hash_map<DWORD, std::wstring> getProcessMap();
-	HANDLE syncEvent;
-
+	DWORD getParentProcessId(DWORD processId);
+	void setProcessMonitor(ProcessMonitor* processMonitor);
 private:
-	
+	ProcessMonitor* processMonitor;
 	static bool instanceCreated;
     static ProcessManager *processManager;
 	HANDLE hProcessCreated;

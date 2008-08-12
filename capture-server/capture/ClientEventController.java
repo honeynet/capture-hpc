@@ -84,20 +84,22 @@ public class ClientEventController extends DefaultHandler implements Runnable {
             VirtualMachineServer vmServer = VirtualMachineServerController.getInstance().getVirtualMachineServer(vmServerId);
 
             int id = Integer.parseInt(vmId);
-            for (VirtualMachine vm : vmServer.getVirtualMachines()) {
-                if (vm.getVmUniqueId() == id) {
-                    try {
-                        client = vm.getClient();
-                        if (client != null) {
-                            client.getClientSocket().close();
+            if(vmServer!=null) {
+                for (VirtualMachine vm : vmServer.getVirtualMachines()) {
+                    if (vm.getVmUniqueId() == id) {
+                        try {
+                            client = vm.getClient();
+                            if (client != null) {
+                                client.getClientSocket().close();
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace(System.out);
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace(System.out);
+                        if (client != null) {
+                            client.setSocket(clientSocket);
+                        }
+                        break;
                     }
-                    if (client != null) {
-                        client.setSocket(clientSocket);
-                    }
-                    break;
                 }
             }
         }

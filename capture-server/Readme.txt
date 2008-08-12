@@ -46,6 +46,7 @@ Example:
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
         xsi:noNamespaceSchemaLocation="config.xsd">
 	<global collect-modified-files="false" 
+			client-default="iexplore"
 			client-default-visit-time="10"
 			capture-network-packets-malicious="false"
 			capture-network-packets-benign="false"
@@ -83,7 +84,7 @@ http://www.google.com
 http://www.yahoo.com
 Example: java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> -f input_uris.txt.
 
-One can specify a specific client application to have Capture client to visit a server with (The default is Internet Explorer). This occurs by appending a client idenifier separated by two colons after the URI. Also one can overwrite the default visitation time, for example, http://www.google.com::firefox::45. The client identifier needs to be specified in the applications.conf on the client side and point to the executable of the client application. (see the Capture Client readme.txt for more information)
+One can specify a specific client application to have Capture client to visit a server with (The default is set via the client-default global property in the config.xml. By default it is set to Internet Explorer). This occurs by appending a client idenifier separated by two colons after the URI. Also one can overwrite the default visitation time, for example, http://www.google.com::firefox::45. The client identifier needs to be specified in the applications.conf on the client side and point to the executable of the client application. (see the Capture Client readme.txt for more information)
 
 4.3 Report Description
 ----------------------

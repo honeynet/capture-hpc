@@ -52,6 +52,7 @@
     <xs:element name="global">
     	<xs:complexType>
     		<xs:attribute name="collect-modified-files" type="xs:boolean" use="required"></xs:attribute>
+			<xs:attribute name="client-default" type="xs:string" use="required"></xs:attribute>
     		<xs:attribute name="client-default-visit-time" type="xs:integer" use="required"></xs:attribute>
     		<xs:attribute name="capture-network-packets-malicious" type="xs:boolean" use="required"></xs:attribute>
 			<xs:attribute name="capture-network-packets-benign" type="xs:boolean" use="required"></xs:attribute>

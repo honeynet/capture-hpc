@@ -48,7 +48,4 @@ private:
 	BOOL static CALLBACK EnumWindowsCloseProc(HWND hwnd,LPARAM lParam);
 	BOOL static CALLBACK EnumWindowsCloseAppProc(HWND hwnd,LPARAM lParam);
 	int compareName(DWORD processID, std::wstring processName);
-	void DebugPrintTrace(LPCTSTR pszFormat, ... );
-
-
 };
