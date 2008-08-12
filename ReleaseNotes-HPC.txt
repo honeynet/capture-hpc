@@ -6,7 +6,8 @@ Version 2.5
 Changes
 -------
 + added preprocessor plugin architecture. Preprocessor plugins allow to handle the input urls before they are passed onto capture. For instance, this could be used to create a crawler or filtering plugin.
-+ added processor ids for state changes (this value is only set if the client plug-in supports this). This allows the client plug-in to determine what URL the attack originates even if multiple URLs are visited at once. The internetexplorerbulk plug-in takes advantage of this functionality.
++ added processor ids for state changes (this value is only set if the client plug-in supports this). This allows the client plug-in to determine what URL the attack originates even if multiple URLs are visited at once. 
++ Added internetexplorerbulk plug-in that takes advantage of the processor id functionality. Allows to run multiple URLs without the need to revisit the URLs. A mapping of the state changes to the process id will determine which URL was malicious.
 + modified client plug-in to communicate the algorithm it is able to support (Divide-and-conquer, bulk, sequential)
 + upgraded vmware server to 1.0.6, java 6 update 7, NSIS 2.38, boost 1.35.0, visual studio 2008 (requires new VC++ Redist Libraries!)
 + removed timeout factor and added absolute timeout/delay config values (see documentation for description of each option)

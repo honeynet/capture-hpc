@@ -31,11 +31,11 @@ Configuring the server component requires editing the config.xml file that was d
   - vm_stalled_during_operation_timeout: When client (e.g. Internet Explorer) locks up, the capture client is still able to respond to pings, but doesnt progress visitation of URLs. This vm_stalled_during_operation_timeout sets how often the capture server should at least expect a visitation event (this is highly dependent on speed of the network and how many URLs are being visited). If no visitation event is received during the timeout period, the VM stalled error is thrown and the VM is reverted.
   - same_vm_revert_delay: the vix library and vmware server have a difficult time reverting vms at the same time. the code already prevents the same VM from reverting at the same time. the delay specified by this variable is automatically applied when reverting the same vm.
   - different_vm_revert_delay: the vix library and vmware server have a difficult time reverting vms at the same time. the delay specified by this variable is automatically applied when reverting a different vm. This delay is larger because theoretically it would be possible to delay two VMs at the same time.
-* The global option group size determines how many instances of the client application are opened at the same time. A value of 1 will cause only 1 instance to be opened (just like Capture-HPC v 2.01 and prior). Note only certain client plug-ins support this feature:
+* The global option group size determines how many instances of the client application are opened at the same time. A value of 1 will cause only 1 instance to be opened (just like Capture-HPC v 2.01 and prior). Note only certain client plug-ins support visiting group of sizes larger than one:
 	- internetexplorer (applies divide-and-conquer algorithm): full support (max group size of 80)
 	- internetexplorerbulk (applies bulk algorithm): full support (max group size of 54)
 	- Firefox (applies divide-and-conquer algorithm): full support; however, firefox needs to be configured to open a blank page and not restore from previous sessions. In addition, because firefox does not have a callback that notifies the server when a page has successfully been retrieved, the client-default-visit-time needs to be increased to accommodate loading X firefox instances and retrieving the web pages. Some testing might be required to determine the appropriate value.
-	- Other: not supported at this point
+	- Other: only group sizes of 1 are supported at this point
 * Add the local exclusion lists that would be pushed to the clients if that option is enabled 
 * Add vmware servers
 	Specify the ip address, port, username, and password of the vmware server that hosts capture clients.
@@ -84,7 +84,7 @@ http://www.google.com
 http://www.yahoo.com
 Example: java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> -f input_uris.txt.
 
-One can specify a specific client application to have Capture client to visit a server with (The default is set via the client-default global property in the config.xml. By default it is set to Internet Explorer). This occurs by appending a client idenifier separated by two colons after the URI. Also one can overwrite the default visitation time, for example, http://www.google.com::firefox::45. The client identifier needs to be specified in the applications.conf on the client side and point to the executable of the client application. (see the Capture Client readme.txt for more information)
+One can specify a specific client application to have Capture client to visit a server with (The default is set via the client-default global property in the config.xml. By default it is set to Internet Explorer Bulk). This occurs by appending a client identifier separated by two colons after the URI. Also one can overwrite the default visitation time, for example, http://www.google.com::firefox::45. The client identifier needs to be specified in the applications.conf on the client side and point to the executable of the client application. When group size is configured to be larger than 1, it is not recommended to overwrite the visitiation time and client. (see the Capture Client readme.txt for more information)
 
 4.3 Report Description
 ----------------------

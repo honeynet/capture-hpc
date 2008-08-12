@@ -61,6 +61,7 @@
 		<copy file="${build}/jar/CaptureServer.jar" todir="${release}"/>
 		<copy file="./COPYING" todir="${release}"/>
 		<copy file="./Readme.txt" todir="${release}"/>
+		<copy file="./preprocessor_README.txt" todir="${release}"/>
 		<copy file="./input_urls_example.txt" todir="${release}"/>
 		<copy file="./config.xsd" todir="${release}"/>
 		<copy file="./config.xml" todir="${release}"/>
