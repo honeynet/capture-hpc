@@ -64,7 +64,7 @@ private:
 	
 	static bool instanceCreated;
     static ProcessManager *processManager;
-	
+	HANDLE hProcessCreated;
 	ProcessManager(void);
 	int cacheHits;
 	int cacheMisses;

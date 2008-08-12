@@ -3,7 +3,7 @@
 
 ProcessManager::ProcessManager(void)
 {
-	syncEvent = CreateEvent(NULL,FALSE,TRUE,NULL);
+	hProcessCreated = CreateEvent(NULL,FALSE,TRUE,NULL);
 	cacheHits = 0;
 	cacheMisses = 0;
 	cacheFailures = 0;
@@ -17,16 +17,8 @@ ProcessManager::~ProcessManager(void)
 	DebugPrint(L"\tCache Misses: %i\n", cacheMisses);
 	DebugPrint(L"\tCache Failures: %i\n", cacheFailures);
 	instanceCreated = false;
-
-	if(WaitForSingleObject(syncEvent,INFINITE)==0) {
-		processMap.clear();
-		SetEvent(syncEvent);
-	} else {
-		DebugPrint(L"Capture-ProcessManager: ~ProcessManager signaled incorrectly");
-	}
-	
-	CloseHandle(syncEvent);
-
+	processMap.clear();
+	CloseHandle(hProcessCreated);
 }
 
 ProcessManager*
@@ -58,22 +50,15 @@ ProcessManager::onProcessEvent(BOOLEAN created, const std::wstring& time,
 void 
 ProcessManager::insertProcess(DWORD processId, const std::wstring& processPath)
 {
-	DebugPrint(L"ProcessManager::insertProcess start\n");
-	if(WaitForSingleObject(syncEvent,INFINITE)==0) {
-		DebugPrint(L"ProcessManager::insertProcess signaled\n");
-		stdext::hash_map<DWORD, std::wstring>::iterator it;
-		it = processMap.find(processId);
-		if(it !=  processMap.end()) {
-			processMap.erase(it);
-		}
-		std::wstring processCompletePath = convertFileObjectPathToDOSPath(processPath);
-		DebugPrint(L"Capture-ProcessManager: Insert process %i -> %ls\n", processId, processCompletePath.c_str()); 
-		processMap.insert(std::pair<DWORD, std::wstring>(processId, processCompletePath));
-		SetEvent(syncEvent);
-	} else {
-		DebugPrint(L"Capture-ProcessManager: insertProcess signaled incorrectly");
+	stdext::hash_map<DWORD, std::wstring>::iterator it;
+	it = processMap.find(processId);
+	if(it !=  processMap.end()) {
+		processMap.erase(it);
 	}
-	DebugPrint(L"ProcessManager::insertProcess end\n");
+	std::wstring processCompletePath = convertFileObjectPathToDOSPath(processPath);
+	DebugPrint(L"Capture-ProcessManager: Insert process %i -> %ls\n", processId, processCompletePath.c_str()); 
+	processMap.insert(std::pair<DWORD, std::wstring>(processId, processCompletePath));
+	SetEvent(hProcessCreated);
 }
 
 std::wstring
@@ -116,30 +101,35 @@ std::wstring
 ProcessManager::getProcessPath(DWORD processId)
 {
 	std::wstring processPath = L"UNKNOWN";
-
-	
 	if(processId == 4)
 	{
 		processPath = L"System";
 		return processPath;
 	}
 
-	
-	if(WaitForSingleObject(syncEvent,INFINITE)==0) {
-		stdext::hash_map<DWORD, std::wstring>::iterator it;
+	int retryCount = 10;
+	stdext::hash_map<DWORD, std::wstring>::iterator it;
+
+	// Get the process name from the map
+	// If its not there wait for the process created event to
+	// be signalled and try again up to a certain amount of time
+	// If this fails the old way of using windows API to determine
+	// the name of the process is used.
+	do
+	{
 		it = processMap.find(processId);
-		if((it !=  processMap.end()) && (it->second != L"<unknown>"))
+		if(it ==  processMap.end())
+		{
+			// Wait till a process has been entered
+			WaitForSingleObject(hProcessCreated, 100);
+		}
+		else
 		{
 			cacheHits++;
-			processPath = it->second;
-			DebugPrint(L"Capture-ProcessManager: Cache hit %i -> %ls\n", processId, processPath.c_str()); 
-			SetEvent(syncEvent);
-			return processPath;
+			return it->second;
 		}
-		SetEvent(syncEvent);
-	} else {
-		DebugPrint(L"Capture-ProcessManager: getProcessPath signaled incorrectly");
-	}
+
+	} while(--retryCount != 0);
 
 	// NOTE testing showed that this case should never or hardly ever
 	// occur. If you are getting a lot of cache misses maybe there is
@@ -150,48 +140,32 @@ ProcessManager::getProcessPath(DWORD processId)
 	ZeroMemory(&szTemp, sizeof(szTemp));
 
 	HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION |
-						PROCESS_VM_READ, FALSE, processId);
-	int time = 0;
-	while(!hProc && time<500) { //half a sec
-		//failure to get path - maybe because process is not fully created yet
-		//inserting delay and try again
-		Sleep(10);
-		time = time + 10;
-		DebugPrint(L"Capture-ProcessManager: Cache failure1 delay %i\n",time);
-		hProc = OpenProcess(PROCESS_QUERY_INFORMATION |
-						PROCESS_VM_READ, FALSE, processId);
-	}
+                        PROCESS_VM_READ, FALSE, processId);
 	if(!hProc)
 	{
 		cacheFailures++;
-		processPath = L"UNKNOWN";
-		DebugPrint(L"Capture-ProcessManager: Cache failure1 %i -> %ls\n", processId, processPath.c_str()); 
+		DebugPrint(L"Capture-ProcessManager: Cache failure - process id = %i\n", processId); 
+		_ltow_s(processId, szTemp, 256, 10);
+		processPath = szTemp;
 		return processPath;
 	}
-
-	time = 0;
+	// Cannot use GetModuleFileName because the module list won't be
+	// updated in time ... only happens on rare occasions.
 	DWORD ret = GetProcessImageFileName(hProc, szTemp,1024);
-	while(ret<=0 && time<500) {
-		Sleep(10);
-		time = time + 10;
-		DebugPrint(L"Capture-ProcessManager: Cache failure2 delay %i\n",time);
-		ret = GetProcessImageFileName(hProc, szTemp,1024);
-	}
-
 	CloseHandle(hProc);
 	if(ret > 0)
 	{
 		processPath = szTemp;
-		DebugPrint(L"Capture-ProcessManager: Cache miss %i -> %ls\n", processId, processPath.c_str()); 
+		DebugPrint(L"Capture-ProcessManager: Cache miss %i -> %ls\n", processId, szTemp); 
 		insertProcess(processId, processPath);
 	} else {
-		//failure to get path
 		cacheFailures++;
-		processPath = L"UNKNOWN";
-		DebugPrint(L"Capture-ProcessManager: Cache failure2 %i -> %ls\n", processId, processPath.c_str()); 
+		DebugPrint(L"Capture-ProcessManager: Cache failure - process id = %i\n", processId); 
+		_ltow_s(processId, szTemp, 256, 10);
+		processPath = szTemp;
 	}
-	DebugPrint(L"ProcessManager::getProcessPath end4\n");
-	return processPath;		
+	
+	return processPath;
 }
 
 
