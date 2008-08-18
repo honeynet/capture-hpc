@@ -21,7 +21,13 @@ Analyzer::Analyzer(Visitor& v, Server& s) : visitor(v), server(s)
 	registryMonitor = new RegistryMonitor();
 	fileMonitor = new FileMonitor();
 	collectModifiedFiles = false;
-	captureNetworkPackets = false;
+
+	if(OptionsManager::getInstance()->getOption(L"capture-network-packets")==L"true") {
+		captureNetworkPackets = true;
+	} else {
+		captureNetworkPackets = false;
+	}
+
 	networkPacketDumper = NULL;
 
 
@@ -69,27 +75,23 @@ Analyzer::onOptionChanged(const std::wstring& option)
 {
 	DebugPrintTrace(L"Analyzer::onOptionChanged(const std::wstring& option) start\n");
 	std::wstring value = OptionsManager::getInstance()->getOption(option); 
-	if(option == L"capture-network-packets-malicious" || 
+	if(captureNetworkPackets || option == L"capture-network-packets-malicious" || 
 		option == L"capture-network-packets-benign") {
 		if(value == L"true")
 		{
-			if(captureNetworkPackets == false)
-			{
-				printf("Creating network dumper\n");
-				if(networkPacketDumper == NULL)
-					networkPacketDumper = new NetworkPacketDumper();
-				captureNetworkPackets = true;
+			printf("Creating network dumper\n");
+			if(networkPacketDumper == NULL) {
+				networkPacketDumper = new NetworkPacketDumper();
 			}
+			captureNetworkPackets = true;
 		} else {
-			if(captureNetworkPackets == true)
-			{
-				if(OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") != L"true" &&
-					OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") != L"true")
-				{
-					captureNetworkPackets = false;
-					if(networkPacketDumper != NULL)
-						delete networkPacketDumper;	
+			if(captureNetworkPackets == false && OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") != L"true" &&
+				OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") != L"true") {
+				captureNetworkPackets = false;
+				if(networkPacketDumper != NULL) {
+					delete networkPacketDumper;	
 				}
+				
 			}
 		}
 	} else if(option == L"collect-modified-files") {
@@ -123,6 +125,7 @@ Analyzer::start()
 	malicious = false;
 	if(captureNetworkPackets)
 	{
+		printf("Start capturing network traffic...\n");
 		networkPacketDumper->start();
 	}
 	onProcessEventConnection = processMonitor->connect_onProcessEvent(boost::bind(&Analyzer::onProcessEvent, this, _1, _2, _3, _4, _5, _6));
