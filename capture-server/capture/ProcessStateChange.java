@@ -40,24 +40,32 @@ public class ProcessStateChange extends StateChange {
         this.type = type;
         setTime(time);
         this.action = action;
-        this.processId = Integer.parseInt(processId);
+        try {
+            this.processId = Integer.parseInt(processId);
+        } catch (NumberFormatException e) {
+            this.processId = -1;
+        }
         this.process = process;
-        this.parentProcessId = Integer.parseInt(parentProcessId);
+        try {
+            this.parentProcessId = Integer.parseInt(parentProcessId);
+        } catch (NumberFormatException e) {
+            this.parentProcessId = -1;
+        }
         this.parentProcess = parentProcess;
     }
 
     public boolean addStateChange(StateChange sc) {
-        if(sc instanceof ObjectStateChange) {
+        if (sc instanceof ObjectStateChange) {
             ObjectStateChange osc = (ObjectStateChange) sc;
-            if(osc.getProcessId()==processId) {
+            if (osc.getProcessId() == processId) {
                 stateChanges.add(osc);
                 return true;
             }
         }
 
-        if(sc instanceof ProcessStateChange) {
+        if (sc instanceof ProcessStateChange) {
             ProcessStateChange psc = (ProcessStateChange) sc;
-            if(psc.getParentProcessId() == this.processId) {
+            if (psc.getParentProcessId() == this.processId) {
                 childProcesses.add(psc);
                 return true;
             }
@@ -66,7 +74,7 @@ public class ProcessStateChange extends StateChange {
         for (Iterator<ProcessStateChange> childStateChangeIterator = childProcesses.iterator(); childStateChangeIterator.hasNext();) {
             ProcessStateChange childProcess = childStateChangeIterator.next();
             boolean added = childProcess.addStateChange(sc);
-            if(added) {
+            if (added) {
                 return true;
             }
         }
@@ -75,7 +83,7 @@ public class ProcessStateChange extends StateChange {
     }
 
     public String toCSV() {
-        return "\""+type+"\",\""+getTimeString()+"\",\""+parentProcessId+"\",\""+parentProcess+"\",\""+action+"\",\""+processId+"\",\""+process+"\"\n";
+        return "\"" + type + "\",\"" + getTimeString() + "\",\"" + parentProcessId + "\",\"" + parentProcess + "\",\"" + action + "\",\"" + processId + "\",\"" + process + "\"\n";
     }
 
     public List<StateChange> getAllStateChanges() {
@@ -90,12 +98,12 @@ public class ProcessStateChange extends StateChange {
 
         Collections.sort(allStateChanges, new Comparator() {
             public int compare(Object o1, Object o2) {
-                Date d1 = ((StateChange)o1).getTime();
-                Date d2 = ((StateChange)o2).getTime();
+                Date d1 = ((StateChange) o1).getTime();
+                Date d2 = ((StateChange) o2).getTime();
                 int dateDiff = d1.compareTo(d2);
-                if(dateDiff==0) {
-                    String type1 = ((StateChange)o1).getType();
-                    String type2 = ((StateChange)o2).getType();
+                if (dateDiff == 0) {
+                    String type1 = ((StateChange) o1).getType();
+                    String type2 = ((StateChange) o2).getType();
                     return type2.compareTo(type1);
                 } else {
                     return dateDiff;
@@ -121,8 +129,8 @@ public class ProcessStateChange extends StateChange {
         if (parentProcess != null ? !parentProcess.equals(that.parentProcess) : that.parentProcess != null)
             return false;
         if (process != null ? !process.equals(that.process) : that.process != null) return false;
-        if (action != null ? !action.equals(that.action) : that.action!= null) return false;
-         if (time != null ? !time.equals(that.time) : that.time != null) return false;
+        if (action != null ? !action.equals(that.action) : that.action != null) return false;
+        if (time != null ? !time.equals(that.time) : that.time != null) return false;
         if (type != null ? !type.equals(that.type) : that.type != null) return false;
 
         return true;

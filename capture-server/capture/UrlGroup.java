@@ -33,7 +33,7 @@ public class UrlGroup extends Observable {
     private ERROR_CODES majorErrorCode = ERROR_CODES.OK;
     private Date visitStartTime;
     private Date visitFinishTime;
-    private String algorithm;
+    private String algorithm = "";
 
     public UrlGroup(List<Url> urlList, boolean initialGroup) {
         urlGroupState = URL_GROUP_STATE.NONE;
