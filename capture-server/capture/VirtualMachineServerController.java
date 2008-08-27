@@ -15,7 +15,7 @@ public class VirtualMachineServerController extends Observable implements EventO
 		virtualMachineServers = new LinkedList<VirtualMachineServer>();
 		vmServerFactory = new VirtualMachineServerFactory();
 		virtualMachinesStateChecker = new VirtualMachinesStateChecker(virtualMachineServers);
-		Timer vmStateChecker = new Timer();
+        Timer vmStateChecker = new Timer("vmStateChecker");
 		vmStateChecker.scheduleAtFixedRate(virtualMachinesStateChecker,0,1000);
 		EventsController.getInstance().addEventObserver("virtual-machine-server", this);
 		EventsController.getInstance().addEventObserver("virtual-machine", this);

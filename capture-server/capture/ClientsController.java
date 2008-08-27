@@ -16,7 +16,7 @@ public class ClientsController extends Observable implements Runnable, EventObse
 		clientsPinger = new ClientsPinger();
 		exclusionLists = new HashMap<String, ExclusionList>();
 		EventsController.getInstance().addEventObserver("exclusion-list", this);
-		Timer clientsPingerTask = new Timer(true);
+		Timer clientsPingerTask = new Timer("ClientsPinger",true);
 		clientsPingerTask.schedule(clientsPinger, 0, 10000);
 		Thread t = new Thread(this, "ClientController");
 		t.start();
