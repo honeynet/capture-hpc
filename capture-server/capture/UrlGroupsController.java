@@ -9,13 +9,19 @@ public class UrlGroupsController extends Observable implements Runnable,Observer
     private List<UrlGroup> visitedList;
     private Thread queueMonitor;
 
+
     private UrlGroupsController() {
         urlGroupQueue = new LinkedBlockingDeque<UrlGroup>();
         visitedList = new ArrayList<UrlGroup>();
         visitingList = new ArrayList<UrlGroup>();
 
-        queueMonitor = new Thread(this, "QueueMonitor");
-        queueMonitor.start();
+        boolean terminate = Boolean.parseBoolean(ConfigManager.getInstance().getConfigOption("terminate"));
+        if(terminate) {
+            queueMonitor = new Thread(this, "QueueMonitor");
+            queueMonitor.start();
+        }
+
+
     }
 
     public void run() {
