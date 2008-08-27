@@ -90,106 +90,107 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
             if (item != null) {
                 try {
                     if (item.function.equals("revert")) {
-                        Stats.vmRevert++;
-                        item.vm.setState(VM_STATE.REVERTING);
+                        synchronized (item.vm) {
+                            Stats.vmRevert++;
+                            item.vm.setState(VM_STATE.REVERTING);
 
-                        final String address = this.address;
-                        final String username = this.username;
-                        final String password = this.password;
-                        final String vmPath = item.vm.getPath();
-                        final String guestUsername = item.vm.getUsername();
-                        final String guestPassword = item.vm.getPassword();
-                        final String guestCmd = "cmd.exe";
-                        final String cmdOptions = "/K " + item.vm.getCaptureClientPath() + " -s " + (String) ConfigManager.getInstance().getConfigOption("server-listen-address") + " -p " + (String) ConfigManager.getInstance().getConfigOption("server-listen-port") + " -a " + uniqueId + " -b " + item.vm.getVmUniqueId();
+                            final String address = this.address;
+                            final String username = this.username;
+                            final String password = this.password;
+                            final String vmPath = item.vm.getPath();
+                            final String guestUsername = item.vm.getUsername();
+                            final String guestPassword = item.vm.getPassword();
+                            final String guestCmd = "cmd.exe";
+                            final String cmdOptions = "/K " + item.vm.getCaptureClientPath() + " -s " + (String) ConfigManager.getInstance().getConfigOption("server-listen-address") + " -p " + (String) ConfigManager.getInstance().getConfigOption("server-listen-port") + " -a " + uniqueId + " -b " + item.vm.getVmUniqueId();
 
-                        final int vmUniqueId = item.vm.getVmUniqueId();
+                            final int vmUniqueId = item.vm.getVmUniqueId();
 
 
-                        String cmd = "";
-                        if (System.getProperty("os.name", "Windows").toLowerCase().contains("windows")) {
-                            cmd = "revert.exe";
-                        } else {
-                            cmd = "./revert";
-                        }
-                        final String[] revertCmd = {cmd, address, username, password, vmPath, guestUsername, guestPassword, guestCmd, cmdOptions};
+                            String cmd = "";
+                            if (System.getProperty("os.name", "Windows").toLowerCase().contains("windows")) {
+                                cmd = "revert.exe";
+                            } else {
+                                cmd = "./revert";
+                            }
+                            final String[] revertCmd = {cmd, address, username, password, vmPath, guestUsername, guestPassword, guestCmd, cmdOptions};
 
-                        //for(int i=0;i<revertCmd.length;i++)
-                        //System.out.println(revertCmd[i]);
+                            //for(int i=0;i<revertCmd.length;i++)
+                            //System.out.println(revertCmd[i]);
 
-                        Date start = new Date(System.currentTimeMillis());
+                            Date start = new Date(System.currentTimeMillis());
 
-                        class VixThread extends Thread {
-                            public int returnCode = 1;
-                            Process vix = null;
+                            class VixThread extends Thread {
+                                public int returnCode = 1;
+                                Process vix = null;
 
-                            public void run() {
-                                BufferedReader stdInput = null;
-                                try {
-                                    vix = Runtime.getRuntime().exec(revertCmd);
-                                    stdInput = new BufferedReader(new InputStreamReader(vix.getInputStream()));
-                                    returnCode = vix.waitFor();
-                                    String line = stdInput.readLine();
-                                    while (line != null) {
-                                        System.out.println(line);
-                                        line = stdInput.readLine();
-                                    }
-                                } catch (InterruptedException e) {
-                                    returnCode = 17; //VIX_TIMEOUT
-                                    if (vix != null) {
-                                        System.out.println("vix null");
-                                        try {
-                                            String line = stdInput.readLine();
-                                            while (line != null) {
-                                                System.out.println("line");
-                                                System.out.println(line);
-                                                line = stdInput.readLine();
-                                            }
-                                            System.out.println("line null");
-                                        } catch (Exception ef) {
-                                            System.out.println(ef.getMessage());
-                                            ef.printStackTrace(System.out);
+                                public void run() {
+                                    BufferedReader stdInput = null;
+                                    try {
+                                        vix = Runtime.getRuntime().exec(revertCmd);
+                                        stdInput = new BufferedReader(new InputStreamReader(vix.getInputStream()));
+                                        returnCode = vix.waitFor();
+                                        String line = stdInput.readLine();
+                                        while (line != null) {
+                                            System.out.println(line);
+                                            line = stdInput.readLine();
                                         }
-                                        vix.destroy();
-                                    }
-                                    System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] Reverting VM timed out.");
-                                } catch (IOException e) {
-                                    returnCode = 11; //VIX_ERROR
-                                    if (vix != null) {
-                                        try {
-                                            String line = stdInput.readLine();
-                                            while (line != null) {
-                                                System.out.println(line);
-                                                line = stdInput.readLine();
+                                    } catch (InterruptedException e) {
+                                        returnCode = 17; //VIX_TIMEOUT
+                                        if (vix != null) {
+                                            System.out.println("vix null");
+                                            try {
+                                                String line = stdInput.readLine();
+                                                while (line != null) {
+                                                    System.out.println("line");
+                                                    System.out.println(line);
+                                                    line = stdInput.readLine();
+                                                }
+                                                System.out.println("line null");
+                                            } catch (Exception ef) {
+                                                System.out.println(ef.getMessage());
+                                                ef.printStackTrace(System.out);
                                             }
-                                        } catch (Exception ef) {
-                                            System.out.println(ef.getMessage());
-                                            ef.printStackTrace(System.out);
+                                            vix.destroy();
                                         }
-                                        vix.destroy();
+                                        System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] Reverting VM timed out.");
+                                    } catch (IOException e) {
+                                        returnCode = 11; //VIX_ERROR
+                                        if (vix != null) {
+                                            try {
+                                                String line = stdInput.readLine();
+                                                while (line != null) {
+                                                    System.out.println(line);
+                                                    line = stdInput.readLine();
+                                                }
+                                            } catch (Exception ef) {
+                                                System.out.println(ef.getMessage());
+                                                ef.printStackTrace(System.out);
+                                            }
+                                            vix.destroy();
+                                        }
+                                        e.printStackTrace(System.out);
+                                        System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] Unable to access external Vix library.");
                                     }
-                                    e.printStackTrace(System.out);
-                                    System.out.println("[" + currentTime() + " " + address + ":" + port + "-" + vmUniqueId + "] Unable to access external Vix library.");
                                 }
                             }
-                        }
 
-                        VixThread vixThread = new VixThread();
-                        vixThread.start();
-                        for (int i = 0; i < REVERT_TIMEOUT; i++) {
-                            if (vixThread.isAlive()) {
-                                Thread.currentThread().sleep(1000);
-                            } else {
-                                i = REVERT_TIMEOUT; //vix completed before timeout was reached
+                            VixThread vixThread = new VixThread();
+                            vixThread.start();
+                            for (int i = 0; i < REVERT_TIMEOUT; i++) {
+                                if (vixThread.isAlive()) {
+                                    Thread.currentThread().sleep(1000);
+                                } else {
+                                    i = REVERT_TIMEOUT; //vix completed before timeout was reached
+                                }
                             }
-                        }
-                        if (vixThread.isAlive()) {
-                            vixThread.interrupt();
-                        }
-                        vixThread.join(1000); //wait for a chance of for thread to finish
+                            if (vixThread.isAlive()) {
+                                vixThread.interrupt();
+                            }
+                            vixThread.join(1000); //wait for a chance of for thread to finish
 
-                        int error = vixThread.returnCode;
+                            int error = vixThread.returnCode;
 
-                        synchronized (item.vm) {
+
                             if (error == 0) {
                                 item.vm.setLastContact(Calendar.getInstance().getTimeInMillis());
                                 item.vm.setState(VM_STATE.RUNNING);
@@ -220,6 +221,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                 } finally {
                     queuedWorkItems.remove(item);
                 }
+                System.out.println(item.vm.getLogHeader() + " Finished processing VM item: " + item.function);
             } else {
                 try {
                     Thread.sleep(2500);
@@ -227,6 +229,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
                     e.printStackTrace(System.out);
                 }
             }
+
         }
     }
 

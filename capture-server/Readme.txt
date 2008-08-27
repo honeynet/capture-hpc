@@ -23,7 +23,7 @@ Unpack the capture-server zip file.
 Configuring the server component requires editing the config.xml file that was distributed with the capture-server release.
 
 * Open up the config.xml
-* Configure the global options, such as the time that is allowed to pass to retrieve a URL, the option to automatically retrieve malware or network captures (on benign and malicious URLs), and the directive to push the local exclusion list to the clients. 
+* Configure the global options, such as the time that is allowed to pass to retrieve a URL, the option to automatically retrieve malware or network captures (on benign and malicious URLs), whether the capture-server should terminate or keep tailing the input file once all URLs are processed, and the directive to push the local exclusion list to the clients. 
   Various timeout/delay options can also be configured via the global option (all in seconds):
   - client_inactivity_timeout: the capture client indicates that it is still alive via responding to a ping by the server. This happens every 10 seconds. If no pong is received by the client for the duration of the client_inactivity_timeout, the client inactivity error is thrown and the VM reverted. An example when this could happen is when a malicious site causes a blue screen.
   - revert_timeout: the vix code that the revert function makes use of, at times hangs, but functions properly if restarted. If the revert has not completed during the revert_timeout duration, the revert timeout error is thrown and the revert of the VM attempted once again.
@@ -51,13 +51,14 @@ Example:
 			capture-network-packets-malicious="false"
 			capture-network-packets-benign="false"
 			send-exclusion-lists="false"
-        		group_size="50"
-				vm_stalled_after_revert_timeout="120"
-            	revert_timeout="120"
-            	client_inactivity_timeout="60"
-            	vm_stalled_during_operation_timeout="300"
-            	same_vm_revert_delay="6"
-            	different_vm_revert_delay="24"
+			terminate="true"
+        	group_size="50"
+			vm_stalled_after_revert_timeout="120"
+            revert_timeout="120"
+            client_inactivity_timeout="60"
+            vm_stalled_during_operation_timeout="300"
+            same_vm_revert_delay="6"
+            different_vm_revert_delay="24"
 	/>
 
         <exclusion-list monitor="file" file="FileMonitor.exl" />

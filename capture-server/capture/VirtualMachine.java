@@ -33,7 +33,7 @@ public class VirtualMachine extends Observable implements Observer {
         password = pass;
         captureClientPath = cpath;
         lastContact = Calendar.getInstance().getTimeInMillis();
-        if(System.getProperty("fixIds") != null && System.getProperty("fixIds").equals("true")) {
+        if (System.getProperty("fixIds") != null && System.getProperty("fixIds").equals("true")) {
             vmUniqueId = 1;
         } else {
             vmUniqueId = this.hashCode();
@@ -84,7 +84,7 @@ public class VirtualMachine extends Observable implements Observer {
      * @return VM_STATE - The current state of the virtual machine
      */
     public void setState(VM_STATE newState) {
-            vmStateTimeChange = Calendar.getInstance().getTimeInMillis();
+        vmStateTimeChange = Calendar.getInstance().getTimeInMillis();
         synchronized (this) {  // so we dont trample onto vms that have been reverted and are in waiting state
             if (newState == vmState) {
                 return;
@@ -159,7 +159,7 @@ public class VirtualMachine extends Observable implements Observer {
         if (vmUniqueId != that.vmUniqueId) return false;
 
         return true;
-    }    
+    }
 }
 
 /**
@@ -169,8 +169,8 @@ enum VM_STATE {
     REVERTING,
     WAITING_TO_BE_REVERTED,
     RUNNING,
-	STOPPED,
-	SAVING,
-	WAITING_TO_BE_SAVED,
-	ERROR
+    STOPPED,
+    SAVING,
+    WAITING_TO_BE_SAVED,
+    ERROR
 }

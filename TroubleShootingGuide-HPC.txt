@@ -45,3 +45,6 @@ This can happen when using the Internet Explorer Bulk algorithm. This algorithm 
 
 12. I am getting a lot of VM stalled errors.
 This might occur when running many client instances (e.g. 50 iexplorebulk) at the same time or when the box that runs the client VM is not very powerful or the connection to the Internet is slow. In those cases, simply increase the timeouts in the config.xml and try again.
+
+13. The revert of the virtual machine fails with error 136.
+This error can occur on linux if the revert binary can not be executed. This could be due to missing executable flag or due to OS/lib incompatibilities. If the revert binary can not be executed from the command line, it is recommended to recompile the capture-server from scratch. See compile_README.txt for details.
