@@ -398,10 +398,14 @@ public class Client extends Observable implements Runnable, Comparable {
         }
         if (clientState == CLIENT_STATE.WAITING) {
             virtualMachine.setState(VM_STATE.RUNNING);
-            urlRetriever.notifyAll();
+            synchronized (urlRetriever) {
+                urlRetriever.notifyAll();
+            }
         } else if (clientState == CLIENT_STATE.DISCONNECTED) {
             this.disconnect();
-            urlRetriever.notifyAll(); //in order to let urlRetriever thread stop
+            synchronized (urlRetriever) {
+                urlRetriever.notifyAll(); //in order to let urlRetriever thread stop
+            }
         } else if (clientState == CLIENT_STATE.CONNECTED) {
             send("<option name=\"capture-network-packets-malicious\" value=\"" +
                     ConfigManager.getInstance().getConfigOption("capture-network-packets-malicious") + "\"/>");
@@ -444,7 +448,7 @@ public class Client extends Observable implements Runnable, Comparable {
             this.visitingUrlGroup.setMajorErrorCode(0x10000111);
             this.visitingUrlGroup.setUrlGroupState(URL_GROUP_STATE.ERROR);
         } else {
-            setClientState(CLIENT_STATE.AWAITING_VISITING);
+            clientState = CLIENT_STATE.AWAITING_VISITING; //dont change to set function call - could cause deadlock
         }
     }
 
@@ -453,14 +457,16 @@ public class Client extends Observable implements Runnable, Comparable {
     }
 
     public void run() {
-        while (clientState != CLIENT_STATE.DISCONNECTED) {
-            try {
-                if (clientState == CLIENT_STATE.WAITING) {
-                    this.setVisitingUrlGroup(UrlGroupsController.getInstance().takeUrlGroup());
+        synchronized (urlRetriever) {
+            while (clientState != CLIENT_STATE.DISCONNECTED) {
+                try {
+                    if (clientState == CLIENT_STATE.WAITING) {
+                        this.setVisitingUrlGroup(UrlGroupsController.getInstance().takeUrlGroup());
+                    }
+                    urlRetriever.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace(System.out);
                 }
-                urlRetriever.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace(System.out);
             }
         }
     }
