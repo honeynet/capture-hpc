@@ -190,7 +190,8 @@ public class Url extends Observable {
             if (this.malicious != null) {
                 if (this.malicious) {
                     Stats.malicious++;
-                    String date = DateFormat.getDateTimeInstance().format(new Date());
+                    SimpleDateFormat sf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss.S");
+                    String date = sf.format(new Date());
                     if(firstStateChange!=null && visitFinishTime != null) {//could happen when VM is stalled. since the tim can't be calculated correctly, we skip this one for this URL
                         Stats.addFirstStateChangeTime(firstStateChange, visitFinishTime, visitTime);
                     }
