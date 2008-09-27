@@ -168,11 +168,13 @@ Analyzer::stop()
 		{
 			//if malicious && capture malicious set to false, then delete pcap
 			if(malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") == L"false")) {
-				networkPacketDumper->deleteAdapterFiles();	
+				if(networkPacketDumper)
+					networkPacketDumper->deleteAdapterFiles();	
 			}
 			//if benign && capture benign set to false, then delete pcap
 			if(!malicious && (OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") == L"false")) {
-				networkPacketDumper->deleteAdapterFiles();
+				if(networkPacketDumper)
+					networkPacketDumper->deleteAdapterFiles();
 			}
 
 			if(!malicious) {
