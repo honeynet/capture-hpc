@@ -55,12 +55,12 @@ BEGIN
             VALUE "Author", "Ramon Steenson & Christian Seifert"
             VALUE "CompanyName", "Victoria University of Wellington, NZ"
             VALUE "FileDescription", "Capture"
-            VALUE "FileVersion", "2.5.0"
+            VALUE "FileVersion", "2.6.0"
             VALUE "InternalName", "CaptureClient.exe"
             VALUE "LegalCopyright", "GNU General Public License, V2"
             VALUE "OriginalFilename", "CaptureClient.exe"
             VALUE "ProductName", "Capture"
-            VALUE "ProductVersion", "2.2.0"
+            VALUE "ProductVersion", "2.6.0"
         END
     END
     BLOCK "VarFileInfo"

@@ -21,13 +21,6 @@ import java.util.GregorianCalendar;
 import java.util.Observable;
 import java.util.regex.Matcher;
 
-enum URL_STATE {
-    NONE,
-    QUEUED,
-    VISITING,
-    VISITED,
-    ERROR
-}
 
 public class Url extends Observable {
 
@@ -67,6 +60,7 @@ public class Url extends Observable {
         }
         visitTime = vTime;
         urlState = URL_STATE.NONE;
+        addObserver(PostprocessorFactory.getActivePostprocessor());
     }
 
     public void setVisitStartTime(String visitStartTime) {

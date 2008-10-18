@@ -1,6 +1,6 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	xsi:noNamespaceSchemaLocation="config.xsd">
-	<!-- version 2.5 -->
+	<!-- version 2.6 -->
 	<global collect-modified-files="false" 
 			client-default="iexplorebulk"
 			client-default-visit-time="20"
@@ -43,4 +43,10 @@
 						 username="Administrator"
 						 password="password"/>
 	</virtual-machine-server>
+	
+	<!--postprocessor classname="example">
+			<![CDATA[
+				<example-config attribute1="1.0" attribute2="40" attribute2="log/output.log"/>
+			]]>
+	</postprocessor-->
 </config>

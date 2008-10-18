@@ -59,6 +59,8 @@ public class ConfigFile implements Observer, ErrorHandler {
 			this.parseServerElements();
 			System.out.println("PARSING PREPROCESSOR");
 			this.parsePreprocessorElements();
+            System.out.println("PARSING POSTPROCESSOR");
+			this.parsePostprocessorElements();
             loaded = true;
 		} catch (SAXException e) {
 			e.printStackTrace(System.out);
@@ -116,6 +118,23 @@ public class ConfigFile implements Observer, ErrorHandler {
             String configValue = n.getFirstChild().getNextSibling().getNodeValue();
 	    System.out.println("CONFIG: " + configValue);
             ConfigManager.getInstance().addConfigOption("preprocessor-configuration", configValue);
+        } else {
+	    System.out.println("n is null");
+	}
+    }
+
+     public void parsePostprocessorElements() {
+        NodeList postprocessor = configDocument.getElementsByTagName("postprocessor");
+        Node n = postprocessor.item(0);
+
+        if(n!=null) {
+	    System.out.println("n is not null");
+            String value = n.getAttributes().getNamedItem("classname").getNodeValue();
+            ConfigManager.getInstance().addConfigOption("postprocessor-classname", value);
+
+            String configValue = n.getFirstChild().getNextSibling().getNodeValue();
+	    System.out.println("CONFIG: " + configValue);
+            ConfigManager.getInstance().addConfigOption("postprocessor-configuration", configValue);
         } else {
 	    System.out.println("n is null");
 	}

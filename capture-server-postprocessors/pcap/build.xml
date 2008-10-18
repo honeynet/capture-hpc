@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<project name="PcapPostprocessor" default="release" basedir=".">
+	<!-- all stuff to get the jni wrapper compiled -->
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+
+	<condition property="os" value="unix">
+        <os family="unix"/>
+    </condition>
+    <condition property="os" value="windows">
+        <os family="windows"/>
+    </condition>
+
+	 <property environment="env"/>
+     <property name="src" value="."/>
+     <property name="build" value="build"/>
+	 <property name="lib" value="lib"/>
+     <property name="release" value="release"/>
+	 <property name="classpath.build" value=".\lib\DNSMapper.jar;.\lib\HTTPExtractor.jar;.\lib\FFDetect.jar;.\lib\jpcap.jar;.\lib\CaptureServer.jar;.\lib\dnsjava-2.0.6.jar"/>
+	 <property name="classpath.run" value="lib/DNSMapper.jar lib/HTTPExtractor.jar lib/FFDetect.jar lib/jpcap.jar lib/CaptureServer.jar lib/dnsjava-2.0.6.jar"/>
+
+	 
+	 <path id="classpath">
+		<fileset dir="${lib}">
+			<include name="*.jar"/>
+		</fileset>
+	 </path>
+	  
+     <target name="init">
+          <mkdir dir="${build}"/>
+		  <mkdir dir="${release}"/>
+	 </target>
+
+     <target name="compile" depends="init">
+          <!-- Compile the java code -->         
+          <javac srcdir="${src}" destdir="${build}" debug="true" debuglevel="lines,vars,source" classpath="${classpath.build}"/>
+     </target>
+	 
+	 <target name="jar" depends="compile">
+		<mkdir dir="${build}/jar"/>
+        <jar destfile="${build}/jar/PcapPostprocessor.jar">
+			<fileset dir="${build}">
+			</fileset>
+            <manifest>
+				<attribute name="Class-Path" value="${classpath.run}"/>
+                <attribute name="Main-Class" value="pcap.PcapPostprocessor"/>
+            </manifest>
+        </jar>
+    </target>
+	
+	<target name="release" depends="clean,compile,jar">
+		<copy file="${build}/jar/PcapPostprocessor.jar" todir="${release}"/>
+		<copy file="./COPYING" todir="${release}"/>
+		<copy file="./Readme.txt" todir="${release}"/>
+		<copy todir="${release}/${lib}">
+			<fileset dir="lib"/>
+		</copy>
+	</target>
+
+	<target name="clean">
+        <delete dir="${build}"/>
+		<delete dir="${release}"/>
+    </target>
+</project>

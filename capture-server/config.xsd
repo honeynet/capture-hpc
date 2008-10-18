@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- version 2.5 -->
+<!-- version 2.6 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:element name="config">
     	<xs:complexType>
@@ -8,6 +8,7 @@
     			<xs:element ref="exclusion-list" minOccurs="0" maxOccurs="unbounded"></xs:element>
     			<xs:element ref="preprocessor" minOccurs="0" maxOccurs="1"></xs:element>
                 <xs:element ref="virtual-machine-server" minOccurs="0" maxOccurs="unbounded"></xs:element>
+				<xs:element ref="postprocessor" minOccurs="0" maxOccurs="1"></xs:element>
     		</xs:sequence>
     	</xs:complexType>
     </xs:element>
@@ -43,6 +44,13 @@
     </xs:element>
 
     <xs:element name="preprocessor">
+        <xs:complexType  mixed="true">
+    		<xs:attribute name="classname" type="xs:string" use="required"></xs:attribute>
+        </xs:complexType>
+
+    </xs:element>
+	
+	    <xs:element name="postprocessor">
         <xs:complexType  mixed="true">
     		<xs:attribute name="classname" type="xs:string" use="required"></xs:attribute>
         </xs:complexType>

@@ -74,8 +74,22 @@ public class Server
 		UrlsController.getInstance();
 		ClientsController.getInstance();
 		ConfigManager.getInstance().loadConfigurationFile();
-		
-		if(ConfigManager.getInstance().getConfigOption("input_urls") != null)
+
+        Postprocessor postprocessor = PostprocessorFactory.getDefaultPostprocessor();
+        try {
+            String postprocessorClassName = ConfigManager.getInstance().getConfigOption("postprocessor-classname");
+            if(postprocessorClassName!=null && !postprocessorClassName.equals("")) {
+                postprocessor = PostprocessorFactory.getPostprocessor(postprocessorClassName);
+                String postprocessorConfig = ConfigManager.getInstance().getConfigOption("postprocessor-configuration");
+                postprocessor.setConfiguration(postprocessorConfig);
+            }
+        } catch (FactoryException e) {
+            System.out.println("Unable to create postprocessor. Proceeding without postprocessor");
+            e.printStackTrace(System.out);
+        }
+        //post processor is an observer of URL
+
+        if(ConfigManager.getInstance().getConfigOption("input_urls") != null)
 		{
 			String file = ConfigManager.getInstance().getConfigOption("input_urls");
 
@@ -92,8 +106,12 @@ public class Server
                 e.printStackTrace(System.out);
             }
             preprocessor.readInputUrls(file);
-		}
-	}
+        }
+
+
+
+
+    }
 
     private static String getUsageString() {
         StringBuffer usageString = new StringBuffer();

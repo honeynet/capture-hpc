@@ -46,7 +46,7 @@ public:
 			exit(1);
 		}
 
-		printf("Starting Capture Client 2.5\n");
+		printf("Starting Capture Client 2.6\n");
 
 		/* Create the log directories */
 		CreateDirectory(L"logs",NULL);
@@ -284,7 +284,7 @@ private:
 int _tmain(int argc, WCHAR* argv[])
 {
 	printf("PROJECT: Capture-HPC\n");
-    printf("VERSION: 2.5\n");
+    printf("VERSION: 2.6\n");
     printf("DATE: August 6, 2008\n");
     printf("COPYRIGHT HOLDER: Victoria University of Wellington, NZ\n");
     printf("AUTHORS:\n");

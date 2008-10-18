@@ -208,7 +208,7 @@ public class Client extends Observable implements Runnable, Comparable {
 
                 visitingUrlGroup.writeEventToLog("\"" + type + "\",\"" + time +
                         "\",\"" + process + "\",\"" + action + "\",\"" + object1 + "\",\"" +
-                        object2 + "\"");
+                        object2 + "\"\n");
                 visitingUrlGroup.setVisitFinishTime(element.attributes.get("time"));
 
                 List<Url> urls = visitingUrlGroup.getUrlList();
@@ -225,7 +225,7 @@ public class Client extends Observable implements Runnable, Comparable {
                 System.out.println(this.getVirtualMachine().getLogHeader() + " Visited group " + visitingUrlGroup.getIdentifier() + " MALICIOUS");
                 visitingUrlGroup.writeEventToLog("\"" + type + "\",\"" + time +
                         "\",\"" + process + "\",\"" + action + "\",\"" + object1 + "\",\"" +
-                        object2 + "\"");
+                        object2 + "\"\n");
             }
 
         }
