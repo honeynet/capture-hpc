@@ -39,6 +39,7 @@ NetworkAdapter::start()
 		adapterThread->start(t);
 		running = true;
 		delete [] szLogFileName;
+		printf("Started network adapter\n");
 	}
 	DebugPrintTrace(L"NetworkAdapter::start() end\n");
 }

@@ -97,6 +97,7 @@ NetworkPacketDumper::start()
 		for(it = adapterList.begin(); it != adapterList.end(); it++)
 		{
 			(*it)->start();
+			printf("Started network dumper\n");
 
 		}
 		monitorRunning = true;
@@ -133,6 +134,7 @@ NetworkPacketDumper::stop()
 		{
 			DebugPrint(L"NetworkPacketDumper::stop() stopping adapter X\n");
 			(*it)->stop();
+			printf("Stopped network dumper\n");
 			DebugPrint(L"NetworkPacketDumper::stop() stopped adapter X\n");
 		}
 		monitorRunning = false;

@@ -1,0 +1,42 @@
+#[+,-]	[File Access]	[Process Name]	[File Path]
+###################################################
+### Google Chrome Beta							###
+###################################################
+#somehow VMwareService & System accesses the same files when Safari1 is browsing.
++	Write	C:\\Program Files\\VMware\\VMware Tools\\VMwareService\.exe	.*
++	Write	System	.*
+#chrome app data
++	Write	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\User Data\\.+
++	Write	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\Documents and Settings\\.*\\Local Settings\\Temp\\.+
++	Write	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\WINDOWS\\Temp\\.+
++	Write	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\.+
++	Write	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\Documents and Settings\\.*\\Application Data\\Microsoft\\Crypto\\.+
++	Write	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\Documents and Settings\\.*\\Application Data\\Microsoft\\CryptnetUrlCache\\.+
++	Delete	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\User Data\\.+
++	Delete	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\Documents and Settings\\.*\\Local Settings\\Temp\\.+
++	Delete	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\WINDOWS\\Temp\\.+
++	Delete	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\.+
++	Delete	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\Documents and Settings\\.*\\Application Data\\Microsoft\\Crypto\\.+
++	Delete	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	C:\\Documents and Settings\\.*\\Application Data\\Microsoft\\CryptnetUrlCache\\.+
+###################################################
+### Minus List - General Malicious Activity	###
+###################################################
+# Alert about executables or scripts that are written to disk
+-	Write	.*	.+\.bat
+-	Write	.*	.+\.cmd
+-	Write	.*	.+\.exe	
+-	Write	.*	.+\.inf
+-	Write	.*	.+\.lnk
+-	Write	.*	.+\.msi
+-	Write	.*	.+\.msp
+-	Write	.*	.+\.pif
+-	Write	.*	.+\.reg
+-	Write	.*	.+\.sct
+-	Write	.*	.+\.shs
+-	Write	.*	.+\.scr
+-	Write	.*	.+\.wsc
+-	Write	.*	.+\.wsf
+-	Write	.*	.+\.wsh
+#commented out for opera because \.com cache files and \.vb script files are very common
+#-	Write	.*	.+\.vb
+#-	Write	.*	.+\.com

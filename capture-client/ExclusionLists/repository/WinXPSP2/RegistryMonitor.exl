@@ -14,6 +14,7 @@
 +	SetValueKey	.*	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\.+
 +	SetValueKey	.*	HKLM\\SOFTWARE\\Microsoft\\Cryptography\\RNG\\Seed.*
 +	SetValueKey	C:\\Program Files\\Capture\\CaptureClient.exe	HKLM\\SYSTEM\\ControlSet001\\Services\\nm\\Parameters\\.+
++	SetValueKey	C:\\Program Files\\Capture\\CaptureClient.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\AppData
 +	SetValueKey	C:\\WINDOWS\\explorer.exe	HKCU\\SessionInformation\\.+
 +	SetValueKey	C:\\WINDOWS\\explorer.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+
 +	SetValueKey	C:\\WINDOWS\\explorer.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\.+

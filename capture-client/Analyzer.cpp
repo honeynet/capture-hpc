@@ -75,12 +75,12 @@ Analyzer::onOptionChanged(const std::wstring& option)
 {
 	DebugPrintTrace(L"Analyzer::onOptionChanged(const std::wstring& option) start\n");
 	std::wstring value = OptionsManager::getInstance()->getOption(option); 
-	if(captureNetworkPackets || option == L"capture-network-packets-malicious" || 
-		option == L"capture-network-packets-benign") {
+	if(option == L"capture-network-packets-malicious" || 
+		option == L"capture-network-packets-benign" || option == L"capture-network-packets") {
 		if(value == L"true")
 		{
-			printf("Creating network dumper\n");
 			if(networkPacketDumper == NULL) {
+				printf("Creating network dumper\n");
 				networkPacketDumper = new NetworkPacketDumper();
 			}
 			captureNetworkPackets = true;
@@ -88,10 +88,11 @@ Analyzer::onOptionChanged(const std::wstring& option)
 			if(captureNetworkPackets == false && OptionsManager::getInstance()->getOption(L"capture-network-packets-malicious") != L"true" &&
 				OptionsManager::getInstance()->getOption(L"capture-network-packets-benign") != L"true") {
 				captureNetworkPackets = false;
+				
 				if(networkPacketDumper != NULL) {
+					printf("Deleting network dumper\n");
 					delete networkPacketDumper;	
 				}
-				
 			}
 		}
 	} else if(option == L"collect-modified-files") {
@@ -134,6 +135,7 @@ Analyzer::start()
 	DebugPrint(L"Analyzer: Registered with callbacks");
 	if(collectModifiedFiles)
 	{
+		printf("Start capturing modified files ...\n");
 		fileMonitor->setMonitorModifiedFiles(true);
 	}
 	DebugPrintTrace(L"Analyzer::start() end\n");
@@ -152,6 +154,7 @@ Analyzer::stop()
 
 	if(captureNetworkPackets)
 	{
+		printf("Stopping network dumper\n");
 		DebugPrint(L"Analyzer::stop() stopping network dumper\n");
 		networkPacketDumper->stop();
 		DebugPrint(L"Analyzer::stop() stopped network dumper\n");
@@ -159,6 +162,7 @@ Analyzer::stop()
 
 	if(collectModifiedFiles) 
 	{
+		printf("Copying monitored files\n");
 		fileMonitor->setMonitorModifiedFiles(false);
 		fileMonitor->copyCreatedFiles();
 	}

@@ -1,0 +1,5 @@
+#[+,-]	[Process Created (no dots)]	[Parent Process]	[Process Path]
+###################################################
+### Google Chrome Beta							###
+###################################################
++	chrome.exe	.*	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome\.exe

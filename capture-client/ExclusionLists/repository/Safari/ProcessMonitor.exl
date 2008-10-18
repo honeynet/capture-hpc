@@ -1,0 +1,5 @@
+#[+,-]	[Process Created (no dots)]	[Parent Process]	[Process Path]
+###################################################
+### Safari 3.1.2								###
+###################################################
++	safari.exe	.*	C:\\Program Files\\Safari\\Safari.exe

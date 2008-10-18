@@ -40,7 +40,7 @@ public class VMwareServer implements VirtualMachineServer, Observer, Runnable {
     private String username;
     private String password;
     private int uniqueId;
-    private static int REVERT_TIMEOUT = (1000 * Integer.parseInt(ConfigManager.getInstance().getConfigOption("revert_timeout")));
+    private static int REVERT_TIMEOUT = Integer.parseInt(ConfigManager.getInstance().getConfigOption("revert_timeout"));
 
     private LinkedList<VirtualMachine> virtualMachines;
     private LinkedBlockingDeque<WorkItem> queuedWorkItems;

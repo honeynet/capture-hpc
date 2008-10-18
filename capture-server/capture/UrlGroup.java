@@ -211,11 +211,15 @@ public class UrlGroup extends Observable {
         } else {
             for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
                 Url url = iterator.next();
-                String stateChanges = urlMaliciousMap.get(url.getUrl().toString());
-                if (stateChanges.equals("")) {
-                    url.setMalicious(false);
+                if(urlMaliciousMap==null) {
+                    url.setMalicious(malicious);
                 } else {
-                    url.setMalicious(true);
+                    String stateChanges = urlMaliciousMap.get(url.getUrl().toString());
+                    if (stateChanges.equals("")) {
+                        url.setMalicious(false);
+                    } else {
+                        url.setMalicious(true);
+                    }
                 }
             }
         }

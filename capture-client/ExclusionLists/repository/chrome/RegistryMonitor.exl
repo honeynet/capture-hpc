@@ -1,0 +1,24 @@
+#[+,-]	[Registry Event]	[Process Name]	[Registry Path]
+###################################################
+### Google Chrome Beta							###
+###################################################
++	OpenKey	.*	.*
++	CreateKey	.*	.*
++	CloseKey	.*	.*
++	EnumerateKey	.*	.*
++	EnumerateValueKey	.*	.*
++	QueryValueKey	.*	.*
++	QueryKey	.*	.*
++	SetValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKLM\\SYSTEM\\ControlSet001\\Hardware Profiles\\0001\\Software\\Microsoft\\windows\\CurrentVersion\\Internet Settings\\.+
++	DeleteValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKLM\\SYSTEM\\ControlSet001\\Hardware Profiles\\0001\\Software\\Microsoft\\windows\\CurrentVersion\\Internet Settings\\.+
++	SetValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKCU\\SYSTEM\\ControlSet001\\Hardware Profiles\\0001\\Software\\Microsoft\\windows\\CurrentVersion\\Internet Settings\\.+
++	DeleteValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKCU\\SYSTEM\\ControlSet001\\Hardware Profiles\\0001\\Software\\Microsoft\\windows\\CurrentVersion\\Internet Settings\\.+
++	SetValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
++	DeleteValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
++	SetValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKCU\\Software\\Google\\.+
++	DeleteValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKCU\\Software\\Google\\.+
++	SetValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKLM\\SOFTWARE\\Classes\\Applications\\chrome.exe\\.+
++	DeleteValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKLM\\SOFTWARE\\Classes\\Applications\\chrome.exe\\.+
++	SetValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKLM\\SOFTWARE\\Microsoft\\SystemCertificates\\.+
++	DeleteValueKey	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe	HKLM\\SOFTWARE\\Microsoft\\SystemCertificates\\.+
+

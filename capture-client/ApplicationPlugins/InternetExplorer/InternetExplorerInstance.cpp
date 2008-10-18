@@ -144,7 +144,6 @@ InternetExplorerInstance::Invoke(
 									 UINT *puArgErr)
  {
 	DebugPrintTrace(L"IInternetExplorerInstance::Invoke(...) start\n");
-	printf("Dispatch Event ID: %d\n",dispIdMember);
 	VARIANT * vt_statuscode;
 	VARIANT * url;
     switch (dispIdMember)

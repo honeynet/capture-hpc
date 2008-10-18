@@ -9,6 +9,16 @@ Changes
 + added post processor plugin architecture. Postprocessors allow to perform actions on classified URLs.
 + added a post processor that analyzes the network data of a classified URL. It extracts DNS information, HTTP requests and determines whether any domain name is part of a fast flux network. Note that this post processor only works with a group size of 1. Otherwise the network of the entire group is analyzed.
 
+
+Version 2.5.1
+-------------
+Changes
+-------
++ fixed issue of nullpointer exception on malicious URL when bulk algorithm is used and group size set to 1 (385)
++ added missing \n for each line in http log file (384)
++ fixed issue that didnt capture network dumps properly (384)
++ fixed bug that didnt handle circumstance when revert gets stuck. this leads to infinite ping/pongs. (383)
+
 Version 2.5
 -----------
 Changes

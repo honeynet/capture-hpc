@@ -1,0 +1,50 @@
+#[+,-]	[File Access]	[Process Name]	[File Path]
+###################################################
+### Safari 3.1.2								###
+###################################################
+#somehow VMwareService & System accesses the same files when Safari1 is browsing.
++	Write	C:\\Program Files\\VMware\\VMware Tools\\VMwareService\.exe	.*
++	Write	System	.*
+#home page for safari
++	Write	C:\\program Files\\capture\\captureclient\.exe	C:\\Documents and Settings\\Administrator\\Application Data\\Apple Computer\\Safari\\Preferences.plist
++	Write	C:\\program Files\\capture\\captureclient\.exe	C:\\Documents and Settings\\Administrator\\Application Data\\Apple Computer\\Safari\\Preferences\\com.apple.Safari.plist
+# cache, etc.
++	Write	C:\\Program Files\\Safari\\Safari.exe	C:\\Documents and Settings\\.*\\Application Data\\Apple Computer\\Safari\\.*
++	Delete	C:\\Program Files\\Safari\\Safari.exe	C:\\Documents and Settings\\.*\\Application Data\\Apple Computer\\Safari\\.*
++	Write	C:\\Program Files\\Safari\\Safari.exe	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Apple Computer\\Safari\\.*
++	Delete	C:\\Program Files\\Safari\\Safari.exe	C:\\Documents and Settings\\.*\\Local Settings\\Application Data\\Apple Computer\\Safari\\.*
++	Write	C:\\Program Files\\Safari\\Safari.exe	C:\\Documents and Settings\\.*\\Local Settings\\Temp\\.*
++	Delete	C:\\Program Files\\Safari\\Safari.exe	C:\\Documents and Settings\\.*\\Local Settings\\Temp\\.*
++	Write	C:\\Program Files\\Safari\\Safari.exe	C:\\$ReplaceAttribute
++	Delete	C:\\Program Files\\Safari\\Safari.exe	C:\\$ReplaceAttribute
++	Write	C:\\Program Files\\Safari\\Safari.exe	C:\\Windows\\Temp\\.*
++	Delete	C:\\Program Files\\Safari\\Safari.exe	C:\\Windows\\Temp\\.*
++	Write	C:\\Program Files\\Safari\\Safari.exe	C:\\Documents and Settings\\.*\\Application Data\\Microsoft\\CryptnetUrlCache\\.+
++	Delete	C:\\Program Files\\Safari\\Safari.exe	C:\\Documents and Settings\\.*\\Application Data\\Microsoft\\CryptnetUrlCache\\.+
++	Write	C:\\Program Files\\Safari\\Safari.exe	C:\\WINDOWS\\system32\\mlfcache.dat
++	Delete	C:\\Program Files\\Safari\\Safari.exe	C:\\WINDOWS\\system32\\mlfcache.dat
+# media player
++	Write	C:\\Program Files\\Safari\\Safari.exe	C:\\Documents and Settings\\.*\\Local Settings\\Temporary Internet Files\\Content.IE5\\.+
++	Delete	C:\\Program Files\\Safari\\Safari.exe	C:\\Documents and Settings\\.*\\Local Settings\\Temporary Internet Files\\Content.IE5\\.+
+###################################################
+### Minus List - General Malicious Activity	###
+###################################################
+# Alert about executables or scripts that are written to disk
+-	Write	.*	.+\.bat
+-	Write	.*	.+\.cmd
+-	Write	.*	.+\.exe	
+-	Write	.*	.+\.inf
+-	Write	.*	.+\.lnk
+-	Write	.*	.+\.msi
+-	Write	.*	.+\.msp
+-	Write	.*	.+\.pif
+-	Write	.*	.+\.reg
+-	Write	.*	.+\.sct
+-	Write	.*	.+\.shs
+-	Write	.*	.+\.scr
+-	Write	.*	.+\.wsc
+-	Write	.*	.+\.wsf
+-	Write	.*	.+\.wsh
+#commented out for opera because \.com cache files and \.vb script files are very common
+#-	Write	.*	.+\.vb
+#-	Write	.*	.+\.com

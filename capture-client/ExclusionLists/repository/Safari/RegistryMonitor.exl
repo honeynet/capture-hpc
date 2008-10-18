@@ -1,0 +1,42 @@
+#[+,-]	[Registry Event]	[Process Name]	[Registry Path]
+###################################################
+### Safari 3.1.2								###
+###################################################
++	OpenKey	.*	.*
++	CreateKey	.*	.*
++	CloseKey	.*	.*
++	EnumerateKey	.*	.*
++	EnumerateValueKey	.*	.*
++	QueryValueKey	.*	.*
++	QueryKey	.*	.*
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2\\.+
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\.+
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\.+
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SYSTEM\\ControlSet001\\Hardware Profiles\\0001\\Software\\Microsoft\\windows\\CurrentVersion\\Internet Settings\\.+
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SOFTWARE\\Microsoft\\SystemCertificates\\AuthRoot\\Certificates\\.+
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SOFTWARE\\Microsoft\\SystemCertificates\\CA\\Certificates\\.+
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2\\.+
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\\.+
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\.+
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\.+
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SYSTEM\\ControlSet001\\Hardware Profiles\\0001\\Software\\Microsoft\\windows\\CurrentVersion\\Internet Settings\\.+
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SOFTWARE\\Microsoft\\SystemCertificates\\AuthRoot\\Certificates\\.+
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SOFTWARE\\Microsoft\\SystemCertificates\\CA\\Certificates\\.+
+#Media Player
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\Scrunch\\WMAudio\\.*
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\Scrunch\\WMAudio\\.*
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\Multimedia\\ActiveMovie\\.*
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\Multimedia\\ActiveMovie\\.*
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\Windows Media\\.*
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\Windows Media\\.*
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\MediaPlayer\\.*
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\MediaPlayer\\.*
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\ActiveMovie\\.*
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKCU\\Software\\Microsoft\\ActiveMovie\\.*
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SOFTWARE\\Microsoft\\DirectDraw\\.*
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SOFTWARE\\Microsoft\\DirectDraw\\.*
++	SetValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SOFTWARE\\Microsoft\\Direct3D\\.*
++	DeleteValueKey	C:\\Program Files\\Safari\\Safari\.exe	HKLM\\SOFTWARE\\Microsoft\\Direct3D\\.*

@@ -61,6 +61,13 @@ public:
 		_threadObj = ptr;
 	}
 
+	~Thread() {
+		if(hStopEvent!=NULL) {
+			printf("Resetting hStopEvent");
+			ResetEvent(hStopEvent);
+		}
+		_threadObj = NULL;
+	}
 	/*
 		Function: Start
 
