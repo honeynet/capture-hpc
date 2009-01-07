@@ -85,6 +85,10 @@ public class UrlsController extends Observable implements EventObserver, Observe
     }
 
     private void addUrl(Url url) {
+	if(urlQueue.size() % 1000 ==0) {
+	    System.out.println("Got " + urlQueue.size() + " in URL queue.");
+	}
+
         if(!inUrlQueue(url)) {
             url.addObserver(this);
             urlQueue.add(url);
