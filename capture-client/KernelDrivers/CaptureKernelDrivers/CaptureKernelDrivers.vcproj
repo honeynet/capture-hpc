@@ -24,12 +24,12 @@
 			>
 			<Tool
 				Name="VCNMakeTool"
-				BuildCommandLine="ddkbuild -WNETXP chk . -Ze"
-				ReBuildCommandLine="ddkbuild -WNETXP chk . -cZw"
+				BuildCommandLine="$(WNETBASE)\bin\ddkbuild -WNETXP chk . -Ze"
+				ReBuildCommandLine="$(WNETBASE)\bin\ddkbuild -WNETXP chk . -cZw"
 				CleanCommandLine=""
 				Output="CaptureKernelDrivers.exe"
 				PreprocessorDefinitions="WIN32;_DEBUG"
-				IncludeSearchPath="C:\WinDDK\6000\inc\ddk;C:\WinDDK\6000\inc\api"
+				IncludeSearchPath=".\Common;C:\WinDDK\6000\inc\ddk;C:\WinDDK\6000\inc\api"
 				ForcedIncludes=""
 				AssemblySearchPath=""
 				ForcedUsingAssemblies=""
@@ -44,12 +44,12 @@
 			>
 			<Tool
 				Name="VCNMakeTool"
-				BuildCommandLine="ddkbuild -WNETXP fre . -Ze"
-				ReBuildCommandLine="ddkbuild -WNETXP fre . -cZw"
+				BuildCommandLine="$(WNETBASE)\bin\ddkbuild -WNETXP fre . -Ze"
+				ReBuildCommandLine="$(WNETBASE)\bin\ddkbuild -WNETXP fre . -cZw"
 				CleanCommandLine=""
 				Output="$(SolutionDir)$(ConfigurationName)"
 				PreprocessorDefinitions="WIN32;NDEBUG"
-				IncludeSearchPath="C:\WinDDK\6000\inc\ddk"
+				IncludeSearchPath=".\Common;C:\WinDDK\6000\inc\ddk;C:\WinDDK\6000\inc\api"
 				ForcedIncludes=""
 				AssemblySearchPath=""
 				ForcedUsingAssemblies=""
@@ -61,39 +61,69 @@
 	</References>
 	<Files>
 		<Filter
-			Name="Source Files"
-			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
-			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
+			Name="RegistryMonitor"
+			>
+			<File
+				RelativePath=".\RegistryMonitor\CaptureRegistryMonitor.c"
+				>
+			</File>
+			<File
+				RelativePath=".\RegistryMonitor\CaptureRegistryMonitor.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="ProcessMonitor"
+			>
+			<File
+				RelativePath=".\ProcessMonitor\CaptureProcessMonitor.c"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="FileMonitor"
 			>
 			<File
 				RelativePath=".\FileMonitor\CaptureFileMonitor.c"
 				>
 			</File>
 			<File
-				RelativePath=".\ProcessMonitor\CaptureProcessMonitor.c"
+				RelativePath=".\FileMonitor\CaptureFileMonitor.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Common"
+			>
+			<File
+				RelativePath=".\Common\ConnectionChecker.h"
 				>
 			</File>
 			<File
-				RelativePath=".\RegistryMonitor\CaptureRegistryMonitor.c"
+				RelativePath=".\Common\EventRingList.c"
+				>
+			</File>
+			<File
+				RelativePath=".\Common\EventRingList.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Common\HashMap.h"
 				>
 			</File>
 		</Filter>
 		<Filter
-			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
+			Name="NetworkMonitor"
 			>
+			<File
+				RelativePath=".\NetworkMonitor\CaptureConnectionMonitor.c"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor\CaptureConnectionMonitor.h"
+				>
+			</File>
 		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
-		</Filter>
-		<File
-			RelativePath=".\readme.txt"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

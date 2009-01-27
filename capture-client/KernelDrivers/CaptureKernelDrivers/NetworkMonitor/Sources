@@ -1,0 +1,10 @@
+TARGETNAME=CaptureConnectionMonitor
+TARGETPATH=.
+TARGETTYPE=DRIVER
+
+TARGETLIBS=$(TARGETLIBS)		\
+
+INCLUDES=..\Common
+
+SOURCES=CaptureConnectionMonitor.c	\
+	
