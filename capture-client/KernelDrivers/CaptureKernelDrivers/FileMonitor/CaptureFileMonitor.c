@@ -1448,7 +1448,18 @@ NTSTATUS MessageCallback (
 					if((bufferSpace-bufferSpaceUsed) >= fileEventSize)
 					{
 						// Copy the memory into the user space buffer
-						RtlCopyMemory(pOutputBuffer+bufferSpaceUsed, pFileEventPacket->pFileEvent, fileEventSize);
+						try
+						{
+							RtlCopyMemory(pOutputBuffer+bufferSpaceUsed, pFileEventPacket->pFileEvent, fileEventSize);
+						}
+						except(EXCEPTION_EXECUTE_HANDLER)
+						{
+							// Not enough user space buffer left so put the packet we just got from the list back
+							ExInterlockedInsertHeadList(&fileManager.lQueuedFileEvents, &pFileEventPacket->Link, &fileManager.lQueuedFileEventsSpinLock);
+
+							return GetExceptionCode();
+						}
+						
 						bufferSpaceUsed += fileEventSize;
 						
 						// Free the allocated packet and file event
@@ -1467,46 +1478,53 @@ NTSTATUS MessageCallback (
 			case SetupMonitor:
 				if(bufferSpace == sizeof(FILEMONITOR_SETUP))
 				{
-					PFILEMONITOR_SETUP pFileMonitorSetup = (PFILEMONITOR_SETUP)pOutputBuffer;			
-					if(pFileMonitorSetup->bCollectDeletedFiles)
+					try
 					{
-						USHORT logDirectorySize;
-						UNICODE_STRING uszTempString;
-						
-						// Create a temp path name that contains the fudge stuff to open files in kernel space
-						RtlInitUnicodeString(&uszTempString, L"\\??\\");
-						logDirectorySize = uszTempString.MaximumLength + pFileMonitorSetup->nLogDirectorySize + 2;
-						
-						// If the log director is already defined free it
-						if(fileManager.logDirectory.Buffer != NULL)
+						PFILEMONITOR_SETUP pFileMonitorSetup = (PFILEMONITOR_SETUP)pOutputBuffer;			
+						if(pFileMonitorSetup->bCollectDeletedFiles)
 						{
-							ExFreePoolWithTag(fileManager.logDirectory.Buffer, FILE_POOL_TAG);
-							fileManager.logDirectory.Buffer = NULL;
-						}
+							USHORT logDirectorySize;
+							UNICODE_STRING uszTempString;
 
-						fileManager.logDirectory.Buffer = ExAllocatePoolWithTag(NonPagedPool, logDirectorySize+sizeof(UNICODE_STRING)+2, FILE_POOL_TAG);
-						
-						if(fileManager.logDirectory.Buffer != NULL)
-						{
-							fileManager.logDirectory.Length = 0;
-							fileManager.logDirectory.MaximumLength = logDirectorySize;										
-							fileManager.bCollectDeletedFiles = pFileMonitorSetup->bCollectDeletedFiles;
+							// Create a temp path name that contains the fudge stuff to open files in kernel space
+							RtlInitUnicodeString(&uszTempString, L"\\??\\");
+							logDirectorySize = uszTempString.MaximumLength + pFileMonitorSetup->nLogDirectorySize + 2;
 
-							// Copy delete log directory into the file manager
-							RtlUnicodeStringCat(&fileManager.logDirectory, &uszTempString);
-							RtlUnicodeStringCatString(&fileManager.logDirectory, pFileMonitorSetup->wszLogDirectory);
-						
-							DbgPrint("CaptureFileMonitor: Collecting deleted files: %wZ\n", &fileManager.logDirectory);
+							// If the log director is already defined free it
+							if(fileManager.logDirectory.Buffer != NULL)
+							{
+								ExFreePoolWithTag(fileManager.logDirectory.Buffer, FILE_POOL_TAG);
+								fileManager.logDirectory.Buffer = NULL;
+							}
+
+							fileManager.logDirectory.Buffer = ExAllocatePoolWithTag(NonPagedPool, logDirectorySize+sizeof(UNICODE_STRING)+2, FILE_POOL_TAG);
+
+							if(fileManager.logDirectory.Buffer != NULL)
+							{
+								fileManager.logDirectory.Length = 0;
+								fileManager.logDirectory.MaximumLength = logDirectorySize;										
+								fileManager.bCollectDeletedFiles = pFileMonitorSetup->bCollectDeletedFiles;
+
+								// Copy delete log directory into the file manager
+								RtlUnicodeStringCat(&fileManager.logDirectory, &uszTempString);
+								RtlUnicodeStringCatString(&fileManager.logDirectory, pFileMonitorSetup->wszLogDirectory);
+
+								DbgPrint("CaptureFileMonitor: Collecting deleted files: %wZ\n", &fileManager.logDirectory);
+							}
+						} else {
+							fileManager.bCollectDeletedFiles = FALSE;
+							// If we were previously collecting deleted files we must have had a log directory
+							// set ... so free it if we did
+							if(fileManager.logDirectory.Buffer != NULL)
+							{
+								ExFreePoolWithTag(fileManager.logDirectory.Buffer, FILE_POOL_TAG);
+								fileManager.logDirectory.Buffer = NULL;
+							}		
 						}
-					} else {
-						fileManager.bCollectDeletedFiles = FALSE;
-						// If we were previously collecting deleted files we must have had a log directory
-						// set ... so free it if we did
-						if(fileManager.logDirectory.Buffer != NULL)
-						{
-							ExFreePoolWithTag(fileManager.logDirectory.Buffer, FILE_POOL_TAG);
-							fileManager.logDirectory.Buffer = NULL;
-						}		
+					}
+					except (EXCEPTION_EXECUTE_HANDLER)
+					{
+						return GetExceptionCode();
 					}
 				}
 				status = STATUS_SUCCESS;

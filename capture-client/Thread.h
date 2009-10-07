@@ -34,8 +34,13 @@
 
 	Workaround to create an OO-style thread
 */
-struct Runnable {
+class Runnable 
+{
+public:
   virtual void run() = 0;
+
+  bool running;
+
 };
 
 typedef struct tagTHREADNAME_INFO
@@ -119,31 +124,11 @@ public:
 		Stops the running thread that was created. Thread should monitor the shouldStop() function
 	*/
 	void stop() {
-		SetEvent(hStopEvent);
-	}
-
-	/*
-		Function: ShouldStop
-
-		Indicates that the thread should stop
-	*/
-	BOOL shouldStop() {
 		DWORD dwWaitResult;
-
-     
+		_threadObj->running = false;
 		dwWaitResult = WaitForSingleObject( 
-			hStopEvent, 
-			0);    
-
-		switch(dwWaitResult)
-		{
-			case WAIT_OBJECT_0:
-				return TRUE;
-				break;
-			default:
-				return FALSE;
-				break;
-		}
+			hThread, 
+			5000);
 	}
 
 	/*
@@ -187,7 +172,10 @@ protected:
 		Static c-function which can be used in the CreateThread function in windows.h
 	*/
 	static unsigned long __stdcall threadProc(void* ptr) {
-		((Runnable*)ptr)->run();
+		Runnable* runnable_thread = (Runnable*)ptr;
+
+		runnable_thread->running = true;
+		runnable_thread->run();
 		return 0;
 	}   
 };

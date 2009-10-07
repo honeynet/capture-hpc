@@ -289,7 +289,7 @@ int _tmain(int argc, WCHAR* argv[])
     printf("COPYRIGHT HOLDER: Victoria University of Wellington, NZ\n");
     printf("AUTHORS:\n");
     printf("\tChristian Seifert (christian.seifert@gmail.com)\n");
-    printf("\tRamon Steenson(ramon.steenson@gmail.com)\n");
+    printf("\tRamon Steenson(rsteenson@gmail.com)\n");
     printf("\n");
     printf("Capture-HPC is free software; you can redistribute it and/or modify\n");
     printf("it under the terms of the GNU General Public License, V2 as published by\n");

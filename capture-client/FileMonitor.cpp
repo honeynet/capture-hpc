@@ -364,7 +364,7 @@ FileMonitor::run()
 	HRESULT hResult;
 	DWORD bytesReturned = 0;
 	monitorRunning = true;
-	while(!fileMonitorThread->shouldStop() && isMonitorRunning())
+	while(running)
 	{
 		FILEMONITOR_MESSAGE command;
 		command.Command = GetFileEvents;
@@ -424,7 +424,7 @@ FileMonitor::run()
 				}
 				
 				offset += sizeof(FILE_EVENT) + e->filePathLength;
-			} while(!fileMonitorThread->shouldStop() && offset < bytesReturned);	
+			} while(offset < bytesReturned);	
 		}
 		
 		if(bytesReturned == FILE_EVENTS_BUFFER_SIZE)

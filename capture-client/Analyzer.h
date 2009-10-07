@@ -33,6 +33,7 @@ class NetworkPacketDumper;
 class FileMonitor;
 class RegistryMonitor;
 class ProcessMonitor;
+class NetworkMonitor;
 class Visitor;
 class Server;
 
@@ -104,6 +105,15 @@ public:
 	*/
 	void onFileEvent(const std::wstring& fileEventType, const std::wstring& time, const DWORD processId, 
 						 const std::wstring& processPath, const std::wstring& fileEventPath);
+
+	/*TODO
+		Function: onNetworkEvent
+
+		Method which binds to the <ConnectionMonitor> file event slot. Called when
+		ever a malcious connection  event occurs
+	*/
+	void onConnectionEvent(const std::wstring& networkEventType, const std::wstring& time, const DWORD processId, 
+						 const std::wstring& processPath, const std::wstring& networkEventPath);
 
 	/*
 		Function: onOptionChanged
@@ -178,6 +188,12 @@ private:
 	*/
 	FileMonitor* fileMonitor;
 	/*
+		Variable: networkMonitor
+
+		Pointer to a <NetworkMonitor> instance
+	*/
+	NetworkMonitor* networkMonitor;
+	/*
 		Variable: networkPacketDumper
 
 		If required this contains a pointer to a <NetworkPacketDumper>. This is only
@@ -194,5 +210,6 @@ private:
 	boost::signals::connection onProcessEventConnection;
 	boost::signals::connection onRegistryEventConnection;
 	boost::signals::connection onFileEventConnection;
+	boost::signals::connection onNetworkEventConnection;
 	boost::signals::connection onOptionChangedConnection;
 };

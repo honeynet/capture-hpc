@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaptureKernelDrivers", "CaptureKernelDrivers\CaptureKernelDrivers.vcproj", "{4EF34E6D-B30C-46E5-9FC5-967ECEADE2CD}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KernelDriverTester", "..\Tools\KernelDriverTester\KernelDriverTester.vcproj", "{7CE0B18D-E3F3-47FC-A1E2-F65EA231D1EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,6 +15,10 @@ Global
 		{4EF34E6D-B30C-46E5-9FC5-967ECEADE2CD}.Debug|Win32.Build.0 = Debug|Win32
 		{4EF34E6D-B30C-46E5-9FC5-967ECEADE2CD}.Release|Win32.ActiveCfg = Release|Win32
 		{4EF34E6D-B30C-46E5-9FC5-967ECEADE2CD}.Release|Win32.Build.0 = Release|Win32
+		{7CE0B18D-E3F3-47FC-A1E2-F65EA231D1EA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7CE0B18D-E3F3-47FC-A1E2-F65EA231D1EA}.Debug|Win32.Build.0 = Debug|Win32
+		{7CE0B18D-E3F3-47FC-A1E2-F65EA231D1EA}.Release|Win32.ActiveCfg = Release|Win32
+		{7CE0B18D-E3F3-47FC-A1E2-F65EA231D1EA}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

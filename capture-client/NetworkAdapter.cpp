@@ -89,7 +89,7 @@ NetworkAdapter::run()
 	int res;
 	struct pcap_pkthdr *header;
 	const u_char *pkt_data;
-	while(!adapterThread->shouldStop() && (res = networkPacketDumper->pfn_pcap_next_ex( adapter, &header, &pkt_data)) >= 0)
+	while(running && (res = networkPacketDumper->pfn_pcap_next_ex( adapter, &header, &pkt_data)) >= 0)
 	{     
 		if(res > 0)
 		{

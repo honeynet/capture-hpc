@@ -274,7 +274,7 @@ RegistryMonitor::run()
 	DWORD dwReturn; 
 	monitorRunning = true;
 	int waitTime = REGISTRY_DEFAULT_WAIT_TIME;
-	while(!registryMonitorThread->shouldStop() && isMonitorRunning())
+	while(running && isMonitorRunning())
 	{
 		ZeroMemory(registryEventsBuffer, REGISTRY_EVENTS_BUFFER_SIZE);
 		DeviceIoControl(hDriver,
@@ -326,7 +326,7 @@ RegistryMonitor::run()
 				if(szRegistryPath != NULL)
 					free(szRegistryPath);
 				offset += sizeof(REGISTRY_EVENT) + e->registryPathLengthB + e->dataLengthB;
-			}while(!registryMonitorThread->shouldStop() && offset < dwReturn);
+			}while(offset < dwReturn);
 			
 			
 		}

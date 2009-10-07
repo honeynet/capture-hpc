@@ -58,12 +58,12 @@ void
 ServerReceive::run()
 {
 	DebugPrintTrace(L"ServerReceive::run() start\n");
-	while(!receiver->shouldStop() && server->isConnected())
+	while(running && server->isConnected())
 	{
 		char buffer[MAX_RECEIVE_BUFFER];
 		std::string xmlDocument = "";
 		int bytesRecv = 0;
-		while(!receiver->shouldStop() && (bytesRecv = recv(server->serverSocket, buffer, MAX_RECEIVE_BUFFER, 0)) > 2)
+		while(running && (bytesRecv = recv(server->serverSocket, buffer, MAX_RECEIVE_BUFFER, 0)) > 2)
 		{
 			printf("ServerReceive. Bytes received: %d\n",bytesRecv);
 			for(int i = 0; i < bytesRecv; i++)

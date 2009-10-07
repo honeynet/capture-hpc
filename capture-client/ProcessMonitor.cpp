@@ -218,7 +218,7 @@ ProcessMonitor::run()
 	ZeroMemory(&tempP, sizeof(tempP));
 	monitorRunning = true;
 	DWORD      dwBytesReturned = 0;
-	while(!processMonitorThread->shouldStop() && isMonitorRunning())
+	while(running && isMonitorRunning())
 	{
 
 		DebugPrint(L"Capture-ProcessMonitor: waiting for hEvent signal\n");

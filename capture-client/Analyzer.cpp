@@ -5,6 +5,7 @@
 #include "ProcessManager.h"
 #include "RegistryMonitor.h"
 #include "FileMonitor.h"
+#include "NetworkMonitor.h"
 #include "NetworkPacketDumper.h"
 #include "FileUploader.h"
 #include "OptionsManager.h"
@@ -19,7 +20,9 @@ Analyzer::Analyzer(Visitor& v, Server& s) : visitor(v), server(s)
 	DebugPrintTrace(L"Analyzer::Analyzer(Visitor& v, Server& s) start\n");
 	processMonitor = new ProcessMonitor();
 	registryMonitor = new RegistryMonitor();
+	networkMonitor = new NetworkMonitor();
 	fileMonitor = new FileMonitor();
+	
 	collectModifiedFiles = false;
 
 	if(OptionsManager::getInstance()->getOption(L"capture-network-packets")==L"true") {
@@ -45,6 +48,7 @@ Analyzer::Analyzer(Visitor& v, Server& s) : visitor(v), server(s)
 
 	registryMonitor->start();
 	fileMonitor->start();
+	networkMonitor->start();
 
 	DebugPrintTrace(L"Analyzer::Analyzer(Visitor& v, Server& s) end\n");
 }
@@ -63,6 +67,7 @@ Analyzer::~Analyzer(void)
 	delete registryMonitor;
 	delete processMonitor;
 	delete fileMonitor;
+	delete networkMonitor;
 	if(captureNetworkPackets)
 	{
 		delete networkPacketDumper;
@@ -109,6 +114,7 @@ Analyzer::onOptionChanged(const std::wstring& option)
 			processMonitor->clearExclusionList();
 			registryMonitor->clearExclusionList();
 			fileMonitor->clearExclusionList();
+			networkMonitor->clearExclusionList();
 		}
 	}
 	DebugPrintTrace(L"Analyzer::onOptionChanged(const std::wstring& option) end\n");
@@ -132,6 +138,8 @@ Analyzer::start()
 	onProcessEventConnection = processMonitor->connect_onProcessEvent(boost::bind(&Analyzer::onProcessEvent, this, _1, _2, _3, _4, _5, _6));
 	onRegistryEventConnection = registryMonitor->connect_onRegistryEvent(boost::bind(&Analyzer::onRegistryEvent, this, _1, _2, _3, _4, _5));
 	onFileEventConnection = fileMonitor->connect_onFileEvent(boost::bind(&Analyzer::onFileEvent, this, _1, _2, _3, _4, _5));
+	/*TODO check this is right*/
+	onNetworkEventConnection = networkMonitor->connect_onConnectionEvent(boost::bind(&Analyzer::onConnectionEvent, this, _1, _2, _3, _4, _5));
 	DebugPrint(L"Analyzer: Registered with callbacks");
 	if(collectModifiedFiles)
 	{
@@ -150,6 +158,7 @@ Analyzer::stop()
 	onProcessEventConnection.disconnect();
 	onRegistryEventConnection.disconnect();
 	onFileEventConnection.disconnect();
+	onNetworkEventConnection.disconnect();
 	DebugPrint(L"Analyzer::stop() stopped monitors\n");
 
 	if(captureNetworkPackets)
@@ -449,4 +458,17 @@ Analyzer::onFileEvent(const std::wstring& fileEventType, const std::wstring& tim
 	sendSystemEvent(fileEvent, time, processId,
 					processPath, fileEventType, fileEventPath, dummy);
 	DebugPrintTrace(L"Analyzer::onFileEvent(...) end\n");
+}
+
+void
+Analyzer::onConnectionEvent(const std::wstring& networkEventType, const std::wstring& time, const DWORD processId, 
+						 const std::wstring& processPath, const std::wstring& networkEventPath)
+{
+	DebugPrintTrace(L"Analyzer::onNetworkEvent(...) start\n");
+	malicious = true;
+	std::wstring networkEvent = L"connection";
+	std::wstring dummy = L"-1";
+	sendSystemEvent(networkEvent, time, processId,
+					processPath, networkEventType, networkEventPath, dummy);
+	DebugPrintTrace(L"Analyzer::onNetworkEvent(...) end\n");
 }

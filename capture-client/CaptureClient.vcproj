@@ -41,8 +41,9 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft Visual Studio 9.0\VC\include&quot;;C:\expatpp\expat\lib;C:\expatpp\src_pp;C:\WinDDK\6000\inc;&quot;C:\program files\boost\boost_1_35_0&quot;;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;;C:\WpdPack\Include;C:\WinDDK\6000\inc\api"
+				AdditionalIncludeDirectories="D:\Libraries\expatpp\expat\lib;D:\Libraries\expatpp\src_pp;D:\Projects\capture\vendor\wpcap\Include;&quot;D:\Libraries\Boost\include\boost-1_36&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;WARN;CAPTURE_DEBUG"
+				IgnoreStandardIncludePath="false"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -64,9 +65,9 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/VERBOSE:LIB"
-				AdditionalDependencies="kernel32.lib Ws2_32.lib Advapi32.lib Psapi.lib fltLib.lib shlwapi.lib expatpp.lib shell32.lib Urlmon.lib $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib Ws2_32.lib Advapi32.lib Psapi.lib C:\WinDDK\6000\lib\wxp\i386\fltLib.lib shlwapi.lib expatpp.lib shell32.lib Urlmon.lib $(NOINHERIT)"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="c:\WinDDK\6000\lib\wxp\i386;C:\expatpp\vc_pp\expatpp\DebugMTDLL;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;&quot;C:\Program Files\boost\boost_1_35_0\lib&quot;"
+				AdditionalLibraryDirectories="D:\Libraries\expatpp\vc_pp\expatpp\DebugMTDLL;D:\Libraries\Boost\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				RandomizedBaseAddress="1"
@@ -221,6 +222,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\NetworkMonitor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\NetworkPacketDumper.cpp"
 				>
 			</File>
@@ -254,6 +259,10 @@
 			</File>
 			<File
 				RelativePath=".\ServerReceive.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\StringHelper.cpp"
 				>
 			</File>
 			<File
@@ -299,6 +308,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\EventList.h"
+				>
+			</File>
+			<File
 				RelativePath=".\FileMonitor.h"
 				>
 			</File>
@@ -320,6 +333,10 @@
 			</File>
 			<File
 				RelativePath=".\NetworkAdapter.h"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor.h"
 				>
 			</File>
 			<File
@@ -371,6 +388,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\StringHelper.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Thread.h"
 				>
 			</File>
@@ -405,6 +426,14 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\ClassDiagram1.cd"
+			>
+		</File>
+		<File
+			RelativePath=".\Makefile"
+			>
+		</File>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>
