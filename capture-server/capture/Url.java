@@ -23,7 +23,7 @@ import java.util.regex.Matcher;
 
 
 public class Url extends Observable {
-
+    private String id;
     private URI url;
     private String clientProgram;
     private int visitTime;
@@ -49,7 +49,8 @@ public class Url extends Observable {
     private double priority;
 
 
-    public Url(String u, String cProgram, int vTime, double priority) throws URISyntaxException {
+    public Url(String urlid, String u, String cProgram, int vTime, double priority) throws URISyntaxException {
+        id=urlid;
         url = new URI(u);
         this.priority = priority;
         malicious = null;
@@ -120,6 +121,12 @@ public class Url extends Observable {
             setMalicious(true);
             logFile.write(event);
             logFile.flush();
+
+			//store in database
+			if (ConfigManager.getInstance().getConfigOption("database-url")!=null)
+			{
+				Database.getInstance().storeEvent(this.getId(), event);
+			}	
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace(System.out);
         } catch (IOException e) {
@@ -154,6 +161,7 @@ public class Url extends Observable {
     public void setUrlState(URL_STATE newState) {
         if (urlState == newState)
             return;
+		String status=null;
 
         urlState = newState;
         System.out.println("\tUrlSetState: " + newState.toString());
@@ -163,7 +171,7 @@ public class Url extends Observable {
             Logger.getInstance().writeToProgressLog("\"" + date + "\",\"visiting\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
 
         } else if (urlState == URL_STATE.VISITED) {
-            String date = getVisitFinishTime();
+			String date = getVisitFinishTime();
             Logger.getInstance().writeToProgressLog("\"" + date + "\",\"visited\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
             Stats.visited++;
             Stats.addUrlVisitingTime(visitStartTime, visitFinishTime, visitTime);
@@ -173,10 +181,18 @@ public class Url extends Observable {
                 Stats.addFirstStateChangeTime(firstStateChange, visitFinishTime, visitTime);
                 Logger.getInstance().writeToMaliciousUrlLog("\"" + date + "\",\"malicious\",\"" + groupID + "\",\"" + url +
                         "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
+			
+				/*update value in database*/
+				status="malicious";
+
             } else if (this.malicious != null && !this.malicious) {
                 Stats.safe++;
                 Logger.getInstance().writeToSafeUrlLog("\"" + date + "\",\"benign\",\"" + groupID + "\",\"" + url +
                         "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
+
+				/*update value in database*/
+				status="benign";
+
             }
             closeEventLog();
 
@@ -191,18 +207,30 @@ public class Url extends Observable {
                     }
                     Logger.getInstance().writeToMaliciousUrlLog("\"" + date + "\",\"malicious\",\"" + groupID + "\",\"" + url +
                             "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
-                }
 
+					/*update status value in database*/
+					status="malicious";
+                } 			
                 //logged in error group even if group size is larger, because these URL
                 String finishDate = getVisitFinishTime();
                 Logger.getInstance().writeToProgressLog("\"" + finishDate  + "\",\"error" + ":" + majorErrorCode + "-" + minorErrorCode + "\",\"" + groupID + "\",\"" + url + "\",\"" + clientProgram + "\",\"" + visitTime + "\"");
                 Stats.urlError++;
-            }
-
-
-
+				//logged in error table
+				if (ConfigManager.getInstance().getConfigOption("database-url")!=null)
+				{
+					Database.getInstance().storeErrorUrl(this.getId(), majorErrorCode.toString(), String.valueOf(minorErrorCode));
+				}	
+            } 
+			if (status==null)
+			{
+				status="error";
+			}
             closeEventLog();
         }
+		if ((ConfigManager.getInstance().getConfigOption("database-url")!=null) && (status!=null))
+		{
+			Database.getInstance().setStatus(this.getId(), status, this.getVisitStartTime(), this.getVisitFinishTime(), clientProgram);
+		}	
         this.setChanged();
         this.notifyObservers();
     }
@@ -224,6 +252,10 @@ public class Url extends Observable {
         }
     }
 
+    public String getId() {
+        return id;
+    }
+    
     public String getUrl() {
         return url.toString().toLowerCase();
     }

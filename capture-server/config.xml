@@ -16,7 +16,21 @@
             same_vm_revert_delay="6"
             different_vm_revert_delay="24"
     />
+  <!--
+  <database database-type="PostgreSQL"
+		     database-url="jdbc:postgresql://localhost/capturehpc"
+	         database-username="capture"
+			 database-password="capture"
+	/>
+  -->
+  <!--
+	<database database-type="MySQL"
+		     database-url="jdbc:mysql://localhost/capturehpc"
+	         database-username="capture"
+			 database-password="capture"
 	
+	/>	
+  -->
 	<exclusion-list monitor="file" file="FileMonitor.exl" />
 	<exclusion-list monitor="process" file="ProcessMonitor.exl" />
 	<exclusion-list monitor="registry" file="RegistryMonitor.exl" />

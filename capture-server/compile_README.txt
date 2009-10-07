@@ -18,6 +18,13 @@ Ensure that the following directories are in the PATH:
 	ANT_HOME/bin
 	VCINSTALLDIR/bin for Windows
 	path to gcc for Linux
+For database options:
+  - Database server: MySQL server 5.1 or PostgreSQL server 8.3
+  - Libraries:
+    + Mysql connector 5.1 or PostgreSQL connector 8.3
+    + Jakarta commons DBCP 1.2.2
+    + Apache Commons Pools 1.4
+    These libraries should be coppied to <Java folder>/jre/lib/ext
 
 3. Compilation
 --------------

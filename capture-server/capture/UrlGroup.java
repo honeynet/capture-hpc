@@ -137,7 +137,7 @@ public class UrlGroup extends Observable {
         urlGroupEvent += "identifier=\"" + identifier + "\" program=\"" + clientProgram + "\" time=\"" + visitTime + "\">";
         for (Iterator<Url> iterator = urlList.iterator(); iterator.hasNext();) {
             Url url = iterator.next();
-            urlGroupEvent += "<item url=\"" + url.getEscapedUrl() + "\"/>";
+            urlGroupEvent += "<item id=\""+url.getId()+"\" url=\"" + url.getEscapedUrl() + "\"/>";
         }
         urlGroupEvent += "</visit-event>";
         return urlGroupEvent;

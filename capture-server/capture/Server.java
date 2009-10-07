@@ -27,7 +27,25 @@ public class Server
 
         for(int i = 0; i < args.length; i++)
 		{
-			if(args[i].equals("-s")) {
+        	if(args[i].equals("stop")) {
+            	ConfigFile configFile=new ConfigFile();
+                configFile.parseDatabaseInfo("config.xml");
+                if (ConfigManager.getInstance().getConfigOption("database-url")!=null)
+                {
+                    Database.initialize();
+                    Database.getInstance().setSystemStatus(false);
+                    System.exit(0);
+                }
+                else
+                {
+                    System.out.println("ERROR: Database option is disable!");
+                    System.exit(1);
+                }
+            }
+            else if(args[i].equals("resume")) {
+                ConfigManager.getInstance().addConfigOption("resume", "yes");
+            }
+            else if(args[i].equals("-s")) {
 				if(((i+1) < args.length) && !args[i+1].startsWith("-")) {
 					String serverOption = args[++i];
 					if(serverOption.contains(":"))
@@ -56,9 +74,37 @@ public class Server
                 if(((i+1) < args.length) && !args[i+1].startsWith("-")) {
                 ConfigManager.getInstance().addConfigOption("halt_on_revert", args[++i]);
                 }
-			}
+            } else if(args[i].equals("-i")) {
+                if(((i+1) < args.length) && !args[i+1].startsWith("-")) {
+                ConfigManager.getInstance().addConfigOption("input_urls", args[++i]);
+                ConfigManager.getInstance().addConfigOption("import_urls", "yes");
+                }
+            } else if(args[i].equals("-c")) {
+                if(((i+1) < args.length) && !args[i+1].startsWith("-")) {
+                ConfigManager.getInstance().addConfigOption("import_check", args[++i]);
+                }
+			} 
 		}
 
+		/* Import URLs from file only, no operation*/
+		if (ConfigManager.getInstance().getConfigOption("import_urls")!= null)
+		{
+			ConfigFile configFile=new ConfigFile();
+			configFile.parseDatabaseInfo("config.xml");
+            if (ConfigManager.getInstance().getConfigOption("database-url")!=null)
+            {
+                Database.initialize();
+                Database.getInstance().importUrlFromFile();
+                System.out.println("Finish import");
+                System.exit(0);
+            }
+            else
+            {
+                System.out.println("ERROR: Database option is disable!");
+                System.exit(1);
+            }
+
+		}
 
 		/* Check that an address was specified to listen on */
 		if(ConfigManager.getInstance().getConfigOption("server-listen-address") == null)
@@ -75,6 +121,13 @@ public class Server
 		ClientsController.getInstance();
 		ConfigManager.getInstance().loadConfigurationFile();
 
+
+		/* Load temporary value into memory */
+		if (ConfigManager.getInstance().getConfigOption("database-url")!=null)
+		{
+			Database.initialize();
+			Database.getInstance().loadTemporaryValue();
+		}
         Postprocessor postprocessor = PostprocessorFactory.getDefaultPostprocessor();
         try {
             String postprocessorClassName = ConfigManager.getInstance().getConfigOption("postprocessor-classname");
@@ -93,6 +146,7 @@ public class Server
 		{
 			String file = ConfigManager.getInstance().getConfigOption("input_urls");
 
+	
             Preprocessor preprocessor = PreprocessorFactory.getDefaultPreprocessor();
             try {
                 String preprocessorClassName = ConfigManager.getInstance().getConfigOption("preprocessor-classname");
@@ -105,13 +159,26 @@ public class Server
                 System.out.println("Unable to create preprocessor. Proceeding without preprocessor");
                 e.printStackTrace(System.out);
             }
-            preprocessor.readInputUrls(file);
-        }
-
-
-
-
-    }
+			
+			if (ConfigManager.getInstance().getConfigOption("database-url")!=null)
+			{
+				Database.getInstance().loadInputUrlFromFile(file);
+			} else
+			{
+				preprocessor.readInputUrls(file);
+			}
+		} else if (ConfigManager.getInstance().getConfigOption("database-url")!=null)
+		{
+            if (ConfigManager.getInstance().getConfigOption("resume")!=null)
+            {
+                Database.getInstance().resumeLastOperation();
+            }
+            else
+            {
+                Database.getInstance().loadInputUrlFromDatabase();
+            }
+		}
+	}
 
     private static String getUsageString() {
         StringBuffer usageString = new StringBuffer();

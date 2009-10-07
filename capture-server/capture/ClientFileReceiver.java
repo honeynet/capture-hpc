@@ -62,6 +62,10 @@ public class ClientFileReceiver {
 		try {
 			outputFile.flush();
 			outputFile.close();
+			if ((ConfigManager.getInstance().getConfigOption("database-url")!=null) && (client.getVisitingUrlGroup() !=null) && (client.getVisitingUrlGroup().size()==1))
+			{
+				Database.getInstance().storeFile(client.getVisitingUrlGroup().getUrlList().get(0).getId(), fileName);
+			}
 		} catch (IOException e) {
 			e.printStackTrace(System.out);
 		}

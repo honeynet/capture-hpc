@@ -5,7 +5,8 @@
     	<xs:complexType>
     		<xs:sequence>
     			<xs:element ref="global" minOccurs="1" maxOccurs="1"></xs:element>
-    			<xs:element ref="exclusion-list" minOccurs="0" maxOccurs="unbounded"></xs:element>
+          <xs:element ref="database" minOccurs="0" maxOccurs="1"></xs:element>
+          <xs:element ref="exclusion-list" minOccurs="0" maxOccurs="unbounded"></xs:element>
     			<xs:element ref="preprocessor" minOccurs="0" maxOccurs="1"></xs:element>
                 <xs:element ref="virtual-machine-server" minOccurs="0" maxOccurs="unbounded"></xs:element>
 				<xs:element ref="postprocessor" minOccurs="0" maxOccurs="1"></xs:element>
@@ -75,4 +76,12 @@
             <xs:attribute name="different_vm_revert_delay" type="xs:integer" use="required"></xs:attribute>
         </xs:complexType>
     </xs:element>
+  <xs:element name="database">
+    <xs:complexType>
+      <xs:attribute name="database-type" type="xs:string" use="required"></xs:attribute>
+      <xs:attribute name="database-url" type="xs:string" use="required"></xs:attribute>
+      <xs:attribute name="database-username" type="xs:string" use="required"></xs:attribute>
+      <xs:attribute name="database-password" type="xs:string" use="required"></xs:attribute>
+    </xs:complexType>
+  </xs:element>
 </xs:schema>

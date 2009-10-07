@@ -29,8 +29,21 @@ public class UrlGroupsController extends Observable implements Runnable,Observer
             Thread.sleep(60*1000*5); //dont quit in the first five minutes as queue is building
 
             while(true) {
+				if (ConfigManager.getInstance().getConfigOption("database-url")!=null)
+				{
+                    if (!Database.getInstance().getSystemStatus()) {
+                        System.out.println("System is stopped by user!");
+                        System.exit(0);
+                    }
+				}
                 if(visitingList.size()==0 && urlGroupQueue.size()==0 && UrlsController.getInstance().getQueueSize()==0 && (PostprocessorFactory.getActivePostprocessor()!=null && !PostprocessorFactory.getActivePostprocessor().processing())) {
-                    System.out.println("No more urls in queues...exiting in 10 sec.");
+                    System.out.println("No more urls in the current operation.");
+
+					if (ConfigManager.getInstance().getConfigOption("database-url")!=null)
+					{
+						Database.getInstance().finishOperation();
+					}
+
                     Thread.sleep(10000);
                     if(visitingList.size()==0 && urlGroupQueue.size()==0 && UrlsController.getInstance().getQueueSize()==0 && (PostprocessorFactory.getActivePostprocessor()!=null && !PostprocessorFactory.getActivePostprocessor().processing())) {
                         System.out.println("exiting.");
@@ -183,5 +196,3 @@ public class UrlGroupsController extends Observable implements Runnable,Observer
 
 
 }
-
-

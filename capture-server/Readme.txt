@@ -9,7 +9,13 @@ Capture is written and distributed under the GNU General Public License.
 * Sun's Java JRE 1.6.0 - update 7
 * VMWare Server 1.0.6 with VMware VIX (do not download VIX separately) (available at http://www.vmware.com/download/server/) 
 * Microsoft Windows XP, Microsoft Windows Vista or Linux (other OS might also be capable of running the server, but are not supported)
-
+* For database options: 
+  - Database server: MySQL server 5.1 or PostgreSQL server 8.3
+  - Libraries: 
+    + Mysql connector 5.1 or PostgreSQL connector 8.3
+    + Jakarta commons DBCP 1.2.2
+    + Apache Commons Pools 1.4
+    These libraries should be coppied to <Java folder>/jre/lib/ext
 1.1 Installing the VMware VIX
 -----------------------------
 1. Install VMware server.
@@ -64,6 +70,12 @@ Example:
         <exclusion-list monitor="file" file="FileMonitor.exl" />
         <exclusion-list monitor="process" file="ProcessMonitor.exl" />
         <exclusion-list monitor="registry" file="RegistryMonitor.exl" />
+	
+	<database database-type="PostgreSQL"
+		 database-url="jdbc:postgresql://192.18.1.1/capturehpc"
+	         database-username="capture"
+		 database-password="capture"
+        />
 
 	<virtual-machine-server type="vmware-server" address="192.168.1.1" port="902" 
 		username="Username" password="password">
@@ -86,6 +98,39 @@ http://www.yahoo.com
 Example: java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> -f input_uris.txt.
 
 One can specify a specific client application to have Capture client to visit a server with (The default is set via the client-default global property in the config.xml. By default it is set to Internet Explorer Bulk). This occurs by appending a client identifier separated by two colons after the URI. Also one can overwrite the default visitation time, for example, http://www.google.com::firefox::45. The client identifier needs to be specified in the applications.conf on the client side and point to the executable of the client application. When group size is configured to be larger than 1, it is not recommended to overwrite the visitiation time and client. (see the Capture Client readme.txt for more information)
+
+DATABASE OPTION (Make sure you have installed MySQL server or PostgreSQL server if you want to use database functionalities)
+ - Create database for capture-hpc: There are four scripts (in utilities folder) to create or remove database. You can change some configuration such as database name, username, password in these script before using them.
+  + create_mysql_database.sh: create database in MySQL server for capture-hpc. 
+  + remove_mysql_database.sh: remove database in MySQL server.
+  + create_postgresql_database.sh: create database in PosgreSQL server for capture-hpc. 
+  + remove_postgresql_database.sh: remove database in PostgreSQL server.
+
+ - Operation options:
+  + Without input-url file, Capture will get all urls from database (url table) for inspecting.
+   java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port>
+
+  + With -f input-url file and -c false option, Capture will get all urls from input-url file, insert these urls into database without checking existence of these urls in database, and then inspect these urls.
+   java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> -f input_uris.txt -c false
+    If you are sure all urls from text file haven't existed in database, you can use this option to import urls from text file and run scan. It can save a lot of time in inserting urls into database.
+
+  + With -f input-url file and without -c option, Capture will get all urls from input-url file, insert these urls into database with checking existence of these urls in database, and then inspect these urls.
+    java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> -f input_uris.txt
+    It takes time to insert urls into database. 
+
+  + With stop option: Force capture exit immediately
+    java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> stop
+
+  + With resume option: Capture will get all unvisited urls from last operation for inspecting.
+    java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> resume
+
+  + With -i input-url file and -c false option, Capture will get all urls from input-url file, insert these urls into database without checking existence of these urls in database, and then EXIT (NO OPERATION).
+   java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> -i input_uris.txt -c false
+    It can save a lot of time in inserting urls into database.
+
+  + With -i input-url file and without -c option, Capture will get all urls from input-url file, insert these urls into database with checking existence of these urls in database, and then EXIT (NO OPERATION).
+    java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> -i input_uris.txt
+    It takes time to insert urls into database. 
 
 4.3 Report Description
 ----------------------

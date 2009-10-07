@@ -55,6 +55,7 @@ public class ConfigFile implements Observer, ErrorHandler {
 		    }
 			
 			this.parseGlobalElements();
+			this.parseDatabaseElements();
 			this.parseExclusionListElements();
 			this.parseServerElements();
 			System.out.println("PARSING PREPROCESSOR");
@@ -106,7 +107,22 @@ public class ConfigFile implements Observer, ErrorHandler {
 		}
 	}
 
-    public void parsePreprocessorElements() {
+	public void parseDatabaseElements()
+	{
+		NodeList databaseList = configDocument.getElementsByTagName("database");
+		for(int i = 0; i < databaseList.getLength(); i++)
+		{
+			NamedNodeMap attributesMap = databaseList.item(i).getAttributes();
+			for(int k = 0; k < attributesMap.getLength(); k++)
+			{
+				String option = attributesMap.item(k).getNodeName();
+				String value = attributesMap.item(k).getNodeValue();
+				ConfigManager.getInstance().addConfigOption(option, value);
+			}
+		}
+	}
+        	
+	public void parsePreprocessorElements() {
         NodeList preprocessor = configDocument.getElementsByTagName("preprocessor");
         Node n = preprocessor.item(0);
 
@@ -207,6 +223,51 @@ public class ConfigFile implements Observer, ErrorHandler {
 			e.printStackTrace(System.out);
 		}
 	}
+
+   	//parse config file for database info
+	public void parseDatabaseInfo(String file)
+	{
+		ConfigManager.getInstance().addObserver(this);
+		DocumentBuilderFactory factory =
+            DocumentBuilderFactory.newInstance();
+		 factory.setNamespaceAware(true);
+		 //factory.
+
+        try {
+    		factory.newDocumentBuilder();
+    		DocumentBuilder builder = factory.newDocumentBuilder();
+			configDocument = builder.parse( file );
+
+		    /* Validate the config file */
+		    SchemaFactory factory2 = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+		    Source schemaFile = new StreamSource(new File("config.xsd"));
+		    Schema schema = factory2.newSchema(schemaFile);
+		    Validator validator = schema.newValidator(); 
+		    validator.setErrorHandler(this);
+
+		    try {
+		    	System.out.println("Validating " + file + " ...");
+		        validator.validate(new DOMSource(configDocument));
+		        System.out.println(file + " successfully validated");
+		    } catch (SAXException e) {
+		    	e.printStackTrace(System.out);
+		    	System.exit(1);
+		    }
+			
+			this.parseDatabaseElements();
+            loaded = true;
+		} catch (SAXException e) {
+			e.printStackTrace(System.out);
+	    	System.exit(1);
+		} catch (IOException e) {
+			e.printStackTrace(System.out);
+	    	System.exit(1);
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace(System.out);
+	    	System.exit(1);
+		}
+	}
+
 
 	@Override
 	public void error(SAXParseException exception) throws SAXException {
