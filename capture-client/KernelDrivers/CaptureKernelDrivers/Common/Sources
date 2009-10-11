@@ -1,7 +1,10 @@
-TARGETNAME=EventRingList
+TARGETNAME=Common
 TARGETPATH=.
 TARGETTYPE=DRIVER_LIBRARY
 
 TARGETLIBS=$(TARGETLIBS)	\
 
-SOURCES=EventRingList.c	\
+
+SOURCES=EventList.c \
+	SharedBuffer.c	\
+	HashMap.c		\

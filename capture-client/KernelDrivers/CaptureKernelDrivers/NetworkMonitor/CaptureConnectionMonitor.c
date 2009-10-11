@@ -1,7 +1,9 @@
 /*
  *	PROJECT: Capture
  *	FILE: CaptureConnectionMonitor.c
- *	AUTHORS: Ramon Steenson (rsteenson@gmail.com) & Christian Seifert (christian.seifert@gmail.com)
+ *	AUTHORS:	Ramon Steenson (rsteenson@gmail.com)
+ *				Christian Seifert (christian.seifert@gmail.com)
+ *				Van Lam Le (vanlamle@gmail.com)
  *
  *	Developed by Victoria University of Wellington and the New Zealand Honeynet Alliance
  *
@@ -21,523 +23,249 @@
  *  along with Capture; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
+#include "CaptureTdiIrpHandlers.h"
 #include "CaptureConnectionMonitor.h"
 
 #include <strsafe.h>
 
 KIRQL g_irq_level;
 
-//NTSTATUS TdiCall(IN PIRP pIrp,
-//                 IN PDEVICE_OBJECT pDeviceObject,
-//                 IN OUT PIO_STATUS_BLOCK pIoStatusBlock)
-//{
-//    KEVENT kEvent;                                                  
-//    NTSTATUS ntStatus = STATUS_INSUFFICIENT_RESOURCES;              
-//
-//    KeInitializeEvent ( &kEvent, NotificationEvent, FALSE ); 
-//
-//    pIrp->UserEvent = &kEvent;                                   
-//    pIrp->UserIosb = pIoStatusBlock;                           
-//    ntStatus = IoCallDriver ( pDeviceObject, pIrp ); 
-//
-//    if(ntStatus == STATUS_PENDING)                                
-//    {
-//        KeWaitForSingleObject ( 
-//            (PVOID)&kEvent,                             
-//            Executive,                                   
-//            KernelMode,                                 
-//            TRUE,                                       
-//            NULL ); 
-//
-//        ntStatus = pIoStatusBlock->Status; 
-//    }    
-//
-//    return ( ntStatus );                                             
-//}
-//
-void CopyAddress( PTA_ADDRESS* destination, PTA_ADDRESS source )
+const CHAR* TdiIrpNames[] =
 {
-	//int size = sizeof(TDI_ADDRESS_INFO) + sizeof(TDI_ADDRESS_IP);
+	"",
+	"TDI_ASSOCIATE_ADDRESS",
+	"TDI_DISASSOCIATE_ADDRESS",
+	"TDI_CONNECT",
+	"TDI_LISTEN",
+	"TDI_ACCEPT",
+	"TDI_DISCONNECT",
+	"TDI_SEND",
+	"TDI_RECEIVE",
+	"TDI_SEND_DATAGRAM",
+	"TDI_RECEIVE_DATAGRAM",
+	"TDI_SET_EVENT_HANDLER",
+	"TDI_QUERY_INFORMATION",
+	"TDI_SET_INFORMATION",
+	"TDI_ACTION",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"TDI_DIRECT_SEND",
+	"TDI_DIRECT_SEND_DATAGRAM",
+	"TDI_DIRECT_ACCEPT"
+};
+
+typedef long (*TdiIrpHandler)( ConnectionManager*, PIRP, PIO_STACK_LOCATION, CompletionRoutine* completion_routine );
+
+const PVOID tdi_irp_handlers[] =
+{
+	TdiDefaultHandler,
+	TdiAssociateAddressHandler,
+	TdiDisassociateAddressHandler,
+	TdiConnectHandler,
+	TdiListenHandler,
+	TdiAcceptHandler,
+	TdiDisconnectHandler,
+	TdiSendHandler,
+	TdiReceiveHandler,
+	TdiSendDatagramHandler,
+	TdiReceiveDatagramHandler,
+	TdiSetEventHandler,
+	TdiQueryInformationHandler,
+	TdiSetInformationHandler,
+	TdiActionHandler
+};
+
+const int num_tdi_irp_handlers = sizeof(tdi_irp_handlers);
+
+// Main entry point into the driver, is called when the driver is loaded
+NTSTATUS DriverEntry(
+					 IN PDRIVER_OBJECT driver_object, 
+					 IN PUNICODE_STRING registry_path
+					 )
+{
+	int i = 0;
+	NTSTATUS status;
+	UNICODE_STRING tcpdriver_name;
+	UNICODE_STRING tcpdevice_name;
+	UNICODE_STRING udpdriver_name;
+	UNICODE_STRING udpdevice_name;
+
+	UNICODE_STRING attach_device;
+	PDEVICE_OBJECT tcpdevice_object;
+	PDEVICE_OBJECT udpdevice_object;
+
+	ConnectionManager* connection_manager = NULL;
+
+
+	//Set irp handles for both tcp and udp
+	for(i = 0; i <= IRP_MJ_MAXIMUM_FUNCTION; i++)
+	{
+		driver_object->MajorFunction[i] = HandleIrp; 
+	}
+	driver_object->DriverUnload = UnloadDriver;
+
+
+	// CREATE AND INITIALIZE TCP DEVICE OBJECT///////
 	
-	int size = sizeof(TA_ADDRESS) + source->AddressLength;	
 
-	if( *destination == NULL )
+	//Attach to tcp device
+	RtlInitUnicodeString( &attach_device, L"\\Device\\Tcp" );
+
+	// Set the driver name
+	RtlInitUnicodeString( &tcpdriver_name, L"\\Device\\TCPCaptureConnectionMonitor" );
+	// Set the device string
+	RtlInitUnicodeString( &tcpdevice_name, L"\\DosDevices\\TCPCaptureConnectionMonitor");
+
+	status = IoCreateDevice(
+		driver_object,
+		sizeof( ConnectionManager ),
+		&tcpdriver_name,
+		FILE_DEVICE_UNKNOWN,
+		0,
+		FALSE,
+		&tcpdevice_object
+		);
+
+	if(!NT_SUCCESS(status))
 	{
-		*destination = (PTA_ADDRESS)ExAllocatePoolWithTag(NonPagedPool, size, CONNECTION_POOL_TAG);
+		DbgPrint("CaptureConnectionMonitor: ERROR IoCreateDevice ->  \\Device\\TCPCaptureConnectionMonitor - %08x\n", status);
+		return status;
 	}
 
-	if( *destination == NULL )
+	// Get the connection manager from the devices extension
+	connection_manager = (ConnectionManager*)tcpdevice_object->DeviceExtension;
+
+	connection_manager->device = tcpdevice_object;
+	connection_manager->device_type=TCP_DEVICE;
+
+	status = IoAttachDevice(tcpdevice_object, &attach_device, &connection_manager->next_device);
+
+	InitialiseConnectionManager(connection_manager);
+	if(!NT_SUCCESS(status))
 	{
-		return;
+		DbgPrint("CaptureConnectionMonitor: Can't attach TCP device - %08x\n", status);
+		IoDeleteDevice( tcpdevice_object );
+		return status;
+	}
+	// Create a symbolic link between the driver and the device
+	status = IoCreateSymbolicLink( &tcpdevice_name, &tcpdriver_name );
+
+	if(!NT_SUCCESS(status))
+	{
+		DbgPrint("CaptureConnectionMonitor: ERROR IoCreateSymbolicLink ->  \\DosDevices\\TCPCaptureConnectionMonitor - %08x\n", status); 
+		IoDeleteDevice( tcpdevice_object );
+		return status;
+	}
+	DbgPrint("TCPCaptureConnectionMonitor: Successfully Loaded\n");
+
+
+	// CREATE AND INITIALIZE UDP DEVICE OBJECT///////
+	
+	//Attach to tcp device
+	RtlInitUnicodeString( &attach_device, L"\\Device\\Udp" );
+
+	// Set the driver name
+	RtlInitUnicodeString( &udpdriver_name, L"\\Device\\UDPCaptureConnectionMonitor" );
+	// Set the device string
+	RtlInitUnicodeString( &udpdevice_name, L"\\DosDevices\\UDPCaptureConnectionMonitor");
+
+	status = IoCreateDevice(
+		driver_object,
+		sizeof( ConnectionManager ),
+		&udpdriver_name,
+		FILE_DEVICE_UNKNOWN,
+		0,
+		FALSE,
+		&udpdevice_object
+		);
+
+	if(!NT_SUCCESS(status))
+	{
+		DbgPrint("CaptureConnectionMonitor: ERROR IoCreateDevice ->  \\Device\\UDPCaptureConnectionMonitor - %08x\n", status);
+		return status;
 	}
 
-	RtlCopyMemory( *destination, source, size );
-}
+	// Get the connection manager from the devices extension
+	connection_manager = (ConnectionManager*)udpdevice_object->DeviceExtension;
 
-NTSTATUS GetLocalAddressComplete( PDEVICE_OBJECT device_object, PIRP irp, PVOID context )
-{
-	Connection* connection = (Connection*)context;
+	connection_manager->device = udpdevice_object;
+	connection_manager->device_type=UDP_DEVICE;
 
-	if( irp->IoStatus.Status != STATUS_SUCCESS )
+	status = IoAttachDevice(udpdevice_object, &attach_device, &connection_manager->next_device);
+
+	InitialiseConnectionManager(connection_manager);
+	if(!NT_SUCCESS(status))
 	{
-		ExFreePoolWithTag( connection->local_address, CONNECTION_POOL_TAG );
-		connection->local_address = NULL;
+		DbgPrint("CaptureConnectionMonitor: Can't attach UDP device - %08x\n", status);
+		IoDeleteDevice( udpdevice_object );
+		IoDeleteSymbolicLink(&tcpdevice_name);
+		IoDeleteDevice(tcpdevice_object);
+		return status;
+	}
+	// Create a symbolic link between the driver and the device
+	status = IoCreateSymbolicLink( &udpdevice_name, &udpdriver_name );
+
+	if(!NT_SUCCESS(status))
+	{
+		DbgPrint("CaptureConnectionMonitor: ERROR IoCreateSymbolicLink ->  \\DosDevices\\UDPCaptureConnectionMonitor - %08x\n", status); 
+		IoDeleteDevice( udpdevice_object );
+		IoDeleteSymbolicLink(&tcpdevice_name);
+		IoDeleteDevice(tcpdevice_object);
+		return status;
 	}
 
-	if( irp->MdlAddress )
-	{
-		IoFreeMdl( irp->MdlAddress );
-	}
+	DbgPrint("UDPCaptureConnectionMonitor: Successfully Loaded\n");
 
 	return STATUS_SUCCESS;
 }
 
-void GetLocalAddressWorkItem( PVOID user_data )
+VOID UnloadDriver( IN PDRIVER_OBJECT driver_object )
 {
-	AddressWorkItem* work_item = (AddressWorkItem*)user_data;
-
-	GetLocalAddress( work_item->device_object, work_item->connection );
-
-	ExFreePoolWithTag( work_item, CONNECTION_POOL_TAG );
-}
-
-void GetLocalAddress( PDEVICE_OBJECT device_object, Connection* connection )
-{
-	UINT size = 0;
-	PMDL mdl = NULL;
-	NTSTATUS status;
-	KEVENT kernel_event;
-	PIRP query_irp = NULL;
-	IO_STATUS_BLOCK io_status_block;
-	PTDI_ADDRESS_INFO local_address = NULL;
-	PFILE_OBJECT connection_object = connection->local_node;
-
-    if(KeGetCurrentIrql() != PASSIVE_LEVEL)
-    {
-		AddressWorkItem* address_work = (AddressWorkItem*)ExAllocatePoolWithTag( NonPagedPool, sizeof(AddressWorkItem), CONNECTION_POOL_TAG );
-
-		if( address_work )
-		{
-			RtlZeroMemory( address_work, sizeof(AddressWorkItem) );
-
-			address_work->device_object = device_object;
-			address_work->connection = connection;
-
-			// Initialise our delayed work item that will be executed at the PASSIVE_LEVEL
-			// Note, we should probably use IoAllocateWorkItem because the device may disappear before
-			// the item is executed?
-			ExInitializeWorkItem( &address_work->work_item, GetLocalAddressWorkItem, address_work );
-
-			ExQueueWorkItem( &address_work->work_item, DelayedWorkQueue );	
-		}
-
-		return;
-    }
-
-	//RtlZeroMemory(
-
-	size = sizeof(TDI_ADDRESS_INFO) + sizeof(TDI_ADDRESS_IP);
-
-	local_address = (PTDI_ADDRESS_INFO)ExAllocatePoolWithTag( PagedPool, size, CONNECTION_POOL_TAG );
-
-	if( local_address == NULL )
-		goto error;
-
-	query_irp = TdiBuildInternalDeviceControlIrp( TDI_QUERY_INFORMATION, device_object, connection_object, NULL, NULL );
-
-	if( query_irp == NULL )
-		goto error;
-
-	KeInitializeEvent ( &kernel_event, NotificationEvent, FALSE );
-	query_irp->UserEvent = &kernel_event;
-	query_irp->UserIosb = &io_status_block;
-
-	mdl = IoAllocateMdl( local_address, size, FALSE, FALSE, NULL );
-
-	if( mdl == NULL )
-		goto error;
-
-	__try
-	{
-		MmProbeAndLockPages( mdl, KernelMode, IoModifyAccess );   
-	} 
-	__except(EXCEPTION_EXECUTE_HANDLER)
-	{
-		IoFreeMdl( mdl );
-		mdl = NULL;
-		goto error;
-	}
-
-	TdiBuildQueryInformation( query_irp, device_object, connection_object, NULL, NULL, TDI_QUERY_ADDRESS_INFO, mdl);   
-	  
-	status = IoCallDriver( device_object, query_irp ); 
-
-	if(status == STATUS_PENDING)                                
-    {
-        KeWaitForSingleObject( (PVOID)&kernel_event, Executive, KernelMode, TRUE, NULL ); 
-        status = io_status_block.Status; 
-    }
-
-	if( status == STATUS_SUCCESS )
-	{
-		CopyAddress( &connection->local_address, local_address->Address.Address );
-	} 
-	else
-	{
-		connection->local_address = NULL;
-	}
-
-	ExFreePoolWithTag( local_address, CONNECTION_POOL_TAG );
-
-	return;
-
-error:
-
-	if( mdl )						IoFreeMdl( mdl );
-	if( query_irp )					IoCompleteRequest( query_irp, IO_NO_INCREMENT );
-	if( local_address )	ExFreePoolWithTag( local_address, CONNECTION_POOL_TAG );
-
-	return;
-}
-
-NTSTATUS ClientEventConnectComplete(IN PDEVICE_OBJECT device_object, IN PIRP irp, IN PVOID context)
-{
-	NTSTATUS status = STATUS_SUCCESS;
-	ClientEventConnectContext* connection_context = (ClientEventConnectContext*)context;
-
-	if( irp->IoStatus.Status == STATUS_SUCCESS )
-	{
-		connection_context->connection->state = TCP_STATE_ESTABLISHED;
-	}
-
-	status = connection_context->previous_callback.callback( device_object, irp, connection_context->previous_callback.context );
-
-	return status;
-}
-
-NTSTATUS ClientEventConnect(
-    IN PVOID  tdiEventContext,
-    IN LONG  remoteAddressLength,
-    IN PVOID  remoteAddress,
-    IN LONG  userDataLength,
-    IN PVOID  userData,
-    IN LONG  optionsLength,
-    IN PVOID  options,
-    OUT CONNECTION_CONTEXT  *connectionContext,
-    OUT PIRP  *acceptIrp
-    )
-{
-	NTSTATUS status;
-	ULONG process_id;
-	
-	ConnectionContext* connection_context = (ConnectionContext*)tdiEventContext;
-
-	TA_ADDRESS *remote_address = ((TRANSPORT_ADDRESS *)remoteAddress)->Address;
-
-	TDI_ADDRESS_IP* ip_address = (TDI_ADDRESS_IP*)remote_address->Address;
-	char *p;
-	p = (char *)&ip_address->in_addr;
-	DbgPrint("ClientEventConnect: %08x \n", connection_context->file_object);
-	DbgPrint("\tSource: %d.%d.%d.%d:%i\n", (UCHAR)p[0], (UCHAR)p[1], (UCHAR)p[2], (UCHAR)p[3], ip_address->sin_port);  
-
-	process_id = 0;
-	
-	status = ((PTDI_IND_CONNECT)connection_context->original_callback)(
-		connection_context->original_context,
-		remoteAddressLength,
-		remoteAddress,
-		userDataLength,
-		userData,
-		optionsLength,
-		options,
-		connectionContext,
-		acceptIrp);
-
-	 if( status == STATUS_MORE_PROCESSING_REQUIRED )
-	 {
-		 // We don't bother with this as we aren't monitoring the actual state of
-		 // connections. If the connect fails we will remove the connection when
-		 // a TDI_DISASSOCIATE irp comes
-	 }
-
-	if( status == STATUS_SUCCESS && *acceptIrp != NULL)
-	{
-		Pair* pair = NULL;
-		Connection* connection = NULL;
-		PIO_STACK_LOCATION irp_stack = NULL;
-
-		irp_stack = IoGetCurrentIrpStackLocation( *acceptIrp );
-		
-		pair = FindHashMap( &connection_context->connection_manager->connection_hash_map, (UINT)irp_stack->FileObject);
-
-		DbgPrint("\t\t\t\tFind: %08x\n", irp_stack->FileObject);
-
-		if( pair )
-		{
-			connection = (Connection*)pair->value;
-
-			connection->state = TCP_STATE_SYN_RCVD;
-
-			DbgPrint("\t\t\t\tFound: %08x - l=%08x c=%08x p=%i\n", connection, connection->local_node, connection->connection, connection->process_id);
-
-			if(remote_address && remote_address->AddressType == TDI_ADDRESS_TYPE_IP)
-			{
-				CopyAddress( &connection->remote_address, remote_address  );
-			}
-		}
-		else
-		{
-			DbgPrint("\t\t\t\tCould not Find: %08x\n", irp_stack->FileObject);
-		}
-	}
-	
-	return status;
-}
-
-NTSTATUS ClientEventDisconnect(
-    IN PVOID  tdiEventContext,
-    IN CONNECTION_CONTEXT  connectionContext,
-    IN LONG  disconnectDataLength,
-    IN PVOID  disconnectData,
-    IN LONG  disconnectInformationLength,
-    IN PVOID  disconnectInformation,
-    IN ULONG  disconnectFlags
-    )
-{
-	NTSTATUS status;
-	ULONG process_id;
-	
-	ConnectionContext* connection_context = (ConnectionContext*)tdiEventContext;
-	//DbgBreakPoint();
-	//process_id = IoGetRequestorProcessId(irp);
-	//DbgPrint("ClientEventDisconnect: P=%i \n", process_id);
-	DbgPrint("ClientEventDisconnect: %08x \n", connection_context->file_object);
-
-	status = ((PTDI_IND_DISCONNECT)connection_context->original_callback)(
-		connection_context->original_context,
-		connectionContext,
-		disconnectDataLength,
-		disconnectData,
-		disconnectInformationLength,
-		disconnectInformation,
-		disconnectFlags);
-
-	return status;
-}
-
-NTSTATUS ClientEventReceive(
-    IN PVOID  tdiEventContext,
-    IN CONNECTION_CONTEXT  connectionContext,
-    IN ULONG  receiveFlags,
-    IN ULONG  bytesIndicated,
-    IN ULONG  bytesAvailable,
-    OUT ULONG  *bytesTaken,
-    IN PVOID  tsdu,
-    OUT PIRP  *ioRequestPacket
-    )
-{
-	NTSTATUS status;
-	ULONG process_id;
-	
-	ConnectionContext* connection_context = (ConnectionContext*)tdiEventContext;
-
-	DbgPrint("ClientEventReceive: %08x \n", connection_context->file_object);
-
-	status = ((PTDI_IND_RECEIVE)connection_context->original_callback)(
-		connection_context->original_context,
-		connectionContext,
-		receiveFlags,
-		bytesIndicated,
-		bytesAvailable,
-		bytesTaken,
-		tsdu,
-		ioRequestPacket);
-
-	
-	return status;
-}
-
-Connection* CreateConnection( ConnectionManager* connection_manager, int process_id, PFILE_OBJECT local, PFILE_OBJECT remote )
-{
-	Connection* connection = (Connection*)ExAllocatePoolWithTag( NonPagedPool, sizeof(Connection), CONNECTION_POOL_TAG );
-
-	if( connection == NULL )
-	{
-		return NULL;
-	}
-
-	RtlZeroMemory( connection, sizeof(Connection) );
-
-	// Start Lock
-	KeAcquireSpinLock( &connection_manager->lock, &g_irq_level );
-
-	connection->prev = connection_manager->connection_tail;
-
-	if( connection_manager->connection_head == NULL )
-	{
-		connection_manager->connection_head = connection;
-	}
-
-	if( connection_manager->connection_tail != NULL )
-	{
-		connection_manager->connection_tail->next = connection;
-	}
-
-	connection_manager->connection_tail = connection;
-
-	InsertHashMap( &connection_manager->connection_hash_map, (UINT)local, connection );
-
-	KeReleaseSpinLock( &connection_manager->lock, g_irq_level );
-	// End Lock
-
-	connection->local_node = local;
-	connection->connection = remote;
-	connection->process_id = process_id;
-
-	return connection;
-}
-
-void FreeConnection( ConnectionManager* connection_manager, Connection* connection )
-{
-	if( connection == NULL )
-	{
-		return;
-	}
-
-	if( connection->next != NULL )
-	{
-		connection->next->prev = connection->prev;
-	}
-
-	if( connection->prev != NULL )
-	{
-		connection->prev->next = connection->next;
-	}
-
-	if( connection_manager->connection_head == connection )
-	{
-		connection_manager->connection_head = connection->next;
-	}
-
-	if( connection_manager->connection_tail == connection )
-	{
-		connection_manager->connection_tail = connection->prev;
-	}
-
-	if( connection->remote_address != NULL )
-	{
-		ExFreePoolWithTag( connection->remote_address, CONNECTION_POOL_TAG );
-	}
-
-	if( connection->local_address != NULL )
-	{
-		ExFreePoolWithTag( connection->local_address, CONNECTION_POOL_TAG );
-	}
-
-	ExFreePoolWithTag( connection, CONNECTION_POOL_TAG );
-}
-
-
-
-void VPrintf( char* buffer, int buffer_size, const char* format, ... )
-{
-	va_list arglist;
-	va_start(arglist, format);
-
-	StringCchVPrintfA( buffer, buffer_size, "%d.%d.%d.%d:%i", arglist);
-
-	va_end(arglist);
-}
-
-char* no_address = "0.0.0.0:-1";
-
-void AddressToString( PTA_ADDRESS address, char* buffer, int buffer_size )
-{			
-	//PTA_ADDRESS address = NULL;
-
-	if( address == NULL )
-	{
-		//RtlCopyMemory( buffer, no_address, strlen(no_address) +);
-		StringCchCopyA( buffer, buffer_size, no_address );
-		return;
-	}
-
-	//address = address_info->Address.Address;
-
-	if(address->AddressType == TDI_ADDRESS_TYPE_IP)
-	{
-		TDI_ADDRESS_IP* ip_address = (TDI_ADDRESS_IP*)address->Address;
-		char *p;
-		p = (char *)&ip_address->in_addr;
-
-		VPrintf( buffer, buffer_size, "%d.%d.%d.%d:%i", (UCHAR)p[0], (UCHAR)p[1], (UCHAR)p[2], (UCHAR)p[3], ip_address->sin_port);
-	}
-}
-
-void DbgPrintConnection( Connection* connection )
-{
-	char local_address[24];
-	char remote_address[24];
-
-	if( connection == NULL )
-	{
-		return;
-	}
-
-	AddressToString( connection->local_address, local_address, 24 );
-	AddressToString( connection->remote_address, remote_address, 24 );
-
-	DbgPrint("\t\t\t\tConnection: %08x - l=%08x c=%08x p=%i local=%s remote=%s\n", connection, connection->local_node, connection->connection, connection->process_id, local_address, remote_address);
-}
-
-NTSTATUS ConnectCompletion( IN PDEVICE_OBJECT  device_object,
-					   IN PIRP  irp,
-					   IN PVOID  context )
-{
-	PIO_STACK_LOCATION pirp_stack; 
-
-	pirp_stack = IoGetCurrentIrpStackLocation(irp);
-	//GetLocalAddress(device_object, pirp_stack->FileObject);
-
-	return STATUS_SUCCESS;
-}
-
-void RemoveConnection( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack )
-{
-	Pair* pair = NULL;
+	UNICODE_STRING device_name;
 	Connection* connection = NULL;
-	
-	pair = FindHashMap( &connection_manager->connection_hash_map, (UINT)irp_stack->FileObject);
-	DbgPrint("\t\t\t\tFind: %08x\n", irp_stack->FileObject);
-	if( pair )
+	ConnectionManager* connection_manager = NULL;
+
+	connection_manager = (ConnectionManager*)driver_object->DeviceObject->DeviceExtension;
+	if (connection_manager->device_type==TCP_DEVICE)
+		RtlInitUnicodeString(&device_name, L"\\DosDevices\\TCPCaptureConnectionMonitor");
+	else RtlInitUnicodeString(&device_name, L"\\DosDevices\\UDPCaptureConnectionMonitor");
+
+	DbgPrint("CaptureConnectionMonitor: Unloading %s\n", device_name);
+
+	IoDetachDevice(connection_manager->next_device);
+
+	DestroyConnectionManager(connection_manager);
+
+	IoDeleteSymbolicLink(&device_name);
+	if( driver_object->DeviceObject != NULL )
 	{
-		connection = (Connection*)pair->value;
-		DbgPrint("\t\t\t\tFound: %08x - l=%08x c=%08x p=%i\n", connection, connection->local_node, connection->connection, connection->process_id);
-	}
-	else
-	{
-		DbgPrint("\t\t\t\tCould not Find: %08x\n", irp_stack->FileObject);
+		IoDeleteDevice( driver_object->DeviceObject );
 	}
 
-	if( connection )
-	{
-		// Start Lock
-		KeAcquireSpinLock( &connection_manager->lock, &g_irq_level );
-
-		if( RemoveHashMap( &connection_manager->connection_hash_map, (UINT)irp_stack->FileObject ) )
-		{
-			DbgPrint("\t\t\t\tConnection Removed: %08x\n", irp_stack->FileObject);
-		}
-		else
-		{
-			DbgPrint("\t\t\t\tCould not Find - Remove: %08x\n", irp_stack->FileObject);
-		}
-
-		FreeConnection( connection_manager, connection );
-
-		KeReleaseSpinLock( &connection_manager->lock, g_irq_level );
-		// End Lock
-	}
+	DbgPrint("CaptureConnectionMonitor: Unloaded %s\n", device_name);
 }
 
 NTSTATUS HandleIrp( IN PDEVICE_OBJECT device_object, 
@@ -555,27 +283,86 @@ NTSTATUS HandleIrp( IN PDEVICE_OBJECT device_object,
 
 	completion_routine.callback = NULL;
 	completion_routine.context = NULL;
+	if (connection_manager->device_type==TCP_DEVICE)
+		DbgPrint("TCP DEVICE\t\t");
+	else if (connection_manager->device_type==UDP_DEVICE)
+		DbgPrint("UDP DEVICE\t\t");
 
-	if(pirp_stack->MajorFunction == IRP_MJ_INTERNAL_DEVICE_CONTROL)
+	if(pirp_stack->MajorFunction == IRP_MJ_DEVICE_CONTROL)
+	{
+		if (KeGetCurrentIrql() == PASSIVE_LEVEL)
+		{
+			status = TdiMapUserRequest(device_object, irp, pirp_stack);
+			
+			if(status == STATUS_SUCCESS)
+			{
+				DbgPrint("TDI MapUserRequest Succeeded\n");
+			}
+		}
+
+		if(pirp_stack->Parameters.DeviceIoControl.IoControlCode == GET_SHARED_EVENT_LIST_IOCTL)
+		{
+			GetSharedEventListIoctlHandler(&connection_manager->event_list, device_object, irp, pirp_stack);
+			DbgPrint("TDI IRP_MJ_DEVICE_CONTROL: GET_SHARED_EVENT_LIST_IOCTL\t\t%08x\n", pirp_stack->FileObject);
+			IoCompleteRequest(irp, IO_NO_INCREMENT);
+			return STATUS_SUCCESS;
+		}
+
+		//else if (pirp_stack->Parameters.DeviceIoControl.IoControlCode == IOCTL_TCP_QUERY_INFORMATION_EX)
+		//{
+		//	DbgPrint("TDI IRP_MJ_DEVICE_CONTROL: IOCTL_TCP_QUERY_INFORMATION_EX\t\t%08x\n", pirp_stack->FileObject);
+		//}
+		//else if (pirp_stack->Parameters.DeviceIoControl.IoControlCode == IOCTL_TCP_SET_INFORMATION_EX)
+		//{
+		//	DbgPrint("TDI IRP_MJ_DEVICE_CONTROL: IOCTL_TCP_SET_INFORMATION_EX\t\t%08x\n", pirp_stack->FileObject);
+		//}
+		else if(pirp_stack->Parameters.DeviceIoControl.IoControlCode == IOCTL_TDI_QUERY_DIRECT_SEND_HANDLER)
+		{
+			DbgPrint("TDI IRP_MJ_DEVICE_CONTROL: IOCTL_TDI_QUERY_DIRECT_SEND_HANDLER\n");
+		}
+		else DbgPrint("TDI IRP_MJ_DEVICE_CONTROL\t\t%08x\n", pirp_stack->FileObject);
+	}
+
+	if(pirp_stack->MajorFunction == IRP_MJ_CREATE )
+	{
+		DbgPrint("TDI IRP = IRP_MJ_CREATE\t\t%08x\n", pirp_stack->FileObject);	
+
+		TdiCreateHandler( connection_manager, irp, pirp_stack, &completion_routine );
+	}
+
+	else if(pirp_stack->MajorFunction == IRP_MJ_CLOSE )
+	{
+		DbgPrint("TDI IRP = IRP_MJ_CLOSE\t\t%08x\n", pirp_stack->FileObject);	
+
+		TdiCloseHandler( connection_manager, irp, pirp_stack, &completion_routine );
+	}
+
+	else if(pirp_stack->MajorFunction == IRP_MJ_CLEANUP )
+	{
+		DbgPrint("TDI IRP = IRP_MJ_CLEANUP\t\t%08x\n", pirp_stack->FileObject);	
+
+		TdiCleanupHandler( connection_manager, irp, pirp_stack, &completion_routine );
+	}
+
+	else if(pirp_stack->MajorFunction == IRP_MJ_INTERNAL_DEVICE_CONTROL)
 	{
 		int tdi_irp = pirp_stack->MinorFunction;
 
 		DbgPrint("TDI IRP = %s\t\t%08x\n", TdiIrpNames[pirp_stack->MinorFunction], pirp_stack->FileObject);	
 
-		if( tdi_irp < num_tdi_irp_handlers )
+		if(( tdi_irp < num_tdi_irp_handlers ) && (((int)pirp_stack->FileObject->FsContext2==TDI_CONNECTION_FILE)||((int)pirp_stack->FileObject->FsContext2==TDI_TRANSPORT_ADDRESS_FILE)))
 		{
 			((TdiIrpHandler)(tdi_irp_handlers[tdi_irp]))( connection_manager, irp, pirp_stack, &completion_routine );
 		}
-	}
-	else if( pirp_stack->MajorFunction == IRP_MJ_CLEANUP )
-	{
-		
+		else DbgPrint("Don't know IRP_MJ_INTERNAL_DEVICE_CONTROL");
 	}
 
+
+	// Setup the completion routine and pass the IRP down the stack
 	if( completion_routine.callback )
 	{
 		CompletionRoutineContext* context = (CompletionRoutineContext*)ExAllocatePoolWithTag( NonPagedPool, sizeof(CompletionRoutineContext), CONNECTION_POOL_TAG );
-		
+
 		if( context != NULL )
 		{
 			RtlZeroMemory( context, sizeof(CompletionRoutineContext) );
@@ -584,73 +371,112 @@ NTSTATUS HandleIrp( IN PDEVICE_OBJECT device_object,
 			context->completion_routine.context = completion_routine.context;
 			context->completion_routine.control = completion_routine.control;
 
-			// Not enough stack locations exists to put our completion routine in
-			// We create a new irp with enough locations and send that down to the
-			// next lowest driver. In the completion handler we call the callback,
-			// free the irp we created and complete the original irp which calls
-			// its completion routine.
-			// We do this because drivers like netbt use legacy code that don't
-			// have any free stack locations
 			if( irp->CurrentLocation <= 1 )
 			{
-				PIRP new_irp = NULL;
-				PIO_STACK_LOCATION new_sirp = NULL;	
-
-				new_irp = IoAllocateIrp(connection_manager->next_device->StackSize, FALSE);
-
-				if( new_irp == NULL )
-				{
-					// Pass the irp as normal - our completion routine will not be called
-					IoSkipCurrentIrpStackLocation( irp );
-					return IoCallDriver(connection_manager->next_device, irp);
-				}
-
-				// Copy the original irp state to the newly created irp
-				context->original_irp = irp;
-
-				new_irp->MdlAddress = irp->MdlAddress;
-				new_irp->Flags = irp->Flags;
-				new_irp->AssociatedIrp = irp->AssociatedIrp;
-				new_irp->RequestorMode = irp->RequestorMode;
-				new_irp->UserIosb = irp->UserIosb;
-				new_irp->UserEvent = irp->UserEvent;
-				new_irp->Overlay = irp->Overlay;
-				new_irp->UserBuffer = irp->UserBuffer;
-				new_irp->Tail.Overlay.AuxiliaryBuffer = irp->Tail.Overlay.AuxiliaryBuffer;
-				new_irp->Tail.Overlay.OriginalFileObject = irp->Tail.Overlay.OriginalFileObject;
-				new_irp->Tail.Overlay.Thread = irp->Tail.Overlay.Thread;
-
-				// Give our new irp the same stack location as the original
-				new_sirp = IoGetNextIrpStackLocation(new_irp);
-				*new_sirp = *pirp_stack;
-
-				IoSetCompletionRoutine( new_irp, TdiNewIrpCompletionHandler, context, TRUE, TRUE, TRUE );
-
-				// Pass the new irp onto the next driver
-				return IoCallDriver( connection_manager->next_device, new_irp );
+				// Not enough stack locations exists to put our completion routine in
+				// We create a new irp with enough locations and send that down to the
+				// next lowest driver. In the completion handler we call the callback,
+				// free the irp we created and complete the original irp which calls
+				// its completion routine.
+				// We do this because drivers like netbt use legacy code that don't
+				// have any free stack locations
+				return SetupNewIrpCompletionRoutineCallDriver(connection_manager, device_object, irp, pirp_stack, context);
 			}
 			else
 			{
-				IoCopyCurrentIrpStackLocationToNext( irp );
-				IoSetCompletionRoutine( irp, TdiCompletionHandler, context, TRUE, TRUE, TRUE );
+				// Setup the completion routine and pass the original IRP
+				return SetupCompletionRoutineCallDriver(connection_manager, irp, pirp_stack, context);
 			}
 		}
-		else
-		{
-			DbgPrint("Failed to create context - Out of memory?\n");
-			IoSkipCurrentIrpStackLocation( irp );
-		}
-	}
-	else
-	{
-		// Pass the IRP to the target without touching the IRP 
-		IoSkipCurrentIrpStackLocation( irp );
 	}
 
+	// Pass the IRP to the target without touching the IRP 
+	IoSkipCurrentIrpStackLocation( irp );
+
+	// Pass the original IRP
 	return IoCallDriver(connection_manager->next_device, irp);
-
 }
 
+/// Sets up a new IRP with the same parameters as the original but with enough stack locations
+/// to store our completion routine. It will pass this new irp down the stack. Once the new
+/// IRP is completed the original will be marked as completed in TdiNewIrpCompletionHandler
+/// which will call the original completion routines. See comment in HandleIrp for more info
+/// @param	connection_manager	The connection manager for this kernel driver
+/// @param	device_object		This device
+/// @param	irp					The current irp
+/// @param	irp_stack			Our irp stack location
+/// @param	context				The completion routine context containing our callback and context
+NTSTATUS SetupNewIrpCompletionRoutineCallDriver(ConnectionManager* connection_manager, 
+												PDEVICE_OBJECT device_object,
+												PIRP irp, 
+												PIO_STACK_LOCATION irp_stack, 
+												CompletionRoutineContext* context)
+{
+	PIRP new_irp = NULL;
+	PIO_STACK_LOCATION new_sirp = NULL;	
+
+	// Create a new IRP with enough stack locations
+	new_irp = IoAllocateIrp(connection_manager->next_device->StackSize + 1, FALSE);
+
+	if( new_irp == NULL )
+	{
+		// Pass the irp as normal - our completion routine will not be called
+		IoSkipCurrentIrpStackLocation( irp );
+		return IoCallDriver(connection_manager->next_device, irp);
+	}
+
+	// Copy the original irp state to the newly created irp
+	context->original_irp = irp;
+
+	new_irp->MdlAddress = irp->MdlAddress;
+	new_irp->Flags = irp->Flags;
+	new_irp->AssociatedIrp = irp->AssociatedIrp;
+	new_irp->RequestorMode = irp->RequestorMode;
+	new_irp->UserIosb = irp->UserIosb;
+	new_irp->UserEvent = irp->UserEvent;
+	new_irp->Overlay = irp->Overlay;
+	new_irp->UserBuffer = irp->UserBuffer;
+	new_irp->Tail.Overlay.AuxiliaryBuffer = irp->Tail.Overlay.AuxiliaryBuffer;
+	new_irp->Tail.Overlay.OriginalFileObject = irp->Tail.Overlay.OriginalFileObject;
+	new_irp->Tail.Overlay.Thread = irp->Tail.Overlay.Thread;
+
+	// Make the stack location valid
+	IoSetNextIrpStackLocation(new_irp);
+
+	// Set our device so that we receive a pointer to it in our completion routine
+	IoGetCurrentIrpStackLocation(new_irp)->DeviceObject = device_object;
+
+	IoSetCompletionRoutine( new_irp, TdiNewIrpCompletionHandler, context, TRUE, TRUE, TRUE );
+
+	// Give our new irp the same stack location as the original
+	new_sirp = IoGetNextIrpStackLocation(new_irp);
+	RtlCopyMemory( new_sirp, irp_stack, FIELD_OFFSET(IO_STACK_LOCATION, CompletionRoutine));
+
+	// Pass the new irp onto the next driver
+	return IoCallDriver( connection_manager->next_device, new_irp );
+}
+
+/// Sets up the completion routine in the original irp
+/// Will call TdiCallCompletionRoutine when the irp completes which will then call
+/// our completion routine stored in the context
+/// @param	connection_manager	The connection manager for this kernel driver
+/// @param	irp					The current irp
+/// @param	irp_stack			Our irp stack location
+/// @param	context				The completion routine context containing our callback and context
+NTSTATUS SetupCompletionRoutineCallDriver(ConnectionManager* connection_manager, 
+										  PIRP irp, 
+										  PIO_STACK_LOCATION irp_stack, 
+										  CompletionRoutineContext* context)
+{
+	IoCopyCurrentIrpStackLocationToNext( irp );
+	IoSetCompletionRoutine( irp, TdiCompletionHandler, context, TRUE, TRUE, TRUE );
+
+	return IoCallDriver( connection_manager->next_device, irp );
+}
+
+/// A small wrapper that handles the calling of completion routines we set for IRPs
+/// Will call the completion routine stored inside CompletionRoutine only if the status
+/// matches what the IRP returned
 NTSTATUS TdiCallCompletionRoutine(CompletionRoutine* completion_routine, PDEVICE_OBJECT device_object, PIRP irp)
 {	
 	UCHAR control = 0;
@@ -683,6 +509,11 @@ NTSTATUS TdiCallCompletionRoutine(CompletionRoutine* completion_routine, PDEVICE
 	return status;
 }
 
+/// Called when a IRP created in our driver has been completed and we set a completion routine.
+/// Only called when an IRP does not have enough stack locations to hold our completion routine
+/// A new IRP is created and this is called when that is finished. It will call our completion
+/// routine, free our IRP and complete the original IRP, which will in turn call its
+/// completion routines
 NTSTATUS TdiNewIrpCompletionHandler(PDEVICE_OBJECT device_object, PIRP irp, PVOID context)
 {
 	CompletionRoutineContext* completion_context = (CompletionRoutineContext*)context;
@@ -712,6 +543,9 @@ NTSTATUS TdiNewIrpCompletionHandler(PDEVICE_OBJECT device_object, PIRP irp, PVOI
 	return STATUS_MORE_PROCESSING_REQUIRED;
 }
 
+/// Called when a IRP created in our driver has been completed and we set a completion routine.
+/// This is called most times as most IRPs have enough stack locations to insert our
+/// completion routine. This will call our completion routine.
 NTSTATUS TdiCompletionHandler(PDEVICE_OBJECT device_object, PIRP irp, PVOID context)
 {
 	CompletionRoutineContext* completion_context = (CompletionRoutineContext*)context;
@@ -731,411 +565,3 @@ NTSTATUS TdiCompletionHandler(PDEVICE_OBJECT device_object, PIRP irp, PVOID cont
 
 	return STATUS_CONTINUE_COMPLETION;   
 }
-
-// TDI IRP handlers
-NTSTATUS TdiDefaultHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiAssociateAddressHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	NTSTATUS status;
-	ULONG process_id;
-	HANDLE local_address_handle = ((TDI_REQUEST_KERNEL_ASSOCIATE *)(&irp_stack->Parameters))->AddressHandle;
-
-	process_id = IoGetRequestorProcessId(irp);
-
-	if( local_address_handle != NULL )
-	{
-		PFILE_OBJECT local_node = NULL;
-
-		status = ObReferenceObjectByHandle(local_address_handle, GENERIC_READ, NULL, KernelMode, &local_node, NULL);
-
-		if( NT_SUCCESS(status) )
-		{
-			Connection* connection = CreateConnection(connection_manager, process_id, irp_stack->FileObject, local_node);
-
-			if( connection != NULL )
-			{
-				DbgPrint("\t\t\t\tInserted: %08x - l=%08x c=%08x p=%i\n", connection, connection->local_node, connection->connection, process_id);
-
-				GetLocalAddress(connection_manager->next_device, connection);
-			}
-
-			ObDereferenceObject(local_node);
-		}
-	}
-
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiDisassociateAddressHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	//Pair* pair = NULL;
-	//Connection* connection = NULL;
-	//
-	//pair = FindHashMap( &connection_manager->connection_hash_map, (UINT)irp_stack->FileObject);
-	//DbgPrint("\t\t\t\tFind: %08x\n", irp_stack->FileObject);
-	//if( pair )
-	//{
-	//	connection = (Connection*)pair->value;
-	//	DbgPrint("\t\t\t\tFound: %08x - l=%08x c=%08x p=%i\n", connection, connection->local_node, connection->connection, connection->process_id);
-	//}
-	//else
-	//{
-	//	DbgPrint("\t\t\t\tCould not Find: %08x\n", irp_stack->FileObject);
-	//}
-
-	//if( connection )
-	//{
-	//	if( RemoveHashMap( &connection_manager->connection_hash_map, (UINT)irp_stack->FileObject ) )
-	//	{
-	//		DbgPrint("\t\t\t\tConnection Removed: %08x\n", irp_stack->FileObject);
-	//	}
-	//	else
-	//	{
-	//		DbgPrint("\t\t\t\tCould not Find - Remove: %08x\n", irp_stack->FileObject);
-	//	}
-	//	FreeConnection( connection_manager, connection );
-	//}
-	RemoveConnection(  connection_manager, irp, irp_stack );
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiConnectHandlerComplete( PDEVICE_OBJECT device_object, PIRP irp, PVOID context )
-{
-	//CompletionRoutineContext* completion_context = (CompletionRoutineContext*)context;
-
-	Connection* connection = (Connection*)context;
-
-	DbgPrint("TdiConnectHandlerComplete called\n");
-
-	if( irp->IoStatus.Status == STATUS_SUCCESS )
-	{
-		connection->state = TCP_STATE_ESTABLISHED;
-	}
-
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiConnectHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	Pair* pair = NULL;
-	Connection* connection = NULL;
-	
-	pair = FindHashMap( &connection_manager->connection_hash_map, (UINT)irp_stack->FileObject);
-	DbgPrint("\t\t\t\tFind: %08x\n", irp_stack->FileObject);
-	if( pair )
-	{
-		connection = (Connection*)pair->value;
-		DbgPrint("\t\t\t\tFound: %08x - l=%08x c=%08x p=%i\n", connection, connection->local_node, connection->connection, connection->process_id);
-	}
-	else
-	{
-		DbgPrint("\t\t\t\tCould not Find: %08x\n", irp_stack->FileObject);
-	}
-	
-	if( connection )
-	{
-		PTDI_REQUEST_KERNEL_CONNECT connect_info = NULL;
-
-		connect_info = (PTDI_REQUEST_KERNEL_CONNECT)&irp_stack->Parameters;
-
-		connection->state = TCP_STATE_SYN_SENT;
-
-		if( connection->local_address == NULL )
-		{
-			GetLocalAddress( connection_manager->next_device, connection );
-		}
-
-		if( connect_info )
-		{
-			TA_ADDRESS *remote_address = NULL;
-
-			remote_address = ((TRANSPORT_ADDRESS*)(connect_info->RequestConnectionInformation->RemoteAddress))->Address;
-//PTDI_CONNECTION_INFORMATION
-			if(remote_address && remote_address->AddressType == TDI_ADDRESS_TYPE_IP)
-			{
-			//	TDI_ADDRESS_IP* ip_address = (TDI_ADDRESS_IP*)remote_address ->Address;
-				CopyAddress( &connection->remote_address, remote_address  );
-			}
-		}
-
-		completion_routine->callback = TdiConnectHandlerComplete;
-		completion_routine->context = connection;
-		completion_routine->control = SL_INVOKE_ON_SUCCESS | SL_INVOKE_ON_ERROR | SL_INVOKE_ON_CANCEL;
-		//IoSetCompletionRoutine(irp, TdiConnectHandlerComplete, connection, TRUE, TRUE, TRUE); 
-	}
-
-	
-
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiListenHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiAcceptHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiDisconnectHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	TA_ADDRESS *remote_addr;
-	PTDI_REQUEST_KERNEL_CONNECT disconnect_info;
-
-	//GetLocalAddress(device_object, pirp_stack->FileObject);
-
-
-	//DbgBreakPoint();
-
-	disconnect_info = (PTDI_REQUEST_KERNEL_CONNECT)&irp_stack->Parameters;
-
-	if(disconnect_info && 
-		disconnect_info->RequestConnectionInformation && 
-		disconnect_info->RequestConnectionInformation->RemoteAddress)
-	{
-		remote_addr = ((TRANSPORT_ADDRESS*)(disconnect_info->RequestConnectionInformation->RemoteAddress))->Address;
-		
-		if(remote_addr && remote_addr->AddressType == TDI_ADDRESS_TYPE_IP)
-		{
-			TDI_ADDRESS_IP* ip_address = (TDI_ADDRESS_IP*)remote_addr->Address;
-			char *p;
-			p = (char *)&ip_address->in_addr;
-			DbgPrint("\tDestination: %d.%d.%d.%d:%i ", (UCHAR)p[0], (UCHAR)p[1], (UCHAR)p[2], (UCHAR)p[3], ip_address->sin_port);
-		}
-	}
-
-	if(disconnect_info && disconnect_info->RequestFlags == TDI_DISCONNECT_ABORT)
-		DbgPrint("\tTDI_DISCONNECT_ABORT\n");
-	else if(disconnect_info && disconnect_info->RequestFlags == TDI_DISCONNECT_RELEASE)
-		DbgPrint("\tTDI_DISCONNECT_RELEASE\n");
-
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiSendHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	Pair* pair = NULL;
-	Connection* connection = NULL;
-	
-	pair = FindHashMap( &connection_manager->connection_hash_map, (UINT)irp_stack->FileObject);
-	if( pair )
-	{
-		connection = (Connection*)pair->value;
-		DbgPrintConnection( connection );
-	}
-	else
-	{
-		DbgPrint("\t\t\t\tCould not Find: %08x\n", irp_stack->FileObject);
-	}
-
-	//if( connection->local_address == NULL )
-
-	if( connection )
-	{
-		DbgPrint("\t\t\t\tGetLocalAddress: %08x %08x\n", irp_stack->FileObject, connection->connection);
-		GetLocalAddress( connection_manager->next_device, connection );
-	}
-
-	DbgPrintConnection( connection );
-
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiReceiveHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiSendDatagramHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiReceiveDatagramHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiSetEventHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{	
-	ConnectionContext* connection_context = NULL;
-	PTDI_REQUEST_KERNEL_SET_EVENT callback_context = (PTDI_REQUEST_KERNEL_SET_EVENT)&irp_stack->Parameters;
-
-	DbgPrint("\tSET_EVENT_HANDLER = %s\n", EventCallbackNames[callback_context->EventType]);
-
-	if(ConnectionCallbacks[callback_context->EventType])
-	{
-		if( callback_context->EventHandler == NULL &&
-			callback_context->EventContext == NULL )
-		{
-			Pair* pair = FindHashMap( &connection_manager->callback_hash_map, (UINT)irp_stack->FileObject);
-			if( pair )
-			{
-				connection_context = (ConnectionContext*)pair->value;
-				ExFreePoolWithTag( connection_context, CONNECTION_POOL_TAG );
-				RemoveHashMap( &connection_manager->callback_hash_map, (UINT)irp_stack->FileObject);
-			}
-		}
-		else
-		{
-			connection_context = (ConnectionContext*)ExAllocatePoolWithTag(NonPagedPool, sizeof(ConnectionContext), CONNECTION_POOL_TAG);
-
-			if(connection_context)
-			{
-				connection_context->original_callback = callback_context->EventHandler;
-				connection_context->original_context = callback_context->EventContext;
-				connection_context->file_object = irp_stack->FileObject;
-				connection_context->connection_manager = connection_manager;
-				callback_context->EventHandler = ConnectionCallbacks[callback_context->EventType];
-				callback_context->EventContext = connection_context;
-
-				InsertHashMap( &connection_manager->callback_hash_map, (UINT)irp_stack->FileObject, connection_context );
-			}
-		}
-
-	}
-
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiQueryInformationHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	DbgPrint("TdiQueryInformationHandler = %08x\n", irp_stack->FileObject);
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiSetInformationHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS TdiActionHandler( ConnectionManager* connection_manager, PIRP irp, PIO_STACK_LOCATION irp_stack, CompletionRoutine* completion_routine )
-{
-	return STATUS_SUCCESS;
-}
-
-VOID UnloadDriver( IN PDRIVER_OBJECT driver_object )
-{
-	UNICODE_STRING device_name;
-	Connection* connection = NULL;
-	ConnectionManager* connection_manager = NULL;
-
-	connection_manager = (ConnectionManager*)driver_object->DeviceObject->DeviceExtension;
-
-	DbgPrint("CaptureConnectionMonitor: Unloading\n");
-
-	IoDetachDevice(connection_manager->next_device);
-
-	// Free any trackings to connections that are still open
-	KeAcquireSpinLock( &connection_manager->lock, &g_irq_level );
-
-	connection = connection_manager->connection_head;
-	while( connection != NULL )
-	{
-		Connection* next_connection = connection->next;
-
-		FreeConnection( connection_manager, connection );
-
-		connection = next_connection;
-	}
-
-	// Destroy the hash map of connections
-	CleanupHashMap( &connection_manager->connection_hash_map );
-	CleanupHashMap( &connection_manager->callback_hash_map );
-
-	KeReleaseSpinLock( &connection_manager->lock, g_irq_level );
-
-	RtlInitUnicodeString(&device_name, L"\\DosDevices\\CaptureConnectionMonitor");
-    IoDeleteSymbolicLink(&device_name);
-    if( driver_object->DeviceObject != NULL )
-	{
-		IoDeleteDevice( driver_object->DeviceObject );
-	}
-
-	DbgPrint("CaptureConnectionMonitor: Unloaded\n");
-}
-
-// Main entry point into the driver, is called when the driver is loaded
-NTSTATUS DriverEntry(
-	IN PDRIVER_OBJECT driver_object, 
-	IN PUNICODE_STRING registry_path
-	)
-{
-	int i = 0;
-    NTSTATUS status;
-    UNICODE_STRING driver_name;
-    UNICODE_STRING device_name;
-	UNICODE_STRING attach_device;
-	PDEVICE_OBJECT device_object;
-    ConnectionManager* connection_manager = NULL;
-    
-	// Attach to this device
-	RtlInitUnicodeString( &attach_device, L"\\Device\\Tcp" );
-	// Set the driver name
-    RtlInitUnicodeString( &driver_name, L"\\Device\\CaptureConnectionMonitor" );
-	// Set the device string
-    RtlInitUnicodeString( &device_name, L"\\DosDevices\\CaptureConnectionMonitor");
-
-    // Create and initialize device object
-	// Creates the RegistryManager inside the devices extension
-	status = IoCreateDevice(
-		driver_object,
-        sizeof( ConnectionManager ),
-        &driver_name,
-        FILE_DEVICE_UNKNOWN,
-        0,
-        FALSE,
-        &device_object
-		);
-    if(!NT_SUCCESS(status))
-	{
-		DbgPrint("CaptureConnectionMonitor: ERROR IoCreateDevice ->  \\Device\\CaptureConnectionMonitor - %08x\n", status); 
-        return status;
-	}
-    
-	// Get the connection manager from the devices extension
-	connection_manager = (ConnectionManager*)device_object->DeviceExtension;
-
-	InitialiseHashMap( &connection_manager->connection_hash_map );
-	InitialiseHashMap( &connection_manager->callback_hash_map );
-	connection_manager->connection_head = NULL;
-	connection_manager->connection_tail = NULL;
-	KeInitializeSpinLock( &connection_manager->lock );
-	connection_manager->ready = TRUE;
-
-	// Create a symbolic link between the driver and the device
-    status = IoCreateSymbolicLink( &device_name, &driver_name );
-
-    if(!NT_SUCCESS(status))
-	{
-        DbgPrint("CaptureConnectionMonitor: ERROR IoCreateSymbolicLink ->  \\DosDevices\\CaptureConnectionMonitor - %08x\n", status); 
-        IoDeleteDevice( device_object );
-        return status;
-    }
-
-	for(i = 0; i <= IRP_MJ_MAXIMUM_FUNCTION; i++)
-	{
-		driver_object->MajorFunction[i] = HandleIrp; 
-	}
-	driver_object->DriverUnload = UnloadDriver;
-
-	status = IoAttachDevice(device_object, &attach_device, &connection_manager->next_device);
-
-	if(!NT_SUCCESS(status))
-	{
-		IoDeleteSymbolicLink(&device_name);
-		IoDeleteDevice( device_object );
-		return status;
-	}
-
-	DbgPrint("CaptureConnectionMonitor: Successfully Loaded\n");
-
-    return STATUS_SUCCESS;
-}
-

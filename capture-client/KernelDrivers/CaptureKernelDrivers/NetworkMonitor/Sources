@@ -2,9 +2,17 @@ TARGETNAME=CaptureConnectionMonitor
 TARGETPATH=.
 TARGETTYPE=DRIVER
 
-TARGETLIBS=$(TARGETLIBS)		\
+TARGETLIBS=$(TARGETLIBS)				\
+	$(WNETBASE)\lib\wxp\i386\tdi.lib	\
+	..\Common\i386\Common.lib			\
 
 INCLUDES=..\Common
 
-SOURCES=CaptureConnectionMonitor.c	\
+SOURCES=							\
+	Connection.c					\
+	ConnectionManager.c				\
+	CaptureTdiEventHandlers.c		\
+	CaptureTdiIrpHandlers.c			\
+	EventHandlerManager.c			\
+	CaptureConnectionMonitor.c		\
 	

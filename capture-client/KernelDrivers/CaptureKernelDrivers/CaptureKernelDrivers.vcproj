@@ -100,6 +100,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Common\EventList.c"
+				>
+			</File>
+			<File
+				RelativePath=".\Common\EventList.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Common\EventRingList.c"
 				>
 			</File>
@@ -108,7 +116,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Common\HashMap.c"
+				>
+			</File>
+			<File
 				RelativePath=".\Common\HashMap.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Common\SharedBuffer.c"
+				>
+			</File>
+			<File
+				RelativePath=".\Common\SharedBuffer.h"
 				>
 			</File>
 		</Filter>
@@ -121,6 +141,46 @@
 			</File>
 			<File
 				RelativePath=".\NetworkMonitor\CaptureConnectionMonitor.h"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor\CaptureTdiEventHandlers.c"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor\CaptureTdiEventHandlers.h"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor\CaptureTdiIrpHandlers.c"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor\CaptureTdiIrpHandlers.h"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor\Connection.c"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor\Connection.h"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor\ConnectionManager.c"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor\ConnectionManager.h"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor\EventHandlerManager.c"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkMonitor\EventHandlerManager.h"
 				>
 			</File>
 		</Filter>
