@@ -67,7 +67,7 @@ private:
 
 
 	HANDLE event_count[2];
-	HANDLE driver_handle;
+	HANDLE driver_handle[2];
 	Thread* monitor_thread;
 	bool driver_installed;
 	bool monitor_running;

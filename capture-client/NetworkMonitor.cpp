@@ -71,18 +71,28 @@ NetworkMonitor::NetworkMonitor(void)
 
 	// Load network monitor kernel driver
 	GetFullPathName(L"CaptureConnectionMonitor.sys", MAX_PATH, driver_path, NULL);
-	if(Monitor::installKernelDriver(L"C:\\CaptureConnectionMonitor.sys", L"CaptureConnectionMonitor", L"Capture Connection Monitor"))
+	if(Monitor::installKernelDriver(driver_path, L"CaptureConnectionMonitor", L"Capture Connection Monitor"))
 	{	
-		driver_handle = CreateFile(
-					L"\\\\.\\CaptureConnectionMonitor",
+		driver_handle[0] = CreateFile(
+					L"\\\\.\\TCPCaptureConnectionMonitor",
 					GENERIC_READ | GENERIC_WRITE, 
 					FILE_SHARE_READ | FILE_SHARE_WRITE,
 					0,                     // Default security
 					OPEN_EXISTING,
 					FILE_FLAG_OVERLAPPED,  // Perform asynchronous I/O
 					0);                    // No template
-		if(driver_handle == INVALID_HANDLE_VALUE)
+		driver_handle[1] = CreateFile(
+			L"\\\\.\\UDPCaptureConnectionMonitor",
+			GENERIC_READ | GENERIC_WRITE, 
+			FILE_SHARE_READ | FILE_SHARE_WRITE,
+			0,                     // Default security
+			OPEN_EXISTING,
+			FILE_FLAG_OVERLAPPED,  // Perform asynchronous I/O
+			0);                    // No template
+		if(driver_handle[0] == INVALID_HANDLE_VALUE ||
+			driver_handle[1] == INVALID_HANDLE_VALUE)
 		{
+			Monitor::unInstallKernelDriver();
 			printf("NetworkMonitor: ERROR - CreateFile Failed: %08x\n", GetLastError());
 		} 
 		else 
@@ -99,7 +109,8 @@ NetworkMonitor::~NetworkMonitor(void)
 	if(driver_installed)
 	{
 		driver_installed = false;
-		CloseHandle(driver_handle);	
+		CloseHandle(driver_handle[0]);
+		CloseHandle(driver_handle[1]);	
 	}
 
 	CloseHandle(event_count[0]);
@@ -169,7 +180,7 @@ NetworkMonitor::processUdpEvents(KernelEventList* udp_event_list)
 			{
 				// Remote address
 				const char* address = (char*)data->data;
-				destination_address = StringHelper::multiByteStringToWideString(address, strlen(address));
+				destination_address = StringHelper::multiByteStringToWideString(address, strlen(address)+1);
 			}
 			else if(data->key == 3)
 			{
@@ -230,7 +241,7 @@ NetworkMonitor::processTcpEvents(KernelEventList* tcp_event_list)
 			{
 				// Remote address
 				const char* address = (char*)data->data;
-				destination_address = StringHelper::multiByteStringToWideString(address, strlen(address));
+				destination_address = StringHelper::multiByteStringToWideString(address, strlen(address)+1);
 			}
 			else if(data->key == 3)
 			{
@@ -265,7 +276,7 @@ NetworkMonitor::run()
 
 	// Send the semaphore to the kernel driver. Receive a pointer to the event list
 	// containing the connection events
-	BOOL success = DeviceIoControl(driver_handle,
+	BOOL success = DeviceIoControl(driver_handle[0],
 		GET_SHARED_EVENT_LIST_IOCTL, 
 		event_count[0], 
 		sizeof(HANDLE), 
@@ -274,7 +285,7 @@ NetworkMonitor::run()
 		&received_bytes, 
 		NULL);
 
-	success = DeviceIoControl(driver_handle,
+	success = DeviceIoControl(driver_handle[1],
 		GET_SHARED_EVENT_LIST_IOCTL, 
 		event_count[1], 
 		sizeof(HANDLE), 
