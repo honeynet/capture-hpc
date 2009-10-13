@@ -1,3 +1,5 @@
+#include "Precompiled.h"
+
 #include "Permission.h"
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/find_iterator.hpp>

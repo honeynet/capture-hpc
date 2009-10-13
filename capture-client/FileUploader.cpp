@@ -1,8 +1,8 @@
+#include "Precompiled.h"
+
 #include "FileUploader.h"
 #include "EventController.h"
 #include "Server.h"
-#include <boost/bind.hpp>
-#include <boost/lexical_cast.hpp>
 
 FileUploader::FileUploader(Server& s) : server(s)
 {
@@ -88,7 +88,6 @@ FileUploader::getFileSize(std::wstring file, PLARGE_INTEGER fileSize)
                    NULL);                 // no attr. template
 	if(hFile ==  INVALID_HANDLE_VALUE)
 	{
-		printf("FileUploader: ERROR - Could get file size: %08x\n", GetLastError());
 		return false;
 	} else {
 		BOOL gotSize = FALSE;
@@ -103,7 +102,7 @@ FileUploader::sendFile(std::wstring file)
 {
 	if(!server.isConnected())
 	{
-		printf("FileUploader: ERROR - Not connected to server so not sending file\n");
+		LOG(ERR, "FileUploader: not connected to server so not sending file");
 		return false;
 	}
 
@@ -123,7 +122,7 @@ FileUploader::sendFile(std::wstring file)
 	error = _wfopen_s( &pFileStream, file.c_str(), L"rb");
 	if(error != 0)
 	{
-		printf("FileUploader: ERROR - Could not open file: %08x\n", error);
+		LOG(ERR, "FileUploader: could not open file: %08x", error);
 		busy = false;
 		return false;
 	} else {
@@ -145,7 +144,7 @@ FileUploader::sendFile(std::wstring file)
 
 	if((timeout == WAIT_TIMEOUT) || !fileAccepted)
 	{
-		printf("FileUploader: ERROR - Server did not acknowledge the request to receive a file\n");
+		LOG(ERR, "FileUploader: server did not acknowledge the request to receive a file");
 		busy = false;
 		if(fileOpened)
 		{
@@ -155,7 +154,7 @@ FileUploader::sendFile(std::wstring file)
 		return false;	
 	}	
  
-	printf("FileUplodaer: Sending file: %ls\n", fileName.c_str());
+	LOG(INFO, "FileUplodaer: sending file: %ls", fileName.c_str());
 
 	/* Loop sending the file inside <file-part /> xml messages */
 	size_t offset = 0;	
@@ -191,13 +190,13 @@ FileUploader::sendFilePart(unsigned int offset, unsigned int size)
 		element.addAttribute(L"encoding", L"base64");
 
 		/* Seek to offset and read size bytes */
-		//printf("size: %i\n", size);
-		//printf("offset: %i\n", offset);
+		//LOG(INFO, "size: %i\n", size);
+		//LOG(INFO, "offset: %i\n", offset);
 		int err = fseek(pFileStream, offset, 0);
-		//printf("fseel: %i\n", err);
+		//LOG(INFO, "fseel: %i\n", err);
 		size_t bytesRead = fread(pFilePart , sizeof(char), size, pFileStream);
-		//printf("bytesRead: %i\n", bytesRead);
-		//printf("fread error: %i\n", ferror(pFileStream));
+		//LOG(INFO, "bytesRead: %i\n", bytesRead);
+		//LOG(INFO, "fread error: %i\n", ferror(pFileStream));
 		int end = offset + bytesRead;
 		element.addAttribute(L"part-end", boost::lexical_cast<std::wstring>(end));
 
@@ -207,7 +206,7 @@ FileUploader::sendFilePart(unsigned int offset, unsigned int size)
 		element.setData(pEncodedFilePart, encodedLength);
 
 		/* Send the XML element to the server */
-		//printf("feof: %i\n", feof(pFileStream));
+		//LOG(INFO, "feof: %i\n", feof(pFileStream));
 		if(bytesRead > 0)
 		{
 			server.sendElement(element);

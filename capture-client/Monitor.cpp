@@ -1,14 +1,13 @@
+#include "Precompiled.h"
+
 #include "Monitor.h"
+
 #include "Permission.h"
-#include <string>
-#include <iostream>
-#include <list>
-#include <fstream>
 #include <vector>
 #include <hash_map>
-#include <boost/algorithm/string.hpp>
-#include <boost\regex.hpp>
-
+#include <fstream>
+#include <boost\algorithm\string.hpp>
+#include <boost\range\iterator_range.hpp>
 
 Monitor::Monitor()
 {
@@ -93,7 +92,7 @@ Monitor::installKernelDriver(const std::wstring& driverPath, const std::wstring&
 
     if(hSCManager)
     {
-		//printf("%ls: Kernel driver path: %ls\n", driverName.c_str(), driverPath.c_str());
+		//LOG(INFO, "%ls: Kernel driver path: %ls\n", driverName.c_str(), driverPath.c_str());
         hService = CreateService(hSCManager, driverName.c_str(), 
 								  driverDescription.c_str(), 
                                   SERVICE_START | DELETE | SERVICE_STOP, 
@@ -113,27 +112,27 @@ Monitor::installKernelDriver(const std::wstring& driverPath, const std::wstring&
         {
             if(StartService(hService, 0, NULL))
 			{
-				printf("Loaded kernel driver: %ls\n", driverName.c_str());
+				LOG(INFO, "Loaded kernel driver: %ls\n", driverName.c_str());
 			} else {
 				DWORD err = GetLastError();
 				if(err == ERROR_SERVICE_ALREADY_RUNNING)
 				{
-					printf("Driver already loaded: %ls\n", driverName.c_str());
+					LOG(INFO, "Driver already loaded: %ls\n", driverName.c_str());
 				} else {
-					printf("Error loading kernel driver: %ls - 0x%08x\n", driverName.c_str(), err);
+					LOG(INFO, "Error loading kernel driver: %ls - 0x%08x\n", driverName.c_str(), err);
 					CloseServiceHandle(hSCManager);
 					return false;
 				}
 			}
 		} else {
-			printf("Error loading kernel driver: %ls - 0x%08x\n", driverName.c_str(), GetLastError());
+			LOG(INFO, "Error loading kernel driver: %ls - 0x%08x\n", driverName.c_str(), GetLastError());
 			CloseServiceHandle(hSCManager);
 			return false;
 		}
         CloseServiceHandle(hSCManager);
 		return true;
     }
-	printf("Error loading kernel driver: %ls - OpenSCManager 0x%08x\n", driverName.c_str(), GetLastError());
+	LOG(INFO, "Error loading kernel driver: %ls - OpenSCManager 0x%08x\n", driverName.c_str(), GetLastError());
 	return false;
 }
 
@@ -155,7 +154,7 @@ Monitor::loadExclusionList(const std::wstring& file)
 {
 	std::string line;
 	int lineNumber = 0;
-	DebugPrint(L"Monitor-loadExclusionList: Loading list - %ls\n", file.c_str());
+	LOG(INFO, "Monitor-loadExclusionList: Loading list - %ls\n", file.c_str());
 	std::ifstream exclusionList (file.c_str());
 	if (exclusionList.is_open())
 	{
@@ -181,24 +180,24 @@ Monitor::loadExclusionList(const std::wstring& file)
 						{
 							if(splitLine[1] == L".*" || splitLine[1] == L".+")
 							{
-								printf("%ls ERROR on line %i: The action type is not supposed to be a regular expression\n", file.c_str(), lineNumber);
+								LOG(INFO, "%ls ERROR on line %i: The action type is not supposed to be a regular expression\n", file.c_str(), lineNumber);
 							} else {
 								addExclusion(splitLine[0], splitLine[1], splitLine[2], splitLine[3]);
 							}
 						} else {
-							printf("%ls token ERROR on line %i\n", file.c_str(), lineNumber);
+							LOG(INFO, "%ls token ERROR on line %i\n", file.c_str(), lineNumber);
 						}
 					} else {
-						printf("%ls ERROR no exclusion type (+,-) on line %i\n", file.c_str(), lineNumber);
+						LOG(INFO, "%ls ERROR no exclusion type (+,-) on line %i\n", file.c_str(), lineNumber);
 					}
 				} catch(boost::regex_error r) {				
-					printf("%ls ERROR on line %i\n", file.c_str(), lineNumber);
-					printf("\t%s\n", r.what());
+					LOG(INFO, "%ls ERROR on line %i\n", file.c_str(), lineNumber);
+					LOG(INFO, "\t%s\n", r.what());
 				}
 			}
 		}
 	} else {
-		printf("Could not open file: %ls\n", file.c_str());
+		LOG(INFO, "Could not open file: %ls\n", file.c_str());
 	}
 }
 
@@ -230,7 +229,7 @@ Monitor::prepareStringForExclusion(std::wstring& s)
 void
 Monitor::addExclusion(const std::wstring& excluded, const std::wstring& action, const std::wstring& subject, const std::wstring& object , bool permaneant)
 {
-	//printf("Adding exclusion\n");
+	//LOG(INFO, "Adding exclusion\n");
 	std::wstring action_copy = action; // Action copy
 	try {
 		Permission* p = new Permission();

@@ -1,3 +1,5 @@
+#include "Precompiled.h"
+
 #include "StringHelper.h"
 
 std::wstring 

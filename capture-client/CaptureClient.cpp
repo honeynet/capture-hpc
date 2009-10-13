@@ -1,14 +1,10 @@
-#include <iostream>
-#include <boost/signal.hpp>
-#include <boost/bind.hpp>
-#include <boost/lexical_cast.hpp>
-#include <tchar.h>
+#include "Precompiled.h"
+
 #include "Server.h"
 #include "Visitor.h"
 #include "Analyzer.h"
 #include "ProcessManager.h"
 #include "EventController.h"
-#include "Logger.h"
 #include "OptionsManager.h"
 #include "shellapi.h"
 #include "PluginTest.h"
@@ -35,18 +31,17 @@ class CaptureClient : public Runnable
 public:
 	CaptureClient()
 	{
-		DebugPrintTrace(L"CaptureClient start\n");
+		LOG(INFO, "Capture Client");
+
 		/* Capture needs the SeDriverLoadPrivilege and SeDebugPrivilege to correctly run.
 		   If it doesn't acquire these privileges it exits. DebugPrivilege is used in the
 		   ProcessManager to open handles to existing process. DriverLoadPrivilege allows
 		   Capture to load the kernel drivers. */
 		if(!obtainDebugPrivilege() || !obtainDriverLoadPrivilege())
 		{	
-			printf("\n\nCould not acquire privileges. Make sure you are running Capture with Administrator rights\n");
+			LOG(ERR, "Could not acquire privileges. Make sure you are running Capture with Administrator rights");
 			exit(1);
 		}
-
-		printf("Starting Capture Client 2.6\n");
 
 		/* Create the log directories */
 		CreateDirectory(L"logs",NULL);
@@ -72,12 +67,11 @@ public:
 		analyzer =  new Analyzer(*visitor, *server);
 		Thread* captureClientThread = new Thread(this);
 		captureClientThread->start("CaptureClient");
-		DebugPrintTrace(L"CaptureClient end\n");
 	}
 	
 	~CaptureClient()
 	{
-		DebugPrintTrace(L"~CaptureClient start\n");
+
 		onServerConnectEventConnection.disconnect();
 		onServerPingEventConnection.disconnect();
 		CloseHandle(hStopRunning);
@@ -91,12 +85,12 @@ public:
 		delete ProcessManager::getInstance();
 		delete OptionsManager::getInstance();
 		delete EventController::getInstance();
-		DebugPrintTrace(L"~CaptureClient end\n");
 	}
 
 	void run()
 	{		
-		DebugPrintTrace(L"CaptureClient::run start\n");
+		LOG(INFO, "Client: running");
+
 		try {
 			if((OptionsManager::getInstance()->getOption(L"server") == L"") || 
 				server->connectToServer())
@@ -104,7 +98,7 @@ public:
 				//EventController::getInstance()->receiveServerEvent("<visit url=\"http://www.neowin.net\" program=\"safari\" time=\"30\"/>");
 				/* If Capture is being run in standalone mode start the analyzer now */
 				/* Send file test */
-				printf("---------------------------------------------------------\n");
+				LOG(INFO, "---------------------------------------------------------\n");
 				if((OptionsManager::getInstance()->getOption(L"server") == L""))
 				{
 					analyzer->start();
@@ -118,28 +112,23 @@ public:
 			}
 			SetEvent(hStopRunning);
 		} catch (...) {
-			printf("CaptureClient::run exception\n");	
+			LOG(INFO, "Client: run exception ... wtf?");
 			throw;
 		}
-		DebugPrintTrace(L"CaptureClient::run end\n");
 	}
 
 	/* Event passed when the state of the connection between the server is changed.
 	   When capture becomes disconnected from the server the client exits */
 	void onConnectionStatusChanged(bool connectionStatus)
 	{
-		DebugPrintTrace(L"CaptureClient::onConnectionStatusChanged(bool connectionStatus) start\n");
-		printf("Got connect status changed\n");
-		DebugPrintTrace(L"CaptureClient::onConnectionStatusChanged(bool connectionStatus) end\n");
-		DebugPrintTrace(L"CaptureClient::onConnectionStatusChanged(bool connectionStatus) end\n");
+		LOG(INFO, "Client: server connected = %s", connectionStatus ? "true" : "false");
 	}
 
 	/* Responds to a connect event from the server. It sends the virtual machine
 	   server id and virtual machine id this client is hosted on back to the server */
 	void onServerConnectEvent(const Element& element)
 	{
-		DebugPrintTrace(L"CaptureClient::onServerConnectEvent(const Element& element) start\n");
-		printf("Got connect event\n");
+		LOG(INFO, "Client: received connect event");
 		if(element.getName() == L"connect")
 		{
 			vector<Attribute> attributes;
@@ -152,25 +141,22 @@ public:
 			}
 
 		}
-		DebugPrintTrace(L"CaptureClient::onServerConnectEvent(const Element& element) endn");
 	}
 
 	/* Sends a pong message back to the server when a ping is received */
 	void onServerPingEvent(const Element& element)
 	{
-		DebugPrintTrace(L"CaptureClient::onServerPingEvent(const Element& element) start\n");
+		LOG(INFO, "Client: received ping event, sending pong");
 		if(element.getName() == L"ping")
 		{
 			vector<Attribute> attributes;
 			server->sendXML(L"pong", attributes);
 		}
-		DebugPrintTrace(L"CaptureClient::onServerPingEvent(const Element& element) end\n");
 	}
 
 	/* Get the driver load privilege so that the kernel drivers can be loaded */
 	bool obtainDriverLoadPrivilege()
 	{
-		DebugPrintTrace(L"CaptureClient::obtainDriverLoadPrivilege() start\n");
 		HANDLE hToken;
 		if(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,&hToken))
 		{
@@ -183,7 +169,7 @@ public:
 					lpszPrivilege,   // privilege to lookup 
 					&luid ) )        // receives LUID of privilege
 			{
-				printf("LookupPrivilegeValue error: %u\n", GetLastError() ); 
+				LOG(ERR, "Client: lookup privilege failed - %08x", GetLastError());
 				return false; 
 			}
 
@@ -200,20 +186,17 @@ public:
 				(PTOKEN_PRIVILEGES) NULL, 
 				(PDWORD) NULL) )
 			{ 
-			  printf("AdjustTokenPrivileges error: %u\n", GetLastError() );
-			  DebugPrintTrace(L"CaptureClient::obtainDriverLoadPrivilege() end1\n");
-			  return false; 
+				LOG(ERR, "Client: adjust privilege failed - %08x", GetLastError());
+				return false; 
 			} 
 
 			if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
 			{	
-				printf("The token does not have the specified privilege. \n");
-				DebugPrintTrace(L"CaptureClient::obtainDriverLoadPrivilege() end2\n");
+				LOG(ERR, "Client: token does not have the specified privilege");
 				return false;
 			} 
 		}
 		CloseHandle(hToken);
-		DebugPrintTrace(L"CaptureClient::obtainDriverLoadPrivilege() end3\n");
 		return true;
 
 	}
@@ -222,7 +205,6 @@ public:
 	   except for the system process */
 	bool obtainDebugPrivilege()
 	{
-		DebugPrintTrace(L"CaptureClient::obtainDebugPrivilege() start\n");
 		HANDLE hToken;
 		if(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,&hToken))
 		{
@@ -235,8 +217,7 @@ public:
 					lpszPrivilege,   // privilege to lookup 
 					&luid ) )        // receives LUID of privilege
 			{
-				printf("LookupPrivilegeValue error: %u\n", GetLastError() ); 
-				DebugPrintTrace(L"CaptureClient::obtainDebugPrivilege() end1\n");
+				LOG(ERR, "Client: lookup privilege failed - %08x", GetLastError());
 				return false; 
 			}
 
@@ -253,20 +234,17 @@ public:
 				(PTOKEN_PRIVILEGES) NULL, 
 				(PDWORD) NULL) )
 			{ 
-			  printf("AdjustTokenPrivileges error: %u\n", GetLastError() );
-			  DebugPrintTrace(L"CaptureClient::obtainDebugPrivilege() end2\n");
+			  LOG(ERR, "Client: adjust privilege failed - %08x", GetLastError());
 			  return false; 
 			} 
 
 			if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
 			{	
-				printf("The token does not have the specified privilege. \n");
-				DebugPrintTrace(L"CaptureClient::obtainDebugPrivilege() end3\n");
+				LOG(ERR, "Client: token does not have the specified privilege");
 				return false;
 			} 
 		}
 		CloseHandle(hToken);
-		DebugPrintTrace(L"CaptureClient::obtainDebugPrivilege() end4\n");
 		return true;
 	}
 
@@ -280,6 +258,8 @@ private:
 	boost::signals::connection onServerPingEventConnection;
 	
 };
+
+#include <tchar.h>
 
 int _tmain(int argc, WCHAR* argv[])
 {
@@ -304,22 +284,18 @@ int _tmain(int argc, WCHAR* argv[])
     printf("along with Capture-HPC; if not, write to the Free Software\n");
     printf("Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301,USA\n\n");
 
-	DebugPrintTrace(L"CaptureClient::main start\n");
 	/* Set the current directory to the where the CaptureClient.exe is found */
 	/* This is a bug fix for the VIX library as the runProgramInGuest function
 	   opens the client from within c:\windows\system32 so nothing will load
 	   properly during execution */
 	wchar_t* szFullPath = new wchar_t[4096];
 	GetFullPathName(argv[0], 4096, szFullPath, NULL);
-	DebugPrint(L"Capture: Argv[0] -> %s\n", argv[0]);
-	DebugPrint(L"Capture: GetFullPathName -> %ls\n", szFullPath);
 	std::wstring dir = szFullPath;
 	dir = dir.substr(0, dir.find_last_of(L"\\")+1);
 	SetCurrentDirectory(dir.c_str());
-	DebugPrint(L"Capture: Dir -> %ls\n", dir.c_str());
 	GetCurrentDirectory(4096, szFullPath);
 
-	DebugPrint(L"Capture: Current directory set -> %ls\n", szFullPath);
+	LOG(INFO, "Capture: current directroy set - %ls", szFullPath);
 	
 	/* Delete the log directory */
 	
@@ -389,12 +365,12 @@ int _tmain(int argc, WCHAR* argv[])
 		} else if(option == L"-s") {
 			if((i+1 < argc) && (argv[i+1][0] != '-')) {
 				serverIp = argv[++i];
-				printf("Option: Connect to server ip: %ls\n", serverIp.c_str());
+				LOG(INFO, "Capture: Connect to server ip: %ls", serverIp.c_str());
 			}
 		} else if(option == L"-p") {
 			if((i+1 < argc) && (argv[i+1][0] != '-')) {
 				serverPort = argv[++i];
-				printf("Option: Connect to server port: %ls\n", serverPort.c_str());
+				LOG(INFO, "Capture: Connect to server port: %ls", serverPort.c_str());
 			}
 		} else if(option == L"-a") {
 			if((i+1 < argc) && (argv[i+1][0] != '-')) {
@@ -407,7 +383,7 @@ int _tmain(int argc, WCHAR* argv[])
 		} else if(option == L"-l") {
 			if((i+1 < argc) && (argv[i+1][0] != '-')) {			
 				logSystemEventsFile = argv[++i];
-				printf("Option: Logging system events to %ls\n", logSystemEventsFile.c_str());
+				LOG(INFO, "Capture: Logging system events to %ls", logSystemEventsFile.c_str());
 			}
 		} else {
 			if(argv[i][0] == '-')
@@ -415,18 +391,16 @@ int _tmain(int argc, WCHAR* argv[])
 				for(UINT k = 1; k < option.length(); k++)
 				{
 					if(argv[i][k] == 'c') {
-						printf("Option: Collecting modified files\n");
+						LOG(INFO, "Capture: Collecting modified files");
 						collectModifiedFiles = L"true";
 					} else if(argv[i][k] == 'n') {
 						HMODULE hModWinPcap = LoadLibrary(L"wpcap.dll");
 						if(hModWinPcap == NULL)
 						{
-							printf("NetworkPacketDumper: ERROR - wpcap.dll not found. Check that winpcap is installed on this system\n");
-							printf("Cannot use -n option if winpcap is not installed ... exiting\n");
-							DebugPrintTrace(L"CaptureClient::main end1\n");
+							LOG(ERR, "Capture: wpcap.dll not found. Check that winpcap is installed on this system\nCannot use -n option if winpcap is not installed ... exiting");
 							exit(1);
 						} else {
-							printf("Option: Capturing network packets\n");
+							LOG(INFO, "Capture: Capturing network packets");
 							captureNetworkPackets = L"true";
 							FreeLibrary(hModWinPcap);
 						}
@@ -456,9 +430,7 @@ int _tmain(int argc, WCHAR* argv[])
 			hFind = FindFirstFile(L"7za.exe",&FindFileData);
 			if(hFind == INVALID_HANDLE_VALUE)
 			{
-				printf("Analyzer: ERROR - Could not find 7za.exe (http://www.7-zip.org/) - Not collecting modified files\n");
-				printf("Cannot use -c option if 7za.exe is not in the current directory ... exiting\n");
-				DebugPrintTrace(L"CaptureClient::main end2\n");
+				LOG(ERR, "Could not find 7za.exe - Not collecting modified files\nCannot use -c option if 7za.exe is not in the current directory ... exiting");
 				exit(1);
 			}
 		}
@@ -467,6 +439,5 @@ int _tmain(int argc, WCHAR* argv[])
 	CaptureClient* cp = new CaptureClient();
 	WaitForSingleObject(cp->hStopRunning, INFINITE);
 	delete cp;
-	DebugPrintTrace(L"CaptureClient::main end3\n");
 	return 0;
 }

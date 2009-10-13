@@ -1,8 +1,8 @@
+#include "Precompiled.h"
+
 #include "EventController.h"
 #include "NetworkMonitor.h"
 #include "ProcessManager.h"
-#include <boost/bind.hpp>
-#include "Logger.h"
 #include "EventList.h"
 #include "StringHelper.h"
 
@@ -93,7 +93,7 @@ NetworkMonitor::NetworkMonitor(void)
 			driver_handle[1] == INVALID_HANDLE_VALUE)
 		{
 			Monitor::unInstallKernelDriver();
-			printf("NetworkMonitor: ERROR - CreateFile Failed: %08x\n", GetLastError());
+			LOG(INFO, "NetworkMonitor: ERROR - CreateFile Failed: %08x\n", GetLastError());
 		} 
 		else 
 		{

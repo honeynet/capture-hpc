@@ -1,10 +1,10 @@
+#include "Precompiled.h"
+
 #include "FileMonitor.h"
 #include "ProcessManager.h"
 #include "EventController.h"
 #include "OptionsManager.h"
-#include "Logger.h"
 #include <shlobj.h>
-#include <boost/bind.hpp>
 
 FileMonitor::FileMonitor(void)
 {
@@ -29,10 +29,9 @@ FileMonitor::FileMonitor(void)
 												NULL,
 												&communicationPort );
 		if (IS_ERROR( hResult )) {
-
-			printf( "FileMonitor: ERROR - Could not connect to filter: 0x%08x\n", hResult );
+			LOG(ERR, "FileMonitor: could not connect to filter - %08x", hResult);
 		} else {
-			printf("Loaded filter driver: CaptureFileMonitor\n");
+			LOG(ERR, "FileMonitor: loaded filter driver");
 			driverInstalled = true;
 		}
 		
@@ -113,7 +112,7 @@ FileMonitor::setMonitorModifiedFiles(bool monitor)
 	CreateDirectory(setupFileMonitor.wszLogDirectory,NULL);
 	setupFileMonitor.nLogDirectorySize = (UINT)wcslen(setupFileMonitor.wszLogDirectory)*sizeof(wchar_t);
 	
-	DebugPrint(L"Deleted file directory: %i -> %ls\n", setupFileMonitor.nLogDirectorySize, setupFileMonitor.wszLogDirectory);
+	LOG(INFO, "FileMonitor: deleted file directory - %i -> %ls", setupFileMonitor.nLogDirectorySize, setupFileMonitor.wszLogDirectory);
 
 	command.Command = SetupMonitor;	
 
@@ -197,7 +196,8 @@ FileMonitor::isDirectory(std::wstring filePath)
 void
 FileMonitor::onFileExclusionReceived(const Element& element)
 {
-	DebugPrintTrace(L"FileMonitor::onFileExclusionReceived start\n");
+	LOG(INFO, "FileMonitor: received file exclusion");
+
 	std::wstring excluded = L"";
 	std::wstring fileEventType = L"";
 	std::wstring processPath = L"";
@@ -217,7 +217,6 @@ FileMonitor::onFileExclusionReceived(const Element& element)
 		}
 	}
 	Monitor::addExclusion(excluded, fileEventType, processPath, filePath);
-	DebugPrintTrace(L"FileMonitor::onFileExclusionReceived end\n");
 }
 
 void
@@ -238,7 +237,6 @@ FileMonitor::stop()
 	{
 		monitorRunning = false;
 		WaitForSingleObject(hMonitorStoppedEvent, 1000);
-		DebugPrint(L"FileMonitor::stop() stopping thread.\n");
 		fileMonitorThread->stop();
 		DWORD dwWaitResult;
 		dwWaitResult = fileMonitorThread->wait(5000);
@@ -246,16 +244,14 @@ FileMonitor::stop()
 		{
         // All thread objects were signaled
         case WAIT_OBJECT_0: 
-            DebugPrint(L"FileMonitor::stop() stopped fileMonitorThread.\n");
 			break;
 		case WAIT_TIMEOUT:
-			DebugPrint(L"FileMonitor::stop() stopping fileMonitorThread timed out. Attempting to terminate.\n");
+			LOG(WARNING, "FileMonitor: terminating monitor thread");
 			fileMonitorThread->terminate();
-			DebugPrint(L"FileMonitor::stop() terminated fileMonitorThread.\n");
 			break;
         // An error occurred
         default: 
-            printf("FileMonitor stopping fileMonitorThread failed (%d)\n", GetLastError());
+			break;
 		} 
 		delete fileMonitorThread;
 		free(fileEvents);
@@ -316,7 +312,8 @@ FileMonitor::convertFileObjectNameToDosName(std::wstring fileObjectName)
 void
 FileMonitor::createFilePathAndCopy(std::wstring* logPath, std::wstring* filePath)
 {
-	printf("Copying file: %ls\n", filePath->c_str());
+	LOG(INFO, "Copying file: %ls", filePath->c_str());
+
 	std::wstring drive = filePath->substr(0,filePath->find_first_of(L":"));
 	std::wstring fileName = filePath->substr(filePath->find_last_of(L"\\")+1);
 	std::wstring intermediateDirectory = *logPath;
@@ -336,9 +333,9 @@ FileMonitor::createFilePathAndCopy(std::wstring* logPath, std::wstring* filePath
 		FALSE
 		))
 	{
-		printf("\t... failed: 0x%08x\n", GetLastError());
+		LOG(INFO, "Failed copying file: %08x", GetLastError());
 	} else {
-		printf("\t... done\n");
+		LOG(INFO, "Copied file: %ls", filePath->c_str());
 	}
 }
 
@@ -349,7 +346,6 @@ FileMonitor::copyCreatedFiles()
 	wchar_t currentDirectory[1024];
 	GetFullPathName(L"logs\\modified_files\\", 1024, currentDirectory, NULL);
 	std::wstring logPath = currentDirectory;
-	DebugPrint(L"Modified file directory: %ls\n", logPath.c_str());
 	for(it = modifiedFiles.begin(); it != modifiedFiles.end(); it++)
 	{
 		std::wstring filePath = *it;

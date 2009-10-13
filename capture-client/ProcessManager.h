@@ -22,9 +22,7 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
-#include "CaptureGlobal.h"
 #include "ProcessMonitor.h"
-#include <string>
 #include <hash_map>
 
 /*

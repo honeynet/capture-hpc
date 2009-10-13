@@ -6,7 +6,6 @@
 
 InternetExplorerInstanceBulk::InternetExplorerInstanceBulk(std::wstring fullPathToExe)
 {
-	DebugPrintTrace(L"InternetExplorerInstanceBulk::InternetExplorerInstance(IClassFactory* ie_factory) start\n");
 	m_fullPathToExe = fullPathToExe;
 	
 	ZeroMemory( &m_piProcessInfo, sizeof(m_piProcessInfo) );
@@ -14,21 +13,17 @@ InternetExplorerInstanceBulk::InternetExplorerInstanceBulk(std::wstring fullPath
 	pInternetExplorer = NULL;
 	major = 0;
 	minor = 0;
-	DebugPrintTrace(L"InternetExplorerInstanceBulk::InternetExplorerInstance(IClassFactory* ie_factory) end\n");
 }
 
 InternetExplorerInstanceBulk::~InternetExplorerInstanceBulk(void)
 {
-	DebugPrintTrace(L"InternetExplorerInstanceBulk::~InternetExplorerInstance(void) start\n");
 	CloseHandle(m_piProcessInfo.hProcess);
     CloseHandle(m_piProcessInfo.hThread);
-	DebugPrintTrace(L"InternetExplorerInstanceBulk::~InternetExplorerInstance(void) end\n");
 }
 
 
 DWORD InternetExplorerInstanceBulk::executeProcess() 
 {
-	DebugPrintTrace(L"InternetExplorerInstanceBulk::executeProcess start\n");
 	size_t iMyCounter = 0; 
 	DWORD iReturnVal = 0; 
     DWORD dwExitCode = 0;
@@ -46,7 +41,6 @@ DWORD InternetExplorerInstanceBulk::executeProcess()
                                   &siStartupInfo, &m_piProcessInfo))
      {
 		/* CreateProcess failed */
-		DebugPrint(L"InternetExplorerInstanceBulk::executeProcess error creating process\n");
 		iReturnVal = GetLastError();
 	 } else {
 		WaitForInputIdle(m_piProcessInfo.hProcess, 20000);
@@ -62,14 +56,11 @@ DWORD InternetExplorerInstanceBulk::executeProcess()
 		}
 		if(waitTimeInSec >= maxWaitTimeInSec) {
 			iReturnVal = -5;
-			DebugPrint(L"InternetExplorerInstanceBulk::executeProcess created Process failed\n");
 		} else {
-			DebugPrint(L"InternetExplorerInstanceBulk::executeProcess created Process\n");
 		}
 
 		
 	 }
-	 DebugPrintTrace(L"InternetExplorerInstanceBulk::executeProcess end\n");
      return iReturnVal;
 }
 
@@ -112,19 +103,16 @@ bool InternetExplorerInstanceBulk::isOpen()
 
 bool InternetExplorerInstanceBulk::setCurrentWebBrowserIF()
 {
-	DebugPrintTrace(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF() start\n");
 	CoInitializeEx(NULL,COINIT_MULTITHREADED);
     HRESULT hr;
     SHDocVw::IShellWindowsPtr spSHWinds; 
     hr = spSHWinds.CreateInstance (__uuidof(SHDocVw::ShellWindows)); 
     
 	if (FAILED (hr)) {
-		DebugPrint(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF unable to create shellWindows\n");    
 		return false;
 	} else {
 
 		_ASSERT (spSHWinds != NULL);
-		DebugPrint(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF created shellWindows\n");    
 	    
 		if(spSHWinds!=NULL) {
 			try {
@@ -147,11 +135,9 @@ bool InternetExplorerInstanceBulk::setCurrentWebBrowserIF()
 						GetWindowThreadProcessId(hwndIE, &dProcessId);
 
 						if(dProcessId==m_piProcessInfo.dwProcessId) {
-							DebugPrint(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF found our window\n");
 							pInternetExplorer = pWebBrowser;
 							spSHWinds.Release();
 							CoUninitialize();
-							DebugPrintTrace(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF() end1\n");
 							return true;
 						}
 
@@ -160,21 +146,18 @@ bool InternetExplorerInstanceBulk::setCurrentWebBrowserIF()
 					}
 				} 
 			} catch(...) {
-				DebugPrint(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF() ShelLWindows COM Exception...\n");
 			}
 			spSHWinds.Release();
 		}
 	}
 	CoUninitialize(); 
 
-	DebugPrintTrace(L"InternetExplorerInstanceBulk::setCurrentWebBrowserIF() end2\n");
     return false;
 }
 
 void 
 InternetExplorerInstanceBulk::visitUrl(Url* url)
 {
-	DebugPrintTrace(L"InternetExplorerInstanceBulk::visitUrl(Url* url) start\n");
 	hVisiting = CreateEvent(NULL, false, NULL, NULL);
 	dwNetworkErrorCode = 0;
 	major = CAPTURE_VISITATION_OK;
@@ -216,7 +199,6 @@ InternetExplorerInstanceBulk::visitUrl(Url* url)
 				
 				if(dwWait == WAIT_TIMEOUT)
 				{
-					DebugPrint(L"Timeout visiting URL");
 					url->setMajorErrorCode(CAPTURE_VISITATION_TIMEOUT_ERROR);
 					wait = false;
 				} else {
@@ -259,13 +241,11 @@ InternetExplorerInstanceBulk::visitUrl(Url* url)
 	}
 
 	CloseHandle(hVisiting);
-	DebugPrintTrace(L"InternetExplorerInstanceBulk::visitUrl(Url* url) end\n");
 }
 
 bool
 InternetExplorerInstanceBulk::Close()
 {
-	DebugPrintTrace(L"InternetExplorerInstanceBulk::Close() start\n");
 	
 	//first the process denoted by this process handler
 	EnumWindows(InternetExplorerInstanceBulk::EnumWindowsCloseProc, (LPARAM) this);
@@ -275,7 +255,6 @@ InternetExplorerInstanceBulk::Close()
 		return false;
 	}
 
-	DebugPrintTrace(L"InternetExplorerInstanceBulk::Close() end\n");
 	return true;
 }
 
@@ -310,7 +289,6 @@ InternetExplorerInstanceBulk::Invoke(
     switch (dispIdMember)
     {
 	case DISPID_BEFORENAVIGATE2:
-		DebugPrint(L"BeforeNavigate2");
 		/* Put the first url (the main one) into a variable */
 		if(mainURL.vt == VT_EMPTY)
 		{
@@ -318,18 +296,14 @@ InternetExplorerInstanceBulk::Invoke(
 		}
 		break;
 	case DISPID_NAVIGATECOMPLETE2:		
-		DebugPrint(L"NavigateComplete2");
 		break;
 	case 283:
-		DebugPrint(L"DocumentComplete");
 		SetEvent(hVisiting);
 		break;
 	case DISPID_DOCUMENTCOMPLETE:
-		DebugPrint(L"DocumentComplete");
 		SetEvent(hVisiting);
 		break;
 	case DISPID_NAVIGATEERROR:		
-		DebugPrint(L"NavigateError");
 		url = pDispParams->rgvarg[3].pvarVal;		
 		HRESULT result;
 		/* Compare the main url stored to the one this error msg is for
@@ -350,7 +324,6 @@ InternetExplorerInstanceBulk::Invoke(
 		}
 		break;
 	case DISPID_ONQUIT:
-		DebugPrint(L"onQuit");
 		exited = true;
 		SetEvent(hVisiting);
 		break;

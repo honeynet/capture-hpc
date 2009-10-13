@@ -1,5 +1,11 @@
-#include "Logger.h"
+#include "Precompiled.h"
+
 #include <algorithm>
+
+#include <strsafe.h>
+
+bool Logger::debug_output_enabled = true;
+bool Logger::console_output = false;
 
 Logger::Logger(void)
 {
@@ -26,23 +32,28 @@ Logger::getInstance()
 std::string
 Logger::convertToMultiByteString(const std::wstring& message, size_t& charsConverted)
 {
+	std::string converted_message;
+
 	charsConverted = 0;
+
 	int length = static_cast<int>(message.length());
 	int mbsize = WideCharToMultiByte(CP_UTF8, 0, message.c_str(), length, NULL, 0, NULL, NULL);
 	if (mbsize > 0)
 	{	
-		char* szMessage = (char*)malloc(mbsize);
-		int bytes = WideCharToMultiByte(CP_UTF8, 0, message.c_str(), length, szMessage, mbsize, NULL, NULL);
-		if(bytes == 0)
-		{
-			DebugPrint(L"Logger-convertToMultiByteString: WideCharToMultiByte ERROR - %08x allocated: %i\n", GetLastError(), mbsize);
-		}
+		char* buffer = (char*)malloc(mbsize);
+		int bytes = WideCharToMultiByte(CP_UTF8, 0, message.c_str(), length, 
+			buffer, mbsize, NULL, NULL);
 		charsConverted = bytes;
-		return szMessage;
-	} else {
-		DebugPrint(L"Logger-convertToMultiByteString: WideCharToMultiByte ERROR - %08x allocated: %i\n", GetLastError(), mbsize);
+		converted_message = buffer;
+		free(buffer);
 	}
-	return "";
+	
+	if(converted_message.empty())
+	{
+		LOG(ERR, "Logger: Multi-byte conversion error %08x allocated: %i", GetLastError(), mbsize);
+	}
+
+	return converted_message;
 }
 
 void
@@ -117,12 +128,13 @@ Logger::openLogFile(const std::wstring& file)
 					FILE_ATTRIBUTE_NORMAL,
 					NULL
 					);
+		
 		if(hLog != INVALID_HANDLE_VALUE)
 		{
-			DebugPrint(L"Logger-openLogFile: Log file successfully opened - %ls\n", szFullPath);
+			LOG(INFO, "Logger: Log file opened - %ls", szFullPath);
 			fileOpen = true;
 		} else {
-			printf("Logger: ERROR %08x - Could not open log file %ls\n", GetLastError(), szFullPath);
+			LOG(ERR, "Logger: Log file not opened - %08x - %ls", GetLastError(), szFullPath);
 		}
 		delete [] pFileName;
 		delete [] szFullPath;
@@ -136,5 +148,39 @@ Logger::closeLogFile()
 	{
 		CloseHandle(hLog);
 		fileOpen = false;
+	}
+}
+
+static const char* OutputTypeStrings[] = 
+{
+	"INFO: ",
+	"WARNING: ",
+	"ERROR: "
+};
+
+void Logger::DebugOutput(OutputType type, const char* format, ... )
+{
+	if(!Logger::debug_output_enabled)
+		return;
+
+	std::string output = OutputTypeStrings[type];
+
+	char buffer[256];
+
+	va_list arg_list;
+	va_start(arg_list, format);
+	StringCchVPrintfA(buffer, 256, format, arg_list);
+	va_end(arg_list);
+
+	output += buffer;
+	output += "\n";
+
+	if(Logger::console_output)
+	{
+		LOG(INFO, output.c_str());
+	}
+	else
+	{
+		OutputDebugStringA(output.c_str());
 	}
 }

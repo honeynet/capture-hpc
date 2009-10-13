@@ -21,10 +21,11 @@
  *  along with Capture; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
+#include "Precompiled.h"
+
 #include "Server.h"
 #include "ServerReceive.h"
 
-#include <boost/bind.hpp>
 #include <winsock2.h>
 #include <Ws2tcpip.h>
 #include <stdlib.h>
@@ -80,7 +81,7 @@ Server::connectToServer(bool startSenderAndReciever)
 		aiHints.ai_family = AF_INET;
 		aiHints.ai_socktype = SOCK_STREAM;
 		aiHints.ai_protocol = IPPROTO_TCP;
-		DebugPrint(L"Connecting to: %ls:%s\n", serverAddress.c_str(), sport);
+		LOG(INFO, "Connecting to: %ls:%s\n", serverAddress.c_str(), sport);
 		wcstombs_s(&charsConverted, szServerAddress, 512, serverAddress.c_str(), serverAddress.length() + 1);
 		if ((getaddrinfo(szServerAddress, sport, &aiHints, &aiList)) == 0)
 		{
@@ -95,7 +96,7 @@ Server::connectToServer(bool startSenderAndReciever)
 				{
 					u_long iMode = 1;
 					//ioctlsocket(serverSocket, FIONBIO, &iMode);
-					printf("Connected to server at %s\n", szServerAddress);
+					LOG(INFO, "Connected to server at %s\n", szServerAddress);
 					setConnected(true);
 					if(startSenderAndReciever)
 					{
@@ -104,9 +105,9 @@ Server::connectToServer(bool startSenderAndReciever)
 					freeaddrinfo(aiList);
 					return true;
 				} else {
-					printf("Could not connect to server\n");
-					printf("\tSocket error: %i\n", WSAGetLastError());
-					printf("Retrying...\n");
+					LOG(INFO, "Could not connect to server\n");
+					LOG(INFO, "\tSocket error: %i\n", WSAGetLastError());
+					LOG(INFO, "Retrying...\n");
 					Sleep(1000);
 					count++;
 				}
@@ -121,7 +122,6 @@ Server::connectToServer(bool startSenderAndReciever)
 void
 Server::sendMessage(const std::wstring& message)
 {
-	DebugPrintTrace(L"Server::sendMessage(const std::wstring& message) start\n");
 	if(isConnected())
 	{
 
@@ -134,55 +134,48 @@ Server::sendMessage(const std::wstring& message)
 			EnterCriticalSection(&sendQueueLock);
 			result = send(serverSocket, szMessage, bytes, 0);	
 			LeaveCriticalSection(&sendQueueLock);
-			DebugPrint(L"Capture-Server-sendMessage: Allocated: %i, Converted: %i, Sent: %i\n", mbsize, bytes, result);
+			LOG(INFO, "Capture-Server-sendMessage: Allocated: %i, Converted: %i, Sent: %i\n", mbsize, bytes, result);
 			if(result == SOCKET_ERROR)
 			{
-				DebugPrint(L"Capture-Server-sendMessage: Socket Error %i: %s\n", WSAGetLastError(), szMessage);
+				LOG(INFO, "Capture-Server-sendMessage: Socket Error %i: %s\n", WSAGetLastError(), szMessage);
 				setConnected(false);
 			}
 			free(szMessage);
 		}	
 	} else {
-		DebugPrint(L"Server sendMessage not connected\n");
+		LOG(INFO, "Server sendMessage not connected\n");
 	}
-	DebugPrintTrace(L"Server::sendMessage(const std::wstring& message) end\n");
 }
 
 void
 Server::sendData(const char* data, size_t length)
 {
-	DebugPrintTrace(L"Server::sendData(const char* data, size_t length) start\n");
 	if(isConnected())
 	{
 		int result = send(serverSocket, data, static_cast<int>(length), 0);
 		if(result == SOCKET_ERROR)
 		{
-			DebugPrint(L"Capture-Server-sendData: Socket Error %i", WSAGetLastError());
+			LOG(INFO, "Capture-Server-sendData: Socket Error %i", WSAGetLastError());
 			setConnected(false);
 		}
 	} else {
-		DebugPrint(L"Server sendData not connected\n");
+		LOG(INFO, "Server sendData not connected\n");
 	}
-	DebugPrintTrace(L"Server::sendData(const char* data, size_t length) end\n");
 }
 
 void
 Server::sendElement(const Element& element)
 {
-	DebugPrintTrace(L"Server::sendElement(const Element& element) start\n");
 	if(!isConnected())
 	{
-		DebugPrintTrace(L"Server::sendElement(const Element& element) end1\n");
 		return;
 	}
 	sendMessage(element.toString());
-	DebugPrintTrace(L"Server::sendElement(const Element& element) end2\n");
 }
 
 std::wstring
 Server::xml_escape(const std::wstring& xml)
 {
-	DebugPrintTrace(L"Server::xml_escape(const std::wstring& xml) start\n");
 	std::wstring escaped = xml;
 	for(unsigned int i = 0; i < xml.length(); i++)
 	{
@@ -198,17 +191,14 @@ Server::xml_escape(const std::wstring& xml)
 			escaped = escaped.replace(i, 1, L"&apos;");
 		}
 	}
-	DebugPrintTrace(L"Server::xml_escape(const std::wstring& xml) end\n");
 	return escaped;
 }
 
 void
 Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& vAttributes)
 {
-	DebugPrintTrace(L"Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& vAttributes) start\n");
 	if(!isConnected())
 	{
-		DebugPrintTrace(L"Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& vAttributes) end1\n");
 		return;
 	}
 	//EnterCriticalSection(&sendQueueLock);
@@ -226,7 +216,6 @@ Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& v
 	xmlDocument += L"/>\r\n";
 	sendMessage(xmlDocument);
 	//LeaveCriticalSection(&sendQueueLock);
-	DebugPrintTrace(L"Server::sendXML(const std::wstring& elementName, const std::vector<Attribute>& vAttributes) end2\n");
 }
 
 void

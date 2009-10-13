@@ -41,13 +41,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="D:\Libraries\expatpp\expat\lib;D:\Libraries\expatpp\src_pp;D:\Projects\capture\vendor\wpcap\Include;&quot;D:\Libraries\Boost\include\boost-1_36&quot;"
+				AdditionalIncludeDirectories="&quot;C:\projects\capture-hpc\capture-hpc\vendor\expatpp\expat\lib&quot;;&quot;C:\projects\capture-hpc\capture-hpc\vendor\expatpp\src_pp&quot;;&quot;C:\projects\capture-hpc\capture-hpc\vendor\wpcap\Include&quot;;C:\projects\boost\boost_1_40_0"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;WARN;CAPTURE_DEBUG"
 				IgnoreStandardIncludePath="false"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough="Precompiled.h"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
@@ -65,9 +66,9 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/VERBOSE:LIB"
-				AdditionalDependencies="kernel32.lib Ws2_32.lib Advapi32.lib Psapi.lib C:\WinDDK\6000\lib\wxp\i386\fltLib.lib shlwapi.lib expatpp.lib shell32.lib Urlmon.lib $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib Ws2_32.lib Advapi32.lib Psapi.lib C:\WinDDK\7600.16385.0\lib\wxp\i386\fltLib.lib shlwapi.lib expatpp.lib shell32.lib Urlmon.lib $(NOINHERIT)"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="D:\Libraries\expatpp\vc_pp\expatpp\DebugMTDLL;D:\Libraries\Boost\lib"
+				AdditionalLibraryDirectories="&quot;C:\projects\capture-hpc\capture-hpc\vendor\expatpp\vc_pp\expatpp\DebugMTDLL&quot;;C:\projects\boost\boost_1_40_0\stage\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				RandomizedBaseAddress="1"
@@ -266,6 +267,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Time.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Updater.cpp"
 				>
 			</File>
@@ -364,6 +369,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Precompiled.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ProcessManager.h"
 				>
 			</File>
@@ -393,6 +402,10 @@
 			</File>
 			<File
 				RelativePath=".\Thread.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Time.h"
 				>
 			</File>
 			<File

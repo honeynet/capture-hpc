@@ -1,5 +1,6 @@
+#include "Precompiled.h"
+
 #include "Url.h"
-#include <boost/lexical_cast.hpp>
 
 const wchar_t * Url::hexenc[] = {
 	L"%00", L"%01", L"%02", L"%03", L"%04", L"%05", L"%06", L"%07",

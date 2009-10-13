@@ -22,15 +22,12 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
-#include "CaptureGlobal.h"
 #include "Thread.h"
 #include "Element.h"
 #include "Observable.h"
-#include <string>
 #include <queue>
 #include <vector>
 #include <hash_map>
-#include <boost/signal.hpp>
 
 class Url;
 class ApplicationPlugin;

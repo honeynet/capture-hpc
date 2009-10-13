@@ -22,8 +22,14 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
-#include "CaptureGlobal.h"
-#include <string>
+
+enum OutputType
+{
+	INFO,
+	WARNING,
+	ERR
+};
+
 /*
 	Class: Logger
 
@@ -49,6 +55,16 @@ public:
 	inline const std::wstring& getLogFileName() { return logFileName; }
 	inline const std::wstring& getLogFullPath() { return logFullPath; }
 
+	static void DebugOutput(OutputType type, const char* format, ... );
+
+public:
+
+	/// Whether output debug info is enabled or not
+	static bool debug_output_enabled;
+	/// Whether debug info should be output to the console
+	/// or to the windows debug log channel
+	static bool console_output;
+
 private:
 	static bool instanceCreated;
     static Logger *logger;
@@ -61,3 +77,5 @@ private:
 	std::wstring logFileName;
 	HANDLE hLog;
 };
+
+#define LOG(type, format, ... ) Logger::DebugOutput(type, format,  __VA_ARGS__ );

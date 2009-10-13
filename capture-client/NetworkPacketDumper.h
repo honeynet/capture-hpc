@@ -22,10 +22,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
-#include "CaptureGlobal.h"
 #include <pcap.h>
 
-#include <string>
 #include <hash_map>
 #include "Thread.h"
 #include "Monitor.h"

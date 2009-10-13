@@ -1,7 +1,8 @@
+#include "Precompiled.h"
+
 #include "RegistryMonitor.h"
 #include "EventController.h"
 #include "ProcessManager.h"
-#include <boost/bind.hpp>
 
 /*
 typedef struct _REGISTRY_EVENT
@@ -63,7 +64,7 @@ RegistryMonitor::RegistryMonitor(void)
 					FILE_FLAG_OVERLAPPED,  // Perform asynchronous I/O
 					0);                    // No template
 		if(INVALID_HANDLE_VALUE == hDriver) {
-			printf("RegistryMonitor: ERROR - CreateFile Failed: %i\n", GetLastError());
+			LOG(INFO, "RegistryMonitor: ERROR - CreateFile Failed: %i\n", GetLastError());
 		} else {
 			driverInstalled = true;
 		}
@@ -142,7 +143,6 @@ RegistryMonitor::connect_onRegistryEvent(const signal_registryEvent::slot_type& 
 void
 RegistryMonitor::onRegistryExclusionReceived(const Element& element)
 {
-	DebugPrintTrace(L"RegistryMonitor::onRegistryExclusionReceived start\n");
 	std::wstring excluded = L"";
 	std::wstring registryEventType = L"";
 	std::wstring processPath = L"";
@@ -162,7 +162,6 @@ RegistryMonitor::onRegistryExclusionReceived(const Element& element)
 		}
 	}
 	Monitor::addExclusion(excluded, registryEventType, processPath, registryPath);
-	DebugPrintTrace(L"RegistryMonitor::onRegistryExclusionReceived end\n");
 }
 
 void
@@ -183,7 +182,7 @@ RegistryMonitor::stop()
 	{	
 		monitorRunning = false;
 		WaitForSingleObject(hMonitorStoppedEvent, 1000);
-		DebugPrint(L"RegistryMonitor::stop() stopping thread.\n");
+		LOG(INFO, "RegistryMonitor::stop() stopping thread.\n");
 		registryMonitorThread->stop();
 		DWORD dwWaitResult;
 		dwWaitResult = registryMonitorThread->wait(5000);
@@ -191,16 +190,16 @@ RegistryMonitor::stop()
 		{
         // All thread objects were signaled
         case WAIT_OBJECT_0: 
-            DebugPrint(L"RegistryMonitor::stop() stopped registryMonitorThread.\n");
+            LOG(INFO, "RegistryMonitor::stop() stopped registryMonitorThread.\n");
 			break;
 		case WAIT_TIMEOUT:
-			DebugPrint(L"RegistryMonitor::stop() stopping registryMonitorThread timed out. Attempting to terminate.\n");
+			LOG(INFO, "RegistryMonitor::stop() stopping registryMonitorThread timed out. Attempting to terminate.\n");
 			registryMonitorThread->terminate();
-			DebugPrint(L"RegistryMonitor::stop() terminated registryMonitorThread.\n");
+			LOG(INFO, "RegistryMonitor::stop() terminated registryMonitorThread.\n");
 			break;
         // An error occurred
         default: 
-            printf("RegistryMonitor stopping registryMonitorThread failed (%d)\n", GetLastError());
+            LOG(INFO, "RegistryMonitor stopping registryMonitorThread failed (%d)\n", GetLastError());
 		} 
 
 

@@ -6,25 +6,20 @@
 
 InternetExplorerInstance::InternetExplorerInstance(IClassFactory* ie_factory)
 {
-	DebugPrintTrace(L"InternetExplorerInstance::InternetExplorerInstance(IClassFactory* ie_factory) start\n");
 	internet_explorer_factory = ie_factory;
 	major = 0;
 	minor = 0;
-	DebugPrintTrace(L"InternetExplorerInstance::InternetExplorerInstance(IClassFactory* ie_factory) end\n");
 }
 
 InternetExplorerInstance::~InternetExplorerInstance(void)
 {
-	DebugPrintTrace(L"InternetExplorerInstance::~InternetExplorerInstance(void) start\n");
 
-	DebugPrintTrace(L"InternetExplorerInstance::~InternetExplorerInstance(void) end\n");
 }
 
 
 void 
 InternetExplorerInstance::visitUrl(Url* url)
 {
-	DebugPrintTrace(L"InternetExplorerInstance::visitUrl(Url* url) start\n");
 	HRESULT hr;
 	hVisiting = CreateEvent(NULL, false, NULL, NULL);
 	dwNetworkErrorCode = 0;
@@ -113,13 +108,11 @@ InternetExplorerInstance::visitUrl(Url* url)
 	}
 	
 	
-	DebugPrintTrace(L"InternetExplorerInstance::visitUrl(Url* url) end\n");
 }
 
 bool
 InternetExplorerInstance::Close()
 {
-	DebugPrintTrace(L"InternetExplorerInstance::Close() start\n");
 	// Closes the IE window, except for the last one
 	HRESULT hr = pInternetExplorer->Quit();
 
@@ -128,7 +121,6 @@ InternetExplorerInstance::Close()
 	CloseHandle(hVisiting);
 	CoUninitialize();
 
-	DebugPrintTrace(L"InternetExplorerInstance::Close() end\n");
 	return (hr == S_OK);
 }
 
@@ -143,13 +135,12 @@ InternetExplorerInstance::Invoke(
 									 EXCEPINFO *pExcepInfo,
 									 UINT *puArgErr)
  {
-	DebugPrintTrace(L"IInternetExplorerInstance::Invoke(...) start\n");
 	VARIANT * vt_statuscode;
 	VARIANT * url;
     switch (dispIdMember)
     {
 	case DISPID_BEFORENAVIGATE2:
-		DebugPrint(L"BeforeNavigate2");
+		OutputDebugStringA("BeforeNavigate2");
 		/* Put the first url (the main one) into a variable */
 		if(mainURL.vt == VT_EMPTY)
 		{
@@ -158,18 +149,18 @@ InternetExplorerInstance::Invoke(
 		
 		break;
 	case DISPID_NAVIGATECOMPLETE2:		
-		DebugPrint(L"NavigateComplete2");
+		OutputDebugStringA("NavigateComplete2");
 		break;
 	case 283:
-		DebugPrint(L"DocumentComplete");
+		OutputDebugStringA("DocumentComplete");
 		SetEvent(hVisiting);
 		break;
 	case DISPID_DOCUMENTCOMPLETE:
-		DebugPrint(L"DocumentComplete");
+		OutputDebugStringA("DocumentComplete");
 		SetEvent(hVisiting);
 		break;
 	case DISPID_NAVIGATEERROR:		
-		DebugPrint(L"NavigateError");
+		OutputDebugStringA("NavigateError");
 		url = pDispParams->rgvarg[3].pvarVal;		
 		HRESULT result;
 		/* Compare the main url stored to the one this error msg is for
@@ -190,14 +181,13 @@ InternetExplorerInstance::Invoke(
 		}
 		break;
 	case DISPID_ONQUIT:
-		DebugPrint(L"onQuit");
+		OutputDebugStringA("onQuit");
 		exited = true;
 		SetEvent(hVisiting);
 		break;
 	default:
-		DebugPrint(L"default");
+		OutputDebugStringA("default");
 		break;
 	}
-	DebugPrintTrace(L"IInternetExplorerInstance::Invoke(...) end\n");
 	return(DISP_E_UNKNOWNINTERFACE);
  }

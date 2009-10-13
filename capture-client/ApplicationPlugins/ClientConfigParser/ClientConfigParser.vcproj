@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="C:\program files\boost\boost_1_35_0;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
+				AdditionalIncludeDirectories="C:\projects\boost\boost_1_40_0;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;CAPTURE_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"

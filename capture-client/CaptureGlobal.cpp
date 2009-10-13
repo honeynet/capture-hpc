@@ -1,10 +1,8 @@
-#include "CaptureGlobal.h"
-#include <strsafe.h>
-#include <boost/lexical_cast.hpp>
+#include "Precompiled.h"
 
-#ifdef CAPTURE_DEBUG
-#define FUNCTION_TRACE
-#endif
+#include <strsafe.h>
+
+#include <boost/lexical_cast.hpp>
 
 #define XX 100
 
@@ -27,50 +25,6 @@ const int Base64::b64_index[256] = {
 		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
 		XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
 	};
-
-
-
-void DebugPrint(LPCTSTR pszFormat, ... )
-{
-	#ifdef CAPTURE_DEBUG
-		wchar_t szOutput[MAX_PATH * 2];
-		va_list argList;
-		va_start(argList, pszFormat);
-		StringCchVPrintf(szOutput, MAX_PATH*2, pszFormat, argList);
-		va_end(argList);
-		printf("%ls\n", szOutput);
-		//OutputDebugString(szOutput);
-	
-	#endif
-}
-
-void DebugPrintTrace(LPCTSTR pszFormat, ... )
-{
-	#ifdef FUNCTION_TRACE
-		wchar_t szOutput[MAX_PATH * 2];
-		va_list argList;
-		va_start(argList, pszFormat);
-		StringCchVPrintf(szOutput, MAX_PATH*2, pszFormat, argList);
-		va_end(argList);
-		printf("%ls\n", szOutput);
-		//OutputDebugString(szOutput);
-	
-	#endif
-}
-
-void Warn(LPCTSTR pszFormat, ... )
-{
-	#ifdef WARN
-		wchar_t szOutput[MAX_PATH * 2];
-		va_list argList;
-		va_start(argList, pszFormat);
-		StringCchVPrintf(szOutput, MAX_PATH*2, pszFormat, argList);
-		va_end(argList);
-		printf("%ls\n", szOutput);
-		//OutputDebugString(szOutput);
-	
-	#endif
-}
 
 char*
 Base64::decode(const char* encodedBuffer)
@@ -139,52 +93,4 @@ Base64::encode(char* cleartextBuffer, unsigned int length, size_t* encodedLength
 	}
 	*encodedLength = k;
 	return encodedBuffer;
-}
-
-std::wstring
-Time::timefieldToString(const TIME_FIELDS& time)
-{
-	std::wstring stime;
-	stime += boost::lexical_cast<std::wstring>(time.wDay);
-	stime += L"/";
-	stime += boost::lexical_cast<std::wstring>(time.wMonth);
-	stime += L"/";
-	stime += boost::lexical_cast<std::wstring>(time.wYear);
-	stime += L" ";
-	stime += boost::lexical_cast<std::wstring>(time.wHour);
-	stime += L":";
-	stime += boost::lexical_cast<std::wstring>(time.wMinute);
-	stime += L":";
-	stime += boost::lexical_cast<std::wstring>(time.wSecond);
-	stime += L".";
-	stime += boost::lexical_cast<std::wstring>(time.wMilliseconds);
-	return stime;
-}
-
-std::wstring
-Time::systemtimeToString(const SYSTEMTIME& time)
-{
-	std::wstring stime;
-	stime += boost::lexical_cast<std::wstring>(time.wDay);
-	stime += L"/";
-	stime += boost::lexical_cast<std::wstring>(time.wMonth);
-	stime += L"/";
-	stime += boost::lexical_cast<std::wstring>(time.wYear);
-	stime += L" ";
-	stime += boost::lexical_cast<std::wstring>(time.wHour);
-	stime += L":";
-	stime += boost::lexical_cast<std::wstring>(time.wMinute);
-	stime += L":";
-	stime += boost::lexical_cast<std::wstring>(time.wSecond);
-	stime += L".";
-	stime += boost::lexical_cast<std::wstring>(time.wMilliseconds);
-	return stime;
-}
-
-std::wstring
-Time::getCurrentTime()
-{
-	SYSTEMTIME st;
-	GetLocalTime(&st);
-	return systemtimeToString(st);
 }

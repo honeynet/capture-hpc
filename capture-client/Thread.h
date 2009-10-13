@@ -68,7 +68,7 @@ public:
 
 	~Thread() {
 		if(hStopEvent!=NULL) {
-			printf("Resetting hStopEvent");
+			LOG(INFO, "Resetting hStopEvent");
 			ResetEvent(hStopEvent);
 		}
 		_threadObj = NULL;

@@ -1,3 +1,5 @@
+#include "Precompiled.h"
+
 #include "PluginTest.h"
 
 PluginTest::PluginTest(void)
@@ -28,14 +30,14 @@ void PluginTest::loadTest() {
 
 		if(visitEvent->isError()) {
 			
-			printf("PLUGIN TEST: Visit Event Error %d", visitEvent->getErrorCode());
+			LOG(INFO, "PLUGIN TEST: Visit Event Error %d", visitEvent->getErrorCode());
 		}
 		
 		
 		for each(Url* url in visitEvent->getUrls())
 		{
 			if(url->getMajorErrorCode()!=0) {
-				printf("PLUGIN TEST: URL ERROR %d\n",url->getMajorErrorCode());
+				LOG(INFO, "PLUGIN TEST: URL ERROR %d\n",url->getMajorErrorCode());
 			}
 		}
 
@@ -48,11 +50,9 @@ void PluginTest::loadTest() {
 std::wstring
 PluginTest::errorCodeToString(DWORD errorCode)
 {
-	DebugPrintTrace(L"Analyzer::errorCodeToString(DWORD errorCode) start\n");
 	wchar_t szTemp[16];
 	swprintf_s(szTemp, 16, L"%08x", errorCode);
 	std::wstring error = szTemp;
-	DebugPrintTrace(L"Analyzer::errorCodeToString(DWORD errorCode) end\n");
 	return error;
 }
 
@@ -60,14 +60,14 @@ PluginTest::errorCodeToString(DWORD errorCode)
 void
 PluginTest::loadIEPlugin()
 {
-	printf("loadIEPlugin() start\n");
+	LOG(INFO, "loadIEPlugin() start\n");
 
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	wchar_t pluginDirectoryPath[1024];
 
 	GetFullPathName(L"plugins\\Application_InternetExplorer.dll", 1024, pluginDirectoryPath, NULL);
-	DebugPrint(L"Capture-Visitor: Plugin directory - %ls\n", pluginDirectoryPath);
+	LOG(INFO, "Capture-Visitor: Plugin directory - %ls\n", pluginDirectoryPath);
 	hFind = FindFirstFile(pluginDirectoryPath, &FindFileData);
 
 	if (hFind != INVALID_HANDLE_VALUE) 
@@ -83,25 +83,25 @@ PluginTest::loadIEPlugin()
 			if(ie == NULL) {
 				FreeLibrary(hPlugin);
 			} else {
-				printf("Loaded plugin: %ls\n", FindFileData.cFileName);
+				LOG(INFO, "Loaded plugin: %ls\n", FindFileData.cFileName);
 			}
 		}
 		FindClose(hFind);
 	}
-	printf("loadIEPlugin() end\n");
+	LOG(INFO, "loadIEPlugin() end\n");
 }
 
 void
 PluginTest::loadIEBulkPlugin()
 {
-	printf("loadIEBulkPlugin() start\n");
+	LOG(INFO, "loadIEBulkPlugin() start\n");
 
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	wchar_t pluginDirectoryPath[1024];
 
 	GetFullPathName(L"plugins\\Application_InternetExplorerBulk.dll", 1024, pluginDirectoryPath, NULL);
-	DebugPrint(L"Capture-Visitor: Plugin directory - %ls\n", pluginDirectoryPath);
+	LOG(INFO, "Capture-Visitor: Plugin directory - %ls\n", pluginDirectoryPath);
 	hFind = FindFirstFile(pluginDirectoryPath, &FindFileData);
 
 	if (hFind != INVALID_HANDLE_VALUE) 
@@ -117,18 +117,17 @@ PluginTest::loadIEBulkPlugin()
 			if(ie == NULL) {
 				FreeLibrary(hPlugin);
 			} else {
-				printf("Loaded plugin: %ls\n", FindFileData.cFileName);
+				LOG(INFO, "Loaded plugin: %ls\n", FindFileData.cFileName);
 			}
 		}
 		FindClose(hFind);
 	}
-	printf("loadIEPlugin() end\n");
+	LOG(INFO, "loadIEPlugin() end\n");
 }
 
 ApplicationPlugin*
 PluginTest::createApplicationPluginObject(HMODULE hPlugin)
 {
-	DebugPrintTrace(L"Visitor::createApplicationPluginObject(HMODULE hPlugin) start\n");
 	typedef void (*PluginExportInterface)(void*);
 	PluginExportInterface pluginCreateInstance = NULL;
 	ApplicationPlugin* applicationPlugin = NULL;
@@ -141,8 +140,7 @@ PluginTest::createApplicationPluginObject(HMODULE hPlugin)
 	{
 		return applicationPlugin;
 	} else {
-		printf("Could not create application plugin");
+		LOG(INFO, "Could not create application plugin");
 	}
-	DebugPrintTrace(L"Visitor::createApplicationPluginObject(HMODULE hPlugin) end\n");
 	
 }

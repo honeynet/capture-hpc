@@ -1,3 +1,5 @@
+#include "Precompiled.h"
+
 #include "NetworkPacketDumper.h"
 #include "NetworkAdapter.h"
 
@@ -12,7 +14,7 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 	hModWinPcap = LoadLibrary(L"wpcap.dll");
 	if(hModWinPcap == NULL)
 	{
-		printf("NetworkPacketDumper: ERROR - wpcap.dll not found. Check that winpcap is installed on this system\n");
+		LOG(INFO, "NetworkPacketDumper: ERROR - wpcap.dll not found. Check that winpcap is installed on this system\n");
 	} else {
 		pfn_pcap_findalldevs = (pcap_findalldevs_c)GetProcAddress(hModWinPcap, "pcap_findalldevs");
 		pfn_pcap_open_live = (pcap_open_live_c)GetProcAddress(hModWinPcap, "pcap_open_live");
@@ -29,7 +31,7 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 		{
 			driverInstalled = true;
 		} else {
-			printf("NetworkPacketDumper: ERROR - incorrect version of wpcap.dll. Check the correct version of winpcap installed\n");
+			LOG(INFO, "NetworkPacketDumper: ERROR - incorrect version of wpcap.dll. Check the correct version of winpcap installed\n");
 		}
 	}
 
@@ -37,9 +39,9 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 	{
 		if(pfn_pcap_findalldevs(&allDevices, errbuf) == -1)
 		{
-			fprintf(stderr,"error in pcap_findalldevs: %s\n", errbuf);
+			LOG(ERR, "error in pcap_findalldevs: %s\n", errbuf);
 		} else {
-			printf("Loading network packet dumper\n");
+			LOG(INFO, "Loading network packet dumper\n");
 		}
 		
 		for(device = allDevices; device; device = device->next)
@@ -49,7 +51,7 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 				pcap_t *fp;			
 				if ((fp = pfn_pcap_open_live(device->name, 65536, 0, 1000, errbuf)) == NULL)
 				{
-					printf("\terror could not open network adapter\n");
+					LOG(INFO, "\terror could not open network adapter\n");
 				} else {
 					/* Only start capturing packets for network adapters that have ip addresses */
 					for(pcap_addr_t* a = device->addresses; a; a = a->next) 
@@ -59,7 +61,7 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 							if (a->addr)
 							{
 								char * address = inet_ntoa(((struct sockaddr_in *)a->addr)->sin_addr);
-								printf("\tnetwork adapter found: %s\n", address);
+								LOG(INFO, "\tnetwork adapter found: %s\n", address);
 								NetworkAdapter* networkAdapter = new NetworkAdapter(this,address, fp);
 								adapterList.push_back(networkAdapter);
 							}
@@ -76,7 +78,7 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 
 NetworkPacketDumper::~NetworkPacketDumper(void)
 {
-	DebugPrint(L"NetworkdPacketDumper delete\n");
+	LOG(INFO, "NetworkdPacketDumper delete\n");
 	stop();
 	std::list<NetworkAdapter*>::iterator it;
 	for(it = adapterList.begin(); it != adapterList.end(); it++)
@@ -97,7 +99,7 @@ NetworkPacketDumper::start()
 		for(it = adapterList.begin(); it != adapterList.end(); it++)
 		{
 			(*it)->start();
-			printf("Started network dumper\n");
+			LOG(INFO, "Started network dumper\n");
 
 		}
 		monitorRunning = true;
@@ -105,7 +107,6 @@ NetworkPacketDumper::start()
 }
 
 void NetworkPacketDumper::deleteAdapterFiles() {
-	DebugPrintTrace(L"NetworkdPacketDumper deleteAdapterFiles start\n");
 	std::list<NetworkAdapter*>::iterator it;
 	for(it = adapterList.begin(); it != adapterList.end(); it++)
 	{
@@ -115,29 +116,26 @@ void NetworkPacketDumper::deleteAdapterFiles() {
 		logName += adapterName;
 		logName += ".pcap";
 		GetFullPathNameA(logName.c_str(), 1024, szLogFileName, NULL);
-		DebugPrint(L"NetworkdPacketDumper deleteAdapterFiles - deleting %s\n",logName.c_str());
+		LOG(INFO, "NetworkdPacketDumper deleteAdapterFiles - deleting %s\n",logName.c_str());
 		DeleteFileA(szLogFileName);
 		delete [] szLogFileName;
 	}
-	DebugPrintTrace(L"NetworkdPacketDumper deleteAdapterFiles end\n");
 	
 }
 
 void
 NetworkPacketDumper::stop()
 {	
-	DebugPrintTrace(L"NetworkPacketDumper::stop() start\n");
 	if(isMonitorRunning() && isDriverInstalled())
 	{
 		std::list<NetworkAdapter*>::iterator it;
 		for(it = adapterList.begin(); it != adapterList.end(); it++)
 		{
-			DebugPrint(L"NetworkPacketDumper::stop() stopping adapter X\n");
+			LOG(INFO, "NetworkPacketDumper::stop() stopping adapter X\n");
 			(*it)->stop();
-			printf("Stopped network dumper\n");
-			DebugPrint(L"NetworkPacketDumper::stop() stopped adapter X\n");
+			LOG(INFO, "Stopped network dumper\n");
+			LOG(INFO, "NetworkPacketDumper::stop() stopped adapter X\n");
 		}
 		monitorRunning = false;
 	}	
-	DebugPrintTrace(L"NetworkPacketDumper::stop() end\n");
 }

@@ -24,11 +24,8 @@
 #pragma once
 
 #include <expatpplib.h>
-#include <string>
-#include <boost/signal.hpp>
 #include <hash_map>
 
-#include "CaptureGlobal.h"
 #include "Element.h"
 
 /*

@@ -42,42 +42,4 @@ class Logger;
 class EventController;
 class ProcessManager;
 
-typedef struct _TIME_FIELDS {
-    WORD wYear;
-    WORD wMonth;
-    WORD wDay;
-    WORD wHour;
-    WORD wMinute;
-    WORD wSecond;
-    WORD wMilliseconds;
-    WORD wWeekday;
-} TIME_FIELDS;
 
-class Base64
-{
-public:
-	static char* decode(const char* encodedBuffer);
-	static char* encode(char* cleartextBuffer, size_t length, size_t* encodedLength);
-private:
-	static const char b64_list[];
-	static const int b64_index[256];
-};
-
-class Time
-{
-public:
-	static std::wstring timefieldToString(const TIME_FIELDS& time);
-	static std::wstring systemtimeToString(const SYSTEMTIME& time);
-	static std::wstring getCurrentTime();
-};
-
-/*
-	Various C methods to allow base64 encoding and decoding
-*/
-extern "C" {
-
-void DebugPrint(LPCTSTR pszFormat, ... );
-void DebugPrintTrace(LPCTSTR pszFormat, ... );
-void Warn(LPCTSTR pszFormat, ... );
-
-};

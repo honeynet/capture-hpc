@@ -1,8 +1,8 @@
+#include "Precompiled.h"
+
 #include "Updater.h"
 #include "Server.h"
 #include "EventController.h"
-#include <boost/lexical_cast.hpp>
-#include <boost/bind.hpp>
 
 Updater::Updater(Server* s)
 {
@@ -45,7 +45,7 @@ Updater::onReceiveUpdateEvent(const Element& element)
 		send_element.setName(L"update-accept");
 		server->sendElement(send_element);
 	} else {
-		printf("Updater: ERROR - Can only download one update at a time\n");
+		LOG(INFO, "Updater: ERROR - Can only download one update at a time\n");
 		send_element.setName(L"update-reject");
 		server->sendElement(send_element);
 	}
@@ -81,7 +81,7 @@ Updater::onReceiveUpdatePartEvent(const Element& element)
 
 		free(decodedData);
 	} else {
-		printf("Updater: ERROR - File not allocated: %08x\n", GetLastError());
+		LOG(INFO, "Updater: ERROR - File not allocated: %08x\n", GetLastError());
 		send_element.setName(L"update-error");
 		server->sendElement(send_element);
 	}
@@ -102,7 +102,7 @@ Updater::onReceiveUpdateFinishedEvent(const Element& element)
                    NULL);                 // no attr. template
 	if(hFile ==  INVALID_HANDLE_VALUE)
 	{
-		printf("Updater: ERROR - Could not open file: %08x\n", GetLastError());
+		LOG(INFO, "Updater: ERROR - Could not open file: %08x\n", GetLastError());
 		send_element.setName(L"update-error");
 		server->sendElement(send_element);
 	} else {

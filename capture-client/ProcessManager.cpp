@@ -1,8 +1,8 @@
+#include "Precompiled.h"
+
 #include "ProcessManager.h"
 #include <Psapi.h>
 #include <tlhelp32.h>
-#include <Windows.h>
-#include <stdio.h>
 
 ProcessManager::ProcessManager(void)
 {
@@ -17,10 +17,10 @@ ProcessManager::~ProcessManager(void)
 {
 	processMonitor = NULL;
 		
-	DebugPrint(L"Process Manager Statistics\n");
-	DebugPrint(L"\tCache Hits: %i\n", cacheHits);
-	DebugPrint(L"\tCache Misses: %i\n", cacheMisses);
-	DebugPrint(L"\tCache Failures: %i\n", cacheFailures);
+	LOG(INFO, "Process Manager Statistics\n");
+	LOG(INFO, "\tCache Hits: %i\n", cacheHits);
+	LOG(INFO, "\tCache Misses: %i\n", cacheMisses);
+	LOG(INFO, "\tCache Failures: %i\n", cacheFailures);
 	instanceCreated = false;
 	processMap.clear();
 	CloseHandle(hProcessCreated);
@@ -55,17 +55,17 @@ ProcessManager::onProcessEvent(BOOLEAN created, const std::wstring& time,
 void 
 ProcessManager::insertProcess(DWORD processId, const std::wstring& processPath)
 {
-	DebugPrint(L"ProcessManager::insertProcess start\n");
+	LOG(INFO, "ProcessManager::insertProcess start\n");
 	stdext::hash_map<DWORD, std::wstring>::iterator it;
 	it = processMap.find(processId);
 	if(it !=  processMap.end()) {
 		processMap.erase(it);
 	}
 	std::wstring processCompletePath = convertFileObjectPathToDOSPath(processPath);
-	DebugPrint(L"Capture-ProcessManager: Insert process %i -> %ls\n", processId, processCompletePath.c_str()); 
+	LOG(INFO, "Capture-ProcessManager: Insert process %i -> %ls\n", processId, processCompletePath.c_str()); 
 	processMap.insert(std::pair<DWORD, std::wstring>(processId, processCompletePath));
 	SetEvent(hProcessCreated);
-	DebugPrint(L"ProcessManager::insertProcess end\n");
+	LOG(INFO, "ProcessManager::insertProcess end\n");
 }
 
 std::wstring
@@ -200,7 +200,7 @@ ProcessManager::getProcessPath(DWORD processId)
 	if(!hProc)
 	{
 		cacheFailures++;
-		DebugPrint(L"Capture-ProcessManager: Cache failure1 - process id = %i\n", processId); 
+		LOG(INFO, "Capture-ProcessManager: Cache failure1 - process id = %i\n", processId); 
 		processPath = L"UNKNOWN";
 		return convertFileObjectPathToDOSPath(processPath);
 	}
@@ -212,7 +212,7 @@ ProcessManager::getProcessPath(DWORD processId)
 	{
 		processPath = szTemp;
 		//this occurs when the process monitor is slower than the registry/file monitor
-		DebugPrint(L"Capture-ProcessManager: Cache miss %i -> %ls\n", processId, processPath.c_str()); 
+		LOG(INFO, "Capture-ProcessManager: Cache miss %i -> %ls\n", processId, processPath.c_str()); 
 		insertProcess(processId, processPath);
 
 		if(processMonitor != NULL) {
@@ -226,9 +226,9 @@ ProcessManager::getProcessPath(DWORD processId)
 	} else {
 		cacheFailures++;
 		processPath=L"UNKNOWN";
-		DebugPrint(L"Capture-ProcessManager: Cache failure2 - process id = %i\n", processId); 
+		LOG(INFO, "Capture-ProcessManager: Cache failure2 - process id = %i\n", processId); 
 	}
-	DebugPrint(L"ProcessManager::getProcessPath end4\n");
+	LOG(INFO, "ProcessManager::getProcessPath end4\n");
 	return convertFileObjectPathToDOSPath(processPath);		
 }
 
@@ -253,7 +253,7 @@ ProcessManager::initialiseProcessMap()
 	DWORD aProcesses[1024], cbNeeded, cProcesses;
 
 	if ( !EnumProcesses( aProcesses, sizeof(aProcesses), &cbNeeded ) ) {
-		DebugPrint(L"Capture-ProcessManager: Unable to enum processes.\n");
+		LOG(INFO, "Capture-ProcessManager: Unable to enum processes.\n");
 		return;
 	}
 

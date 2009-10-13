@@ -39,12 +39,11 @@ struct VISIT_INFO
 DWORD WINAPI 
 Application_InternetExplorer::InternetExplorerWorker(LPVOID data)
 {
-	DebugPrintTrace(L"Application_InternetExplorer::InternetExplorerWorker start\n");
 	int worker_id = (int)data;
-	DebugPrint(L"IE Worker Start\n.");
+	OutputDebugStringA("IE Worker Start\n.");
 	while(true)
 	{
-		DebugPrint(L"IE Worker Visit Start.\n");
+		OutputDebugStringA("IE Worker Visit Start.\n");
 		
 		WaitForSingleObject(worker_has_data[worker_id], INFINITE);
 		
@@ -64,16 +63,14 @@ Application_InternetExplorer::InternetExplorerWorker(LPVOID data)
 			worker_thread_busy[worker_id] = false;
 			SetEvent(worker_finished[worker_id]);
 		}
-		DebugPrint(L"IE Worker Visit End.\n");
+		OutputDebugStringA("IE Worker Visit End.\n");
 	}
-	DebugPrint(L"IE Worker End\n.");
+	OutputDebugStringA("IE Worker End\n.");
 
-	DebugPrintTrace(L"Application_InternetExplorer::InternetExplorerWorker end\n");
 }
 
 Application_InternetExplorer::Application_InternetExplorer()
 {
-	DebugPrintTrace(L"Application_InternetExplorer::Application_InternetExplorer() start\n");
 	
 	// Start the COM interface
 	CoInitializeEx(NULL,COINIT_MULTITHREADED);
@@ -87,12 +84,10 @@ Application_InternetExplorer::Application_InternetExplorer()
 		worker_finished[i] = CreateEvent(NULL, false, NULL, NULL); 
 		worker_threads[i] = CreateThread(NULL, 0, &Application_InternetExplorer::InternetExplorerWorker, (LPVOID)i, 0, NULL);
 	}
-	DebugPrintTrace(L"Application_InternetExplorer::Application_InternetExplorer() end\n");
 }
 
 Application_InternetExplorer::~Application_InternetExplorer(void)
 {
-	DebugPrintTrace(L"Application_InternetExplorer::~Application_InternetExplorer(void) start\n");
 		
 	for(unsigned int i = 0; i < MAX_WORKER_THREADS; i++)
 	{
@@ -102,7 +97,6 @@ Application_InternetExplorer::~Application_InternetExplorer(void)
 	}
 
 	CoUninitialize();
-	DebugPrintTrace(L"Application_InternetExplorer::~Application_InternetExplorer(void) end\n");
 	
 
 }
@@ -112,7 +106,6 @@ Application_InternetExplorer::~Application_InternetExplorer(void)
 void
 Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 {	
-	DebugPrintTrace(L"Application_InternetExplorer::visitGroup(VisitEvent* visitEvent) start\n");
 
 	DWORD *error = NULL;
 	
@@ -160,7 +153,7 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 
 		// Wait for one of the workers threads to finish
 		DWORD dwWait = WaitForMultipleObjects(MAX_WORKER_THREADS, worker_finished, false, 60*1000);
-		DebugPrint(L"IE Visit Group Worker Threads Finished.\n");
+		OutputDebugStringA("IE Visit Group Worker Threads Finished.\n");
 
 		// If one has finished then a url has been visited
 		int index = dwWait - WAIT_OBJECT_0;
@@ -169,7 +162,6 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 			n_visited_urls++;
 		}
 	}
-	DebugPrint(L"IE: Finished visiting %i URLs\n", n_visited_urls);		
 
 	// Give the visit event a success or error code based on the visitaion of each url
 	for(int i = 0; i < n_urls; i++)
@@ -177,13 +169,13 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 		Url* url = visitEvent->getUrls().at(i);
 		visitEvent->setErrorCode(url->getMajorErrorCode());
 	}
-	DebugPrint(L"IE Visit Group set errors on urls.\n");
+	OutputDebugStringA("IE Visit Group set errors on urls.\n");
 
 	DWORD errorCode = closeAllInternetExplorers(internet_explorer_factory);
 	if(errorCode!=0) {
 		visitEvent->setErrorCode( CAPTURE_VISITATION_WARNING );
 	}
-	DebugPrint(L"IE Visit Group closed all instances.\n");
+	OutputDebugStringA("IE Visit Group closed all instances.\n");
 
 
 	//Delete all IE instance objects
@@ -193,17 +185,15 @@ Application_InternetExplorer::visitGroup(VisitEvent* visitEvent)
 		delete iexplore_instances[i];
 	}
 	free(iexplore_instances);
-	DebugPrint(L"IE Visit Group delete IE instances\n");
+	OutputDebugStringA("IE Visit Group delete IE instances\n");
 
 	// Free the COM interface stuff
 	ULONG num_references = internet_explorer_factory->Release();
 
-	DebugPrintTrace(L"Application_InternetExplorer::visitGroup(VisitEvent* visitEvent) end\n");
 }
 
 DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* internet_explorer_factory) {
 
-	DebugPrintTrace(L"Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* internet_explorer_factory) start\n");
 	DWORD iReturnVal;
 	iReturnVal = 0;
 	// Create another fake IE instance so that we can close the process
@@ -214,7 +204,7 @@ DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* int
 	
 	if( hr == S_OK )
 	{
-		DebugPrint(L"IE CloseAll created fake IE instance.\n");
+		OutputDebugStringA("IE CloseAll created fake IE instance.\n");
 		HWND hwndIE;
 		DWORD dProcessId;
 		pInternetExplorer->get_HWND((SHANDLE_PTR*)&hwndIE);
@@ -231,7 +221,7 @@ DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* int
 			if(!TerminateProcess(hProc, 0))
 			{
 				iReturnVal = GetLastError();
-				DebugPrint(L"IE CloseAll unable to terminate 1.\n");
+				OutputDebugStringA("IE CloseAll unable to terminate 1.\n");
 			}
 		}
 
@@ -250,7 +240,7 @@ DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* int
 	unsigned int i;
 
 	if ( !EnumProcesses( aProcesses, sizeof(aProcesses), &cbNeeded ) ) {
-		DebugPrint(L"IE CloseAll couldn't enum processes.\n");
+		OutputDebugStringA("IE CloseAll couldn't enum processes.\n");
 		iReturnVal = -1;
 	}
 
@@ -267,14 +257,14 @@ DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* int
 			
 			if(compareName(aProcesses[i], processName)==0) 
 			{
-				DebugPrint(L"IE CloseAll IE process left over. Closing....\n");
+				OutputDebugStringA("IE CloseAll IE process left over. Closing....\n");
 				EnumWindows(Application_InternetExplorer::EnumWindowsCloseAppProc, (LPARAM) aProcesses[i]);
 				
 				HANDLE hPro = OpenProcess(PROCESS_TERMINATE,TRUE, aProcesses[i]);
 				if(!TerminateProcess(hPro, 0))
 				{
 					iReturnVal = GetLastError();
-					DebugPrint(L"IE CloseAll unable to terminate 2.\n");
+					OutputDebugStringA("IE CloseAll unable to terminate 2.\n");
 				}
 
 				if( hPro != NULL ) {
@@ -284,7 +274,6 @@ DWORD Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* int
 		}
 	}
 
-	DebugPrintTrace(L"Application_InternetExplorer::closeAllInternetExplorers(IClassFactory* internet_explorer_factory) end\n");
 	return iReturnVal;
 }
 
@@ -328,8 +317,6 @@ int Application_InternetExplorer::compareName(DWORD processID, std::wstring proc
 wchar_t**
 Application_InternetExplorer::getSupportedApplicationNames()
 {
-	DebugPrintTrace(L"Application_InternetExplorer::getSupportedApplicationNames() start\n");
-	DebugPrintTrace(L"Application_InternetExplorer::getSupportedApplicationNames() end\n");
 	return supportedApplications;
 }
 

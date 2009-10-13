@@ -26,13 +26,10 @@
 #define MAX_SEND_BUFFER 2048
 #define MAX_RECEIVE_BUFFER 2048
 
-#include "CaptureGlobal.h"
 #include "Element.h"
-#include <string>
 #include <vector>
 #include "OptionsManager.h"
 
-#include <boost/signal.hpp>
 /*
 	Class: Server
 	

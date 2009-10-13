@@ -1,6 +1,7 @@
+#include "Precompiled.h"
+
 #include "OptionsManager.h"
 #include "EventController.h"
-#include <boost/bind.hpp>
 
 OptionsManager::OptionsManager(void)
 {
@@ -43,7 +44,7 @@ OptionsManager::onOptionEvent(const Element& element)
 		}
 		if(option != L"" && value != L"")
 		{
-			DebugPrint(L"Received option event: %ls => %ls\n", option.c_str(), value.c_str());
+			LOG(INFO, "Received option event: %ls => %ls\n", option.c_str(), value.c_str());
 			addOption(option, value);
 		}
 	}
@@ -68,10 +69,10 @@ OptionsManager::addOption(const std::wstring& option, const std::wstring& value)
 	it = optionsMap.find(option);
 	if(it == optionsMap.end())
 	{
-		DebugPrint(L"Adding option: %ls => %ls\n", option.c_str(), value.c_str());
+		LOG(INFO, "Adding option: %ls => %ls", option.c_str(), value.c_str());
 		optionsMap.insert(std::pair<wstring, wstring>(option, value));
 	} else {
-		DebugPrint(L"Changing option: %ls => %ls\n", option.c_str(), value.c_str());
+		LOG(INFO, "Changing option: %ls => %ls", option.c_str(), value.c_str());
 		it->second = value;
 	}
 	signalOnOptionChanged(option);

@@ -23,8 +23,7 @@
  */
 #pragma once
 #include "Url.h"
-#include "CaptureGlobal.h"
-#include <string>
+#include "ErrorCodes.h"
 #include <vector>
 
 

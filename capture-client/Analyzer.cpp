@@ -1,3 +1,5 @@
+#include "Precompiled.h"
+
 #include "Analyzer.h"
 #include "Server.h"
 #include "Visitor.h"
@@ -9,15 +11,12 @@
 #include "NetworkPacketDumper.h"
 #include "FileUploader.h"
 #include "OptionsManager.h"
-#include "Logger.h"
 #include "Url.h"
-#include <boost/lexical_cast.hpp>
-#include <boost/bind.hpp>
 #include <shellapi.h>
 
 Analyzer::Analyzer(Visitor& v, Server& s) : visitor(v), server(s)
 {
-	DebugPrintTrace(L"Analyzer::Analyzer(Visitor& v, Server& s) start\n");
+	LOG(INFO, "Analyzer: initializing");
 	processMonitor = new ProcessMonitor();
 	registryMonitor = new RegistryMonitor();
 	networkMonitor = new NetworkMonitor();
@@ -50,12 +49,12 @@ Analyzer::Analyzer(Visitor& v, Server& s) : visitor(v), server(s)
 	fileMonitor->start();
 	networkMonitor->start();
 
-	DebugPrintTrace(L"Analyzer::Analyzer(Visitor& v, Server& s) end\n");
+	LOG(INFO, "Analyzer: initialized");
 }
 
 Analyzer::~Analyzer(void)
 {
-	DebugPrintTrace(L"Analyzer::~Analyzer(void) start\n");
+	LOG(INFO, "Analyzer: destroying");
 	/* Do not change the order of these */
 	/* The registry monitor must be deleted first ... as when the other monitors
 	   kernel drivers are unloaded they cause a lot of registry events which, but
@@ -72,20 +71,21 @@ Analyzer::~Analyzer(void)
 	{
 		delete networkPacketDumper;
 	}
-	DebugPrintTrace(L"Analyzer::~Analyzer(void) end\n");
+	LOG(INFO, "Analyzer: destroyed");
 }
 
 void
 Analyzer::onOptionChanged(const std::wstring& option)
 {
-	DebugPrintTrace(L"Analyzer::onOptionChanged(const std::wstring& option) start\n");
+	LOG(INFO, "Analyzer: received option changed - %ls", option.c_str());
+
 	std::wstring value = OptionsManager::getInstance()->getOption(option); 
 	if(option == L"capture-network-packets-malicious" || 
 		option == L"capture-network-packets-benign" || option == L"capture-network-packets") {
 		if(value == L"true")
 		{
 			if(networkPacketDumper == NULL) {
-				printf("Creating network dumper\n");
+				LOG(INFO, "Creating network dumper\n");
 				networkPacketDumper = new NetworkPacketDumper();
 			}
 			captureNetworkPackets = true;
@@ -95,7 +95,7 @@ Analyzer::onOptionChanged(const std::wstring& option)
 				captureNetworkPackets = false;
 				
 				if(networkPacketDumper != NULL) {
-					printf("Deleting network dumper\n");
+					LOG(INFO, "Analyzer: deleting network dumper");
 					delete networkPacketDumper;	
 				}
 			}
@@ -117,13 +117,13 @@ Analyzer::onOptionChanged(const std::wstring& option)
 			networkMonitor->clearExclusionList();
 		}
 	}
-	DebugPrintTrace(L"Analyzer::onOptionChanged(const std::wstring& option) end\n");
 }
 
 void
 Analyzer::start()
 {
-	DebugPrintTrace(L"Analyzer::start() start\n");
+	LOG(INFO, "Analyzer: starting");
+
 	/* Create the log directory */
 	wchar_t* log_directory = new wchar_t[1024];
 	GetFullPathName(L"logs", 1024, log_directory, NULL);
@@ -132,7 +132,7 @@ Analyzer::start()
 	malicious = false;
 	if(captureNetworkPackets)
 	{
-		printf("Start capturing network traffic...\n");
+		LOG(INFO, "Analyzer: starting network packet dumper");
 		networkPacketDumper->start();
 	}
 	onProcessEventConnection = processMonitor->connect_onProcessEvent(boost::bind(&Analyzer::onProcessEvent, this, _1, _2, _3, _4, _5, _6));
@@ -140,38 +140,35 @@ Analyzer::start()
 	onFileEventConnection = fileMonitor->connect_onFileEvent(boost::bind(&Analyzer::onFileEvent, this, _1, _2, _3, _4, _5));
 	/*TODO check this is right*/
 	onNetworkEventConnection = networkMonitor->connect_onConnectionEvent(boost::bind(&Analyzer::onConnectionEvent, this, _1, _2, _3, _4, _5));
-	DebugPrint(L"Analyzer: Registered with callbacks");
+	LOG(INFO, "Analyzer: registered event callbacks");
 	if(collectModifiedFiles)
 	{
-		printf("Start capturing modified files ...\n");
+		LOG(INFO, "Analyzer: capturing modified files");
 		fileMonitor->setMonitorModifiedFiles(true);
 	}
-	DebugPrintTrace(L"Analyzer::start() end\n");
 
+	LOG(INFO, "Analyzer: starting");
 }
 
 void
 Analyzer::stop()
 {
-	DebugPrintTrace(L"Analyzer::stop() start\n");
+	LOG(INFO, "Analyzer: stopping");
 
 	onProcessEventConnection.disconnect();
 	onRegistryEventConnection.disconnect();
 	onFileEventConnection.disconnect();
 	onNetworkEventConnection.disconnect();
-	DebugPrint(L"Analyzer::stop() stopped monitors\n");
 
 	if(captureNetworkPackets)
 	{
-		printf("Stopping network dumper\n");
-		DebugPrint(L"Analyzer::stop() stopping network dumper\n");
+		LOG(INFO, "Analyzer: stopping network dumper");
 		networkPacketDumper->stop();
-		DebugPrint(L"Analyzer::stop() stopped network dumper\n");
 	}
 
 	if(collectModifiedFiles) 
 	{
-		printf("Copying monitored files\n");
+		LOG(INFO, "Analyzer: copying modified files");
 		fileMonitor->setMonitorModifiedFiles(false);
 		fileMonitor->copyCreatedFiles();
 	}
@@ -191,7 +188,7 @@ Analyzer::stop()
 			}
 
 			if(!malicious) {
-				DebugPrint(L"Analyzer::stop() deleting deleted_files\n");
+				LOG(INFO, "Analyzer: deleting modified files");
 				wchar_t* szFullPathDF = new wchar_t[1024];
 				GetFullPathName(L"logs\\deleted_files", 1024, szFullPathDF, NULL);
 				SHFILEOPSTRUCT deleteDeletedFilesDirectory;
@@ -203,9 +200,7 @@ Analyzer::stop()
 				deleteDeletedFilesDirectory.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
 				SHFileOperation(&deleteDeletedFilesDirectory);
 				delete [] szFullPathDF;
-				DebugPrint(L"Analyzer::stop() deleted deleted_files\n");
 
-				DebugPrint(L"Analyzer::stop() deleting modified_files\n");
 				wchar_t* szFullPathMF = new wchar_t[1024];
 				GetFullPathName(L"logs\\modified_files", 1024, szFullPathMF, NULL);
 				SHFILEOPSTRUCT deleteModifiedFilesDirectory;
@@ -217,8 +212,6 @@ Analyzer::stop()
 				deleteModifiedFilesDirectory.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
 				SHFileOperation(&deleteModifiedFilesDirectory);
 				delete [] szFullPathMF;
-				DebugPrint(L"Analyzer::stop() deleted modified_files\n");
-
 			}
 			
 			SYSTEMTIME st;
@@ -244,7 +237,7 @@ Analyzer::stop()
 				bool compressed = compressLogDirectory(szLogFileName);
 				if(server.isConnected() && compressed)
 				{
-					printf("Sending log file to server\n");
+					LOG(INFO, "Analyzer: sending log file to server");
 					FileUploader uploader(server);
 					uploader.sendFile(szLogFileName);
 					
@@ -258,7 +251,7 @@ Analyzer::stop()
 		}
 
 		/* Delete the log directory */
-		DebugPrint(L"Analyzer::stop() deleting logs\n");
+		LOG(INFO, "Analyzer: deleting logs");
 		wchar_t* szFullPath = new wchar_t[1024];
 		GetFullPathName(L"logs", 1024, szFullPath, NULL);
 		SHFILEOPSTRUCT deleteLogDirectory;
@@ -270,19 +263,16 @@ Analyzer::stop()
 		deleteLogDirectory.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
 		SHFileOperation(&deleteLogDirectory);
 		delete [] szFullPath;
-		DebugPrint(L"Analyzer::stop() deleted logs\n");
 	}
-	DebugPrintTrace(L"Analyzer::stop() end\n");
+	LOG(INFO, "Analyzer: stopped");
 }
 
 std::wstring
 Analyzer::errorCodeToString(DWORD errorCode)
 {
-	DebugPrintTrace(L"Analyzer::errorCodeToString(DWORD errorCode) start\n");
 	wchar_t szTemp[16];
 	swprintf_s(szTemp, 16, L"%08x", errorCode);
 	std::wstring error = szTemp;
-	DebugPrintTrace(L"Analyzer::errorCodeToString(DWORD errorCode) end\n");
 	return error;
 }
 
@@ -291,8 +281,8 @@ Analyzer::errorCodeToString(DWORD errorCode)
 bool
 Analyzer::compressLogDirectory(const std::wstring& logFileName)
 {
-	printf("Analyzer::compressLogDirectory(const std::wstring& logFileName) start\n");
-	DebugPrintTrace(L"Analyzer::compressLogDirectory(const std::wstring& logFileName) start\n");
+	LOG(INFO, "Analyzer: compressing log directory");
+
 	BOOL created = FALSE;
 	STARTUPINFO siStartupInfo;
 	PROCESS_INFORMATION piProcessInfo;
@@ -316,15 +306,13 @@ Analyzer::compressLogDirectory(const std::wstring& logFileName)
 
 	if( created )
 	{
+		LOG(INFO, "Analyzer: waiting for log file compressing to complete");
 		DWORD err = WaitForSingleObject( piProcessInfo.hProcess, INFINITE );
-		printf("Analyzer::compressLogDirectory(const std::wstring& logFileName) end\n");
-		DebugPrintTrace(L"Analyzer::compressLogDirectory(const std::wstring& logFileName) end\n");
 		return true;
 	}
 	else
 	{
-		printf("Analyzer: Cannot open 7za.exe process - 0x%08x\n", GetLastError());
-		DebugPrintTrace(L"Analyzer::compressLogDirectory(const std::wstring& logFileName) end\n");
+		LOG(ERR, "Analyzer: cannot open 7za.exe process - 0x%08x\n", GetLastError());
 		exit(0);
 		return false;
 	}
@@ -333,7 +321,6 @@ Analyzer::compressLogDirectory(const std::wstring& logFileName)
 void
 Analyzer::update(int eventType, const VisitEvent& visitEvent)
 {	
-	DebugPrintTrace(L"Analyzer::update(int eventType, const VisitEvent& visitEvent) start\n");
 	bool send = false;
 	std::wstring type;
 	std::wstring error_code;
@@ -342,26 +329,26 @@ Analyzer::update(int eventType, const VisitEvent& visitEvent)
 	switch(eventType)
 	{
 	case CAPTURE_VISITATION_PRESTART:
-		DebugPrint(L"Analyzer::update - Got CAPTURE_VISITATION_PRESTART");
+		LOG(INFO, "Analyzer: visitation pre-start");
 		start();
 		break;
 	case CAPTURE_VISITATION_START:
-		DebugPrint(L"Analyzer::update - Got CAPTURE_VISITATION_START");
+		LOG(INFO, "Analyzer: visitation start");
 		send = true;
 		type = L"start";
 		break;
 	case CAPTURE_VISITATION_FINISH:
-		DebugPrint(L"Analyzer::update - Got CAPTURE_VISITATION_FINISH");
+		LOG(INFO, "Analyzer: visitation finish");
 		stop();		
 		send = true;
 		type = L"finish";
 		break;
 	case CAPTURE_VISITATION_POSTFINISH:
 		// sending the finish command used to be here ...
-		DebugPrint(L"Analyzer::update - Got CAPTURE_VISITATION_POSTFINISH");
+		LOG(INFO, "Analyzer: visitation post-finish");
 		break;
 	default:
-		DebugPrint(L"Analyzer::update - Got default");
+		LOG(INFO, "Analyzer: visitation default");
 		stop();	
 		send = true;
 		type = L"error";
@@ -371,14 +358,12 @@ Analyzer::update(int eventType, const VisitEvent& visitEvent)
 	
 	if(send)
 	{	
-		DebugPrint(L"Analyzer::update - sending");
+		LOG(INFO, "Analyzer: visitation sending malicious event");
 		element.addAttribute(L"type", type);
 		//element.addAttribute(L"time", Time::getCurrentTime());
 		element.addAttribute(L"malicious", boost::lexical_cast<std::wstring>(malicious));
 		server.sendElement(element);
-		DebugPrint(L"Analyzer::update - done sending");
 	}
-	DebugPrintTrace(L"Analyzer::update(int eventType, const VisitEvent& visitEvent) end\n");
 }
 
 void
@@ -386,7 +371,6 @@ Analyzer::sendSystemEvent(const std::wstring& type, const std::wstring& time, co
 						  const std::wstring& process, const std::wstring& action, const std::wstring& object1,
 					const std::wstring& object2)
 {
-	DebugPrintTrace(L"Analyzer::sendSystemEvent(...) start\n");
 	vector<Attribute> attributes;
 	attributes.push_back(Attribute(L"time", time));
 	attributes.push_back(Attribute(L"type", type));
@@ -401,13 +385,14 @@ Analyzer::sendSystemEvent(const std::wstring& type, const std::wstring& time, co
 	if(OptionsManager::getInstance()->getOption(L"log-system-events-file") == L"")
 	{
 		// Output the event to stdout
-		printf("%ls: %ls %ls %ls -> %ls %ls\n", type.c_str(), action.c_str(), sprocessId.c_str(), process.c_str(), object2.c_str(), object1.c_str());
+		LOG(INFO, "%ls: %ls %ls %ls -> %ls %ls\n", type.c_str(), action.c_str(), sprocessId.c_str(), process.c_str(), object2.c_str(), object1.c_str());
 	} else {
 		// Send the event to the logger
 		Logger::getInstance()->writeSystemEventToLog(type, time, sprocessId, process, action, object1, object2);
 	}
 	server.sendXML(L"system-event", attributes);
-	DebugPrintTrace(L"Analyzer::sendSystemEvent(...) end\n");
+
+	LOG(INFO, "Analyzer: sent event to server - %ls", type.c_str());
 }
 
 void
@@ -415,7 +400,8 @@ Analyzer::onProcessEvent(BOOLEAN created, const std::wstring& time,
 						 DWORD parentProcessId, const std::wstring& parentProcess, 
 						 DWORD processId, const std::wstring& process)
 {
-	DebugPrintTrace(L"Analyzer::onProcessEvent(...) start\n");
+	LOG(INFO, "Analyzer: received process event");
+
 	malicious = true;
 	std::wstring processEvent = L"process";
 	std::wstring processType = L"";
@@ -431,44 +417,43 @@ Analyzer::onProcessEvent(BOOLEAN created, const std::wstring& time,
 	sendSystemEvent(processEvent, time, parentProcessId,
 					parentProcess, processType, sprocessId, 
 					process);
-	DebugPrintTrace(L"Analyzer::onProcessEvent(...) end\n");
 }
 
 void 
 Analyzer::onRegistryEvent(const std::wstring& registryEventType, const std::wstring& time, 
 						  const DWORD processId, const std::wstring& processPath, const std::wstring& registryEventPath)
 {
-	DebugPrintTrace(L"Analyzer::onRegistryEvent(...) start\n");
+	LOG(INFO, "Analyzer: received registry event");
+
 	malicious = true;
 	std::wstring dummy = L"-1";
 	std::wstring registryEvent = L"registry";
 	sendSystemEvent(registryEvent, time, processId,
 		processPath, registryEventType, registryEventPath, dummy);
-	DebugPrintTrace(L"Analyzer::onRegistryEvent(...) end\n");
 }
 
 void
 Analyzer::onFileEvent(const std::wstring& fileEventType, const std::wstring& time, const DWORD processId, 
 						 const std::wstring& processPath, const std::wstring& fileEventPath)
 {
-	DebugPrintTrace(L"Analyzer::onFileEvent(...) start\n");
+	LOG(INFO, "Analyzer: received file event");
+
 	malicious = true;
 	std::wstring fileEvent = L"file";
 	std::wstring dummy = L"-1";
 	sendSystemEvent(fileEvent, time, processId,
 					processPath, fileEventType, fileEventPath, dummy);
-	DebugPrintTrace(L"Analyzer::onFileEvent(...) end\n");
 }
 
 void
 Analyzer::onConnectionEvent(const std::wstring& networkEventType, const std::wstring& time, const DWORD processId, 
 						 const std::wstring& processPath, const std::wstring& networkEventPath)
 {
-	DebugPrintTrace(L"Analyzer::onNetworkEvent(...) start\n");
+	LOG(INFO, "Analyzer: received connection event");
+
 	malicious = true;
 	std::wstring networkEvent = L"connection";
 	std::wstring dummy = L"-1";
 	sendSystemEvent(networkEvent, time, processId,
 					processPath, networkEventType, networkEventPath, dummy);
-	DebugPrintTrace(L"Analyzer::onNetworkEvent(...) end\n");
 }

@@ -22,11 +22,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
-#include "CaptureGlobal.h"
 #include "Observable.h"
 #include "VisitEvent.h"
-#include <string>
-#include <boost/signal.hpp>
 
 class FileUploader;
 class NetworkPacketDumper;

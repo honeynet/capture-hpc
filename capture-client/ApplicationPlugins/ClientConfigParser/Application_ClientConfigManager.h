@@ -34,7 +34,7 @@
 #include <fstream>
 #include <vector>
 #include <hash_map>
-#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/find_iterator.hpp>
 #include <boost/algorithm/string/finder.hpp> 
 #include <boost/tokenizer.hpp>
