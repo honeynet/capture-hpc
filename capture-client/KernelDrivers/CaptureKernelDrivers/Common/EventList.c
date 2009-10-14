@@ -33,6 +33,8 @@ void InitialiseBufferManager( Buffer* buffer )
 
 	RtlZeroMemory( buffer, sizeof(Buffer) );
 
+	KeInitializeSpinLock(&buffer->bitmap_lock);
+
 	RtlInitializeBitMap( &buffer->bitmap, buffer->buffer_bitmap, BUFFER_BITMAP_SIZE * (sizeof(ULONG)*8) );
 
 	free = RtlNumberOfClearBits( &buffer->bitmap );
@@ -45,6 +47,7 @@ void InitialiseBufferManager( Buffer* buffer )
 /// @return			A pointer to a block of memory of size, or null if not enough free space
 PVOID ReserveSpace( Buffer* buffer, ULONG size )
 {
+	KIRQL irq_level;
 	ULONG bits = 0;
 	ULONG position = 0;
 	PVOID data_buffer = NULL;
@@ -53,6 +56,7 @@ PVOID ReserveSpace( Buffer* buffer, ULONG size )
 	bits = ALIGN_UP(size, Block) / BLOCK_SIZE;
 
 	// Start Lock
+	KeAcquireSpinLock(&buffer->bitmap_lock, &irq_level);
 
 	position = RtlFindClearBitsAndSet( &buffer->bitmap, bits, buffer->bitmap_hint_index );
 
@@ -69,6 +73,7 @@ PVOID ReserveSpace( Buffer* buffer, ULONG size )
 	}
 
 	// End Lock
+	KeReleaseSpinLock(&buffer->bitmap_lock, irq_level);
 
 	return data_buffer;
 }
@@ -82,6 +87,8 @@ BOOLEAN InitialiseSharedEventList( SharedEventList* shared_event_list )
 
 	if(!success)
 		return FALSE;
+
+	KeInitializeSpinLock(&shared_event_list->event_list_lock);
 
 	shared_event_list->semaphore = NULL;
 
@@ -199,11 +206,14 @@ Event* CreateEvent( SharedEventList* shared_event_list )
 /// Insert event into the event list
 void InsertEvent( SharedEventList* shared_event_list, Event* event )
 {
+	KIRQL irq_level;
+
 	EventList* event_list = shared_event_list->event_list;
 
 	event->ready = 1;
 
 	// Start Lock
+	KeAcquireSpinLock(&shared_event_list->event_list_lock, &irq_level);
 
 	event->previous = shared_event_list->event_list->tail;
 
@@ -217,6 +227,7 @@ void InsertEvent( SharedEventList* shared_event_list, Event* event )
 		KeReleaseSemaphore(shared_event_list->semaphore, 0, 1, FALSE);
 
 	// End Lock
+	KeReleaseSpinLock(&shared_event_list->event_list_lock, irq_level);
 }
 
 /// Add data to and event

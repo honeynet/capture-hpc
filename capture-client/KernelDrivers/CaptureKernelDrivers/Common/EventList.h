@@ -74,6 +74,7 @@ struct _Block
 struct _Buffer
 {
 	RTL_BITMAP	bitmap;
+	KSPIN_LOCK	bitmap_lock;
 	ULONG		bitmap_hint_index;
 	ULONG		buffer_bitmap[BUFFER_BITMAP_SIZE];
 	BYTE		buffer[BUFFER_SIZE];
@@ -113,6 +114,8 @@ struct _EventList
 struct _SharedEventList
 {
 	EventList*		event_list;
+
+	KSPIN_LOCK		event_list_lock;
 
 	// How many events are stored in the shared list
 	PKSEMAPHORE		semaphore;
