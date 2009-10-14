@@ -49,7 +49,7 @@
 				CleanCommandLine=""
 				Output="$(SolutionDir)$(ConfigurationName)"
 				PreprocessorDefinitions="WIN32;NDEBUG"
-				IncludeSearchPath=".\Common;C:\WinDDK\6000\inc\ddk;C:\WinDDK\6000\inc\api"
+				IncludeSearchPath=".\Common;C:\WinDDK\7600.16385.0\inc\ddk;C:\WinDDK\7600.16385.0\inc\api"
 				ForcedIncludes=""
 				AssemblySearchPath=""
 				ForcedUsingAssemblies=""

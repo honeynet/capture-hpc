@@ -25,6 +25,7 @@
 #include <windows.h>
 #include <string>
 #include <list>
+#include "Time.h"
 #include "VisitEvent.h"
 #include "ErrorCodes.h"
 

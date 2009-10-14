@@ -123,7 +123,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
-				AdditionalIncludeDirectories="C:\Program Files\Microsoft Visual Studio 9.0\VC\include;C:\expatpp\expat\lib;C:\expatpp\src_pp;C:\WinDDK\6000\inc;&quot;C:\program files\boost\boost_1_35_0&quot;;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;;C:\WpdPack\Include;C:\WinDDK\6000\inc\api"
+				AdditionalIncludeDirectories="&quot;C:\projects\capture-hpc\capture-hpc\vendor\expatpp\expat\lib&quot;;&quot;C:\projects\capture-hpc\capture-hpc\vendor\expatpp\src_pp&quot;;&quot;C:\projects\capture-hpc\capture-hpc\vendor\wpcap\Include&quot;;C:\projects\boost\boost_1_40_0"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;WARN"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
@@ -143,9 +143,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib Ws2_32.lib Advapi32.lib Psapi.lib fltLib.lib shlwapi.lib expatpp.lib shell32.lib Urlmon.lib $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib Ws2_32.lib Advapi32.lib Psapi.lib C:\WinDDK\7600.16385.0\lib\wxp\i386\fltLib.lib shlwapi.lib expatpp.lib shell32.lib Urlmon.lib $(NOINHERIT)"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="C:\WinDDK\6000\lib\wxp\i386;C:\expatpp\vc_pp\expatpp\ReleaseMTDLL;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;&quot;C:\Program Files\boost\boost_1_35_0\lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\projects\capture-hpc\capture-hpc\vendor\expatpp\vc_pp\expatpp\ReleaseMTDLL&quot;;C:\projects\boost\boost_1_40_0\stage\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"

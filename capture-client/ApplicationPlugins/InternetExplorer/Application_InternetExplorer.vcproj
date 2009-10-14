@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="comsuppw.lib Version.lib Advapi32.lib CaptureGlobal.obj psapi.lib"
+				AdditionalDependencies="comsuppw.lib Version.lib Advapi32.lib psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;C:\workingDir\capture-hpc\capture-hpc\trunk\capture-client\Release&quot;;&quot;C:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;&quot;C:\Program Files\boost\boost_1_34_0\lib&quot;;&quot;c:\program files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
 				GenerateDebugInformation="true"
