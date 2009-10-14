@@ -5,7 +5,7 @@
 #include <strsafe.h>
 
 bool Logger::debug_output_enabled = true;
-bool Logger::console_output = false;
+bool Logger::console_output = true;
 
 Logger::Logger(void)
 {
@@ -177,7 +177,7 @@ void Logger::DebugOutput(OutputType type, const char* format, ... )
 
 	if(Logger::console_output)
 	{
-		LOG(INFO, output.c_str());
+		printf(output.c_str());
 	}
 	else
 	{

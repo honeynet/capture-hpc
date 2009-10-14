@@ -1,2 +1,5 @@
-#[+,-]	[connection|listening]	[Process Name]	[Destination IP Address:Port]
+#[+,-]	[connection|listening|udp-send|udp-receive]	[Process Name]	[Destination IP Address:Port]
 +	connection	C:\\Program Files\\Internet Explorer\\iexplore\.exe	.*
++	udp-send	.*Explorer\.exe	*.
++	udp-receive	.*Explorer\.exe	*.
+
