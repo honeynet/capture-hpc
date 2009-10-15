@@ -20,7 +20,7 @@ NetworkAdapter::~NetworkAdapter(void)
 void
 NetworkAdapter::start()
 {
-	LOG(INFO, "Starting network adapter\n");
+	LOG(INFO, "Starting network adapter");
 	if(!running)
 	{
 		char* szLogFileName = new char[1024];
@@ -36,7 +36,7 @@ NetworkAdapter::start()
 		adapterThread->start(t);
 		running = true;
 		delete [] szLogFileName;
-		LOG(INFO, "Started network adapter\n");
+		LOG(INFO, "Started network adapter");
 	}
 }
 
@@ -47,28 +47,10 @@ string NetworkAdapter::getAdapterName() {
 void
 NetworkAdapter::stop()
 {
-	LOG(INFO, "Stopping network adapter\n");
+	LOG(INFO, "Stopping network adapter");
 	if(running)
 	{
-		LOG(INFO, "NetworkAdapter::stop() stopping adapterThread\n");
-		adapterThread->stop();
-		DWORD dwWaitResult;
-		dwWaitResult = adapterThread->wait(5000);
-		switch (dwWaitResult) 
-		{
-        // All thread objects were signaled
-        case WAIT_OBJECT_0: 
-            LOG(INFO, "NetworkAdapter::stop() stopped adapterThread\n");
-			break;
-		case WAIT_TIMEOUT:
-			LOG(INFO, "NetworkAdapter::stop() stopping adapterThread timed out. Attempting to terminate.\n");
-			adapterThread->terminate();
-			LOG(INFO, "NetworkAdapter::stop() terminated adapterThread.\n");
-			break;
-        // An error occurred
-        default: 
-            LOG(INFO, "NetworkAdapter stopping adapterThread failed (%d)\n", GetLastError());
-		} 
+		adapterThread->exit();
 		delete adapterThread;
 		if(dumpFile != NULL)
 			networkPacketDumper->pfn_pcap_dump_close(dumpFile);

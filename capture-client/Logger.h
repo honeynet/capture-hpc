@@ -25,6 +25,7 @@
 
 enum OutputType
 {
+	EVENT,
 	INFO,
 	WARNING,
 	ERR

@@ -153,6 +153,7 @@ Logger::closeLogFile()
 
 static const char* OutputTypeStrings[] = 
 {
+	"EVENT: ",
 	"INFO: ",
 	"WARNING: ",
 	"ERROR: "

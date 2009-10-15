@@ -37,7 +37,7 @@ void PluginTest::loadTest() {
 		for each(Url* url in visitEvent->getUrls())
 		{
 			if(url->getMajorErrorCode()!=0) {
-				LOG(INFO, "PLUGIN TEST: URL ERROR %d\n",url->getMajorErrorCode());
+				LOG(INFO, "PLUGIN TEST: URL ERROR %d",url->getMajorErrorCode());
 			}
 		}
 
@@ -67,7 +67,7 @@ PluginTest::loadIEPlugin()
 	wchar_t pluginDirectoryPath[1024];
 
 	GetFullPathName(L"plugins\\Application_InternetExplorer.dll", 1024, pluginDirectoryPath, NULL);
-	LOG(INFO, "Capture-Visitor: Plugin directory - %ls\n", pluginDirectoryPath);
+	LOG(INFO, "Visitor: Plugin directory - %ls", pluginDirectoryPath);
 	hFind = FindFirstFile(pluginDirectoryPath, &FindFileData);
 
 	if (hFind != INVALID_HANDLE_VALUE) 
@@ -83,25 +83,22 @@ PluginTest::loadIEPlugin()
 			if(ie == NULL) {
 				FreeLibrary(hPlugin);
 			} else {
-				LOG(INFO, "Loaded plugin: %ls\n", FindFileData.cFileName);
+				LOG(INFO, "Loaded plugin: %ls", FindFileData.cFileName);
 			}
 		}
 		FindClose(hFind);
 	}
-	LOG(INFO, "loadIEPlugin() end\n");
 }
 
 void
 PluginTest::loadIEBulkPlugin()
 {
-	LOG(INFO, "loadIEBulkPlugin() start\n");
-
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	wchar_t pluginDirectoryPath[1024];
 
 	GetFullPathName(L"plugins\\Application_InternetExplorerBulk.dll", 1024, pluginDirectoryPath, NULL);
-	LOG(INFO, "Capture-Visitor: Plugin directory - %ls\n", pluginDirectoryPath);
+	LOG(INFO, "Visitor: Plugin directory - %ls", pluginDirectoryPath);
 	hFind = FindFirstFile(pluginDirectoryPath, &FindFileData);
 
 	if (hFind != INVALID_HANDLE_VALUE) 
@@ -117,12 +114,11 @@ PluginTest::loadIEBulkPlugin()
 			if(ie == NULL) {
 				FreeLibrary(hPlugin);
 			} else {
-				LOG(INFO, "Loaded plugin: %ls\n", FindFileData.cFileName);
+				LOG(INFO, "Loaded plugin: %ls", FindFileData.cFileName);
 			}
 		}
 		FindClose(hFind);
 	}
-	LOG(INFO, "loadIEPlugin() end\n");
 }
 
 ApplicationPlugin*

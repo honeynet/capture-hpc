@@ -28,8 +28,6 @@ ProcessMonitor::ProcessMonitor(void)
 	wchar_t kernelDriverPath[1024];
 	wchar_t exListDriverPath[1024];
 
-	hMonitorStoppedEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-
 	driverInstalled = false;
 	monitorRunning = false;
 	hEvent = INVALID_HANDLE_VALUE;
@@ -53,7 +51,7 @@ ProcessMonitor::ProcessMonitor(void)
 					FILE_FLAG_OVERLAPPED,  // Perform asynchronous I/O
 					0);                    // No template
 		if(INVALID_HANDLE_VALUE == hDriver) {
-			LOG(INFO, "ProcessMonitor: ERROR - CreateFile Failed: %08x\n", GetLastError());
+			LOG(INFO, "ProcessMonitor: ERROR - CreateFile Failed: %08x", GetLastError());
 		} else {
 			initialiseKernelDriverProcessMap();
 			driverInstalled = true;
@@ -70,7 +68,6 @@ ProcessMonitor::~ProcessMonitor(void)
 		driverInstalled = false;
 		CloseHandle(hDriver);	
 	}
-	CloseHandle(hMonitorStoppedEvent);
 }
 
 boost::signals::connection 
@@ -148,27 +145,9 @@ ProcessMonitor::stop()
 	if(isMonitorRunning() && isDriverInstalled())
 	{
 		monitorRunning = false;
-		WaitForSingleObject(hMonitorStoppedEvent, 1000);
 		CloseHandle(hEvent);
-		LOG(INFO, "ProcessMonitor::stop() stopping thread.\n");
-		processMonitorThread->stop();
-		DWORD dwWaitResult;
-		dwWaitResult = processMonitorThread->wait(5000);
-		switch (dwWaitResult) 
-		{
-        // All thread objects were signaled
-        case WAIT_OBJECT_0: 
-            LOG(INFO, "ProcessMonitor::stop() stopped processMonitorThread.\n");
-			break;
-		case WAIT_TIMEOUT:
-			LOG(INFO, "ProcessMonitor::stop() stopping processMonitorThread timed out. Attempting to terminate.\n");
-			processMonitorThread->terminate();
-			LOG(INFO, "ProcessMonitor::stop() terminated processMonitorThread.\n");
-			break;
-        // An error occurred
-        default: 
-            LOG(INFO, "ProcessMonitor stopping processMonitorThread failed (%d)\n", GetLastError());
-		} 
+
+		processMonitorThread->exit();
 		delete processMonitorThread;
 	}
 }
@@ -181,23 +160,18 @@ void ProcessMonitor::onProcessEvent(BOOLEAN create, DWORD processId, DWORD paren
 	
 	processPath = ProcessManager::getInstance()->getProcessPath(processId);
 	
-
-	LOG(INFO, "Capture-ProcessMonitor: onProcessEvent - processPath: %s\n",processPath.c_str());
-
 	ProcessManager::getInstance()->onProcessEvent(create, time, parentProcessId, 
 		processId, processPath);
 
 	// Get process name and path
 	processModuleName = ProcessManager::getInstance()->getProcessModuleName(processId);
 	
-
 	// Get parent process name and path
 	parentProcessModuleName = ProcessManager::getInstance()->getProcessModuleName(parentProcessId);
 	parentProcessPath = ProcessManager::getInstance()->getProcessPath(parentProcessId);
-	LOG(INFO, "Capture-ProcessMonitor: onEvent %i %i:%ls -> %i:%ls\n", create, parentProcessId, parentProcessPath.c_str(), processId, processPath.c_str()); 
+	LOG(INFO, "received process event %i %i:%ls -> %i:%ls", create, parentProcessId, parentProcessPath.c_str(), processId, processPath.c_str()); 
 	if(!Monitor::isEventAllowed(processModuleName,parentProcessModuleName,processPath))
 	{
-		LOG(INFO, "Capture-ProcessMonitor: onEvent not allowed %i %i:%ls -> %i:%ls\n", create, parentProcessId, parentProcessPath.c_str(), processId, processPath.c_str()); 
 		signalProcessEvent(create, time, parentProcessId, parentProcessPath, processId, processPath);
 	}
 }
@@ -212,10 +186,10 @@ ProcessMonitor::run()
 	DWORD      dwBytesReturned = 0;
 	while(running && isMonitorRunning())
 	{
+		DWORD status = WaitForSingleObject(hEvent, 1000);
+		if(status == WAIT_TIMEOUT)
+			continue;
 
-		LOG(INFO, "Capture-ProcessMonitor: waiting for hEvent signal\n");
-		WaitForSingleObject(hEvent, INFINITE);
-		LOG(INFO, "Capture-ProcessMonitor: hEvent signal received\n");
 		BOOL       bReturnCode = FALSE;
 		
 		ProcessInfo p;
@@ -236,8 +210,6 @@ ProcessMonitor::run()
 				p.ParentId != tempP.ParentId ||
 				p.ProcessId != tempP.ProcessId)
 			{		
-				LOG(INFO, "Capture-ProcessMonitor: onEvent1 %i %i -> %i\n", p.bCreate, p.ParentId, p.ProcessId); 
-
 				std::wstring time = Time::timefieldToString(p.time);
 				DWORD processId = p.ProcessId;
 				DWORD parentProcessId = p.ParentId;
@@ -246,17 +218,7 @@ ProcessMonitor::run()
 				onProcessEvent(create,processId,parentProcessId,time);
 
 				tempP = p;
-			} else {
-				LOG(INFO, "Capture-ProcessMonitor: onEvent2 %i %i -> %i\n", p.bCreate, p.ParentId, p.ProcessId); 
-
-				std::wstring processPath;
-				std::wstring parentProcessPath;
-				processPath = ProcessManager::getInstance()->getProcessPath(p.ProcessId);
-				parentProcessPath = ProcessManager::getInstance()->getProcessPath(p.ParentId);
-				
-				LOG(INFO, "Capture-ProcessMonitor: onEvent already processed %i %i:%ls -> %i:%ls\n", p.bCreate, p.ParentId, parentProcessPath.c_str(), p.ProcessId, processPath.c_str()); 
 			}
 		}
 	}
-	SetEvent(hMonitorStoppedEvent);
 }

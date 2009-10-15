@@ -14,8 +14,6 @@ FileMonitor::FileMonitor(void)
 	int turn = 0;
 	communicationPort = INVALID_HANDLE_VALUE;
 	monitorModifiedFiles = false;
-
-	hMonitorStoppedEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	
 	FilterUnload(L"CaptureFileMonitor");
 	hResult = FilterLoad(L"CaptureFileMonitor");
@@ -31,7 +29,7 @@ FileMonitor::FileMonitor(void)
 		if (IS_ERROR( hResult )) {
 			LOG(ERR, "FileMonitor: could not connect to filter - %08x", hResult);
 		} else {
-			LOG(ERR, "FileMonitor: loaded filter driver");
+			LOG(INFO, "FileMonitor: loaded filter driver");
 			driverInstalled = true;
 		}
 		
@@ -133,7 +131,6 @@ FileMonitor::~FileMonitor(void)
 		CloseHandle(communicationPort);
 		FilterUnload(L"CaptureFileMonitor");
 	}
-	CloseHandle(hMonitorStoppedEvent);
 }
 
 void 
@@ -236,23 +233,7 @@ FileMonitor::stop()
 	if(isMonitorRunning() && isDriverInstalled())
 	{
 		monitorRunning = false;
-		WaitForSingleObject(hMonitorStoppedEvent, 1000);
-		fileMonitorThread->stop();
-		DWORD dwWaitResult;
-		dwWaitResult = fileMonitorThread->wait(5000);
-		switch (dwWaitResult) 
-		{
-        // All thread objects were signaled
-        case WAIT_OBJECT_0: 
-			break;
-		case WAIT_TIMEOUT:
-			LOG(WARNING, "FileMonitor: terminating monitor thread");
-			fileMonitorThread->terminate();
-			break;
-        // An error occurred
-        default: 
-			break;
-		} 
+		fileMonitorThread->exit();
 		delete fileMonitorThread;
 		free(fileEvents);
 	}	
@@ -430,5 +411,4 @@ FileMonitor::run()
 			Sleep(FILE_EVENT_WAIT_TIME);
 		}
 	}
-	SetEvent(hMonitorStoppedEvent);
 }

@@ -9,9 +9,7 @@
 #include <exception>
 
 Visitor::Visitor(void)
-{
-	LOG(INFO, "here");
-	
+{	
 	visiting = false;
 
 	hQueueNotEmpty = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -82,7 +80,7 @@ Visitor::run()
 			visiting = false;
 		}
 	} catch (...) {
-		LOG(INFO, "Visitor::run exception\n");	
+		LOG(ERR, "Visitor: plugin exception occured");	
 		throw;
 	}
 }
@@ -96,7 +94,7 @@ Visitor::loadClientPlugins()
 	wchar_t pluginDirectoryPath[1024];
 
 	GetFullPathName(L"plugins\\Application_*.dll", 1024, pluginDirectoryPath, NULL);
-	LOG(INFO, "Capture-Visitor: Plugin directory - %ls\n", pluginDirectoryPath);
+	LOG(INFO, "Capture-Visitor: Plugin directory - %ls", pluginDirectoryPath);
 	hFind = FindFirstFile(pluginDirectoryPath, &FindFileData);
 
 	if (hFind != INVALID_HANDLE_VALUE) 
@@ -116,7 +114,7 @@ Visitor::loadClientPlugins()
 				if(applicationPlugin == NULL) {
 					FreeLibrary(hPlugin);
 				} else {
-					LOG(INFO, "Loaded plugin: %ls\n", FindFileData.cFileName);
+					LOG(INFO, "Loaded plugin: %ls", FindFileData.cFileName);
 					unsigned int g = applicationPlugin->getPriority();
 					wchar_t** supportedApplications = applicationPlugin->getSupportedApplicationNames();
 					for(int i = 0; supportedApplications[i] != NULL; i++)
@@ -133,24 +131,22 @@ Visitor::loadClientPlugins()
 								/* Over ride the exisiting plugin if the priority of the loaded one
 								   is greater */
 								applicationMap.erase(supportedApplications[i]);
-								LOG(INFO, "\toverride: added application: %ls\n", supportedApplications[i]);
+								LOG(INFO, "\toverride: added application: %ls", supportedApplications[i]);
 								applicationMap.insert(ApplicationPair(supportedApplications[i], applicationPlugin));
 							} else {
-								LOG(INFO, "\tplugin overridden: not adding application: %ls\n", supportedApplications[i]);
+								LOG(INFO, "\tplugin overridden: not adding application: %ls", supportedApplications[i]);
 							}
 						} else {
-							LOG(INFO, "\tinserted: added application: %ls\n", supportedApplications[i]);
+							LOG(INFO, "\tinserted: added application: %ls", supportedApplications[i]);
 							applicationMap.insert(ApplicationPair(supportedApplications[i], applicationPlugin)); 
 						}
 					}
 				}
 			} else {
-				LOG(INFO, "Unable to load library.\n");
+				LOG(INFO, "Unable to load library");
 			}
 		} while(FindNextFile(hFind, &FindFileData) != 0);
 		FindClose(hFind);
-	} else {
-		LOG(INFO, "Unable to open first plugin.\n");
 	}
 }
 
@@ -261,7 +257,6 @@ Visitor::onServerEvent(const Element& element)
 		toVisit.push(visitEvent);
 		SetEvent(hQueueNotEmpty);
 	} else {
-		LOG(INFO, "Visitor-onServerEvent: ERROR no url specified for visit event\n");
 		delete visitEvent;
 	}
 }

@@ -198,7 +198,7 @@ ProcessManager::getProcessPath(DWORD processId)
 	if(!hProc)
 	{
 		cacheFailures++;
-		LOG(INFO, "ProcessManager: Cache failure1 - process id = %i", processId); 
+		LOG(WARNING, "ProcessManager: Cache failure - process id = %i", processId); 
 		processPath = L"UNKNOWN";
 		return convertFileObjectPathToDOSPath(processPath);
 	}
@@ -210,7 +210,7 @@ ProcessManager::getProcessPath(DWORD processId)
 	{
 		processPath = szTemp;
 		//this occurs when the process monitor is slower than the registry/file monitor
-		LOG(INFO, "ProcessManager: Cache miss %i -> %ls", processId, processPath.c_str()); 
+		LOG(WARNING, "ProcessManager: Cache miss %i -> %ls", processId, processPath.c_str()); 
 		insertProcess(processId, processPath);
 
 		if(processMonitor != NULL) {
@@ -224,7 +224,7 @@ ProcessManager::getProcessPath(DWORD processId)
 	} else {
 		cacheFailures++;
 		processPath=L"UNKNOWN";
-		LOG(INFO, "ProcessManager: Cache failure2 - process id = %i", processId); 
+		LOG(WARNING, "ProcessManager: Cache failure - process id = %i", processId); 
 	}
 	return convertFileObjectPathToDOSPath(processPath);		
 }

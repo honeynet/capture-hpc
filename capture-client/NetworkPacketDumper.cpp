@@ -14,7 +14,7 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 	hModWinPcap = LoadLibrary(L"wpcap.dll");
 	if(hModWinPcap == NULL)
 	{
-		LOG(INFO, "NetworkPacketDumper: ERROR - wpcap.dll not found. Check that winpcap is installed on this system\n");
+		LOG(INFO, "NetworkPacketDumper: ERROR - wpcap.dll not found. Check that winpcap is installed on this system");
 	} else {
 		pfn_pcap_findalldevs = (pcap_findalldevs_c)GetProcAddress(hModWinPcap, "pcap_findalldevs");
 		pfn_pcap_open_live = (pcap_open_live_c)GetProcAddress(hModWinPcap, "pcap_open_live");
@@ -31,7 +31,7 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 		{
 			driverInstalled = true;
 		} else {
-			LOG(INFO, "NetworkPacketDumper: ERROR - incorrect version of wpcap.dll. Check the correct version of winpcap installed\n");
+			LOG(INFO, "NetworkPacketDumper: ERROR - incorrect version of wpcap.dll. Check the correct version of winpcap installed");
 		}
 	}
 
@@ -39,9 +39,9 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 	{
 		if(pfn_pcap_findalldevs(&allDevices, errbuf) == -1)
 		{
-			LOG(ERR, "error in pcap_findalldevs: %s\n", errbuf);
+			LOG(ERR, "error in pcap_findalldevs: %s", errbuf);
 		} else {
-			LOG(INFO, "Loading network packet dumper\n");
+			LOG(INFO, "Loading network packet dumper");
 		}
 		
 		for(device = allDevices; device; device = device->next)
@@ -51,7 +51,7 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 				pcap_t *fp;			
 				if ((fp = pfn_pcap_open_live(device->name, 65536, 0, 1000, errbuf)) == NULL)
 				{
-					LOG(INFO, "\terror could not open network adapter\n");
+					LOG(INFO, "\terror could not open network adapter");
 				} else {
 					/* Only start capturing packets for network adapters that have ip addresses */
 					for(pcap_addr_t* a = device->addresses; a; a = a->next) 
@@ -61,7 +61,7 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 							if (a->addr)
 							{
 								char * address = inet_ntoa(((struct sockaddr_in *)a->addr)->sin_addr);
-								LOG(INFO, "\tnetwork adapter found: %s\n", address);
+								LOG(INFO, "\tnetwork adapter found: %s", address);
 								NetworkAdapter* networkAdapter = new NetworkAdapter(this,address, fp);
 								adapterList.push_back(networkAdapter);
 							}
@@ -78,7 +78,6 @@ NetworkPacketDumper::NetworkPacketDumper(void)
 
 NetworkPacketDumper::~NetworkPacketDumper(void)
 {
-	LOG(INFO, "NetworkdPacketDumper delete\n");
 	stop();
 	std::list<NetworkAdapter*>::iterator it;
 	for(it = adapterList.begin(); it != adapterList.end(); it++)
@@ -99,7 +98,7 @@ NetworkPacketDumper::start()
 		for(it = adapterList.begin(); it != adapterList.end(); it++)
 		{
 			(*it)->start();
-			LOG(INFO, "Started network dumper\n");
+			LOG(INFO, "Started network dumper");
 
 		}
 		monitorRunning = true;
@@ -116,7 +115,7 @@ void NetworkPacketDumper::deleteAdapterFiles() {
 		logName += adapterName;
 		logName += ".pcap";
 		GetFullPathNameA(logName.c_str(), 1024, szLogFileName, NULL);
-		LOG(INFO, "NetworkdPacketDumper deleteAdapterFiles - deleting %s\n",logName.c_str());
+		LOG(INFO, "NetworkdPacketDumper: deleting log files %s",logName.c_str());
 		DeleteFileA(szLogFileName);
 		delete [] szLogFileName;
 	}
@@ -131,10 +130,7 @@ NetworkPacketDumper::stop()
 		std::list<NetworkAdapter*>::iterator it;
 		for(it = adapterList.begin(); it != adapterList.end(); it++)
 		{
-			LOG(INFO, "NetworkPacketDumper::stop() stopping adapter X\n");
 			(*it)->stop();
-			LOG(INFO, "Stopped network dumper\n");
-			LOG(INFO, "NetworkPacketDumper::stop() stopped adapter X\n");
 		}
 		monitorRunning = false;
 	}	

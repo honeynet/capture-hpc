@@ -202,7 +202,6 @@ private:
 	Thread* fileMonitorThread;
 	HANDLE hDriver;
 	HANDLE communicationPort;
-	HANDLE hMonitorStoppedEvent;
 	signal_fileEvent signal_onFileEvent;
 	stdext::hash_map<std::wstring, std::wstring> dosNameMap;
 	stdext::hash_set<std::wstring> modifiedFiles;

@@ -44,7 +44,7 @@ OptionsManager::onOptionEvent(const Element& element)
 		}
 		if(option != L"" && value != L"")
 		{
-			LOG(INFO, "Received option event: %ls => %ls\n", option.c_str(), value.c_str());
+			LOG(INFO, "Received option event: %ls => %ls", option.c_str(), value.c_str());
 			addOption(option, value);
 		}
 	}

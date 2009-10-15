@@ -112,27 +112,27 @@ Monitor::installKernelDriver(const std::wstring& driverPath, const std::wstring&
         {
             if(StartService(hService, 0, NULL))
 			{
-				LOG(INFO, "Loaded kernel driver: %ls\n", driverName.c_str());
+				LOG(INFO, "Loaded kernel driver: %ls", driverName.c_str());
 			} else {
 				DWORD err = GetLastError();
 				if(err == ERROR_SERVICE_ALREADY_RUNNING)
 				{
-					LOG(INFO, "Driver already loaded: %ls\n", driverName.c_str());
+					LOG(INFO, "Driver already loaded: %ls", driverName.c_str());
 				} else {
-					LOG(INFO, "Error loading kernel driver: %ls - 0x%08x\n", driverName.c_str(), err);
+					LOG(INFO, "Error loading kernel driver: %ls - 0x%08x", driverName.c_str(), err);
 					CloseServiceHandle(hSCManager);
 					return false;
 				}
 			}
 		} else {
-			LOG(INFO, "Error loading kernel driver: %ls - 0x%08x\n", driverName.c_str(), GetLastError());
+			LOG(INFO, "Error loading kernel driver: %ls - 0x%08x", driverName.c_str(), GetLastError());
 			CloseServiceHandle(hSCManager);
 			return false;
 		}
         CloseServiceHandle(hSCManager);
 		return true;
     }
-	LOG(INFO, "Error loading kernel driver: %ls - OpenSCManager 0x%08x\n", driverName.c_str(), GetLastError());
+	LOG(INFO, "Error loading kernel driver: %ls - OpenSCManager 0x%08x", driverName.c_str(), GetLastError());
 	return false;
 }
 
@@ -154,7 +154,7 @@ Monitor::loadExclusionList(const std::wstring& file)
 {
 	std::string line;
 	int lineNumber = 0;
-	LOG(INFO, "Monitor-loadExclusionList: Loading list - %ls\n", file.c_str());
+	LOG(INFO, "loading exclusion list - %ls", file.c_str());
 	std::ifstream exclusionList (file.c_str());
 	if (exclusionList.is_open())
 	{
@@ -180,24 +180,24 @@ Monitor::loadExclusionList(const std::wstring& file)
 						{
 							if(splitLine[1] == L".*" || splitLine[1] == L".+")
 							{
-								LOG(INFO, "%ls ERROR on line %i: The action type is not supposed to be a regular expression\n", file.c_str(), lineNumber);
+								LOG(INFO, "%ls ERROR on line %i: The action type is not supposed to be a regular expression", file.c_str(), lineNumber);
 							} else {
 								addExclusion(splitLine[0], splitLine[1], splitLine[2], splitLine[3]);
 							}
 						} else {
-							LOG(INFO, "%ls token ERROR on line %i\n", file.c_str(), lineNumber);
+							LOG(INFO, "%ls token ERROR on line %i", file.c_str(), lineNumber);
 						}
 					} else {
-						LOG(INFO, "%ls ERROR no exclusion type (+,-) on line %i\n", file.c_str(), lineNumber);
+						LOG(INFO, "%ls ERROR no exclusion type (+,-) on line %i", file.c_str(), lineNumber);
 					}
 				} catch(boost::regex_error r) {				
-					LOG(INFO, "%ls ERROR on line %i\n", file.c_str(), lineNumber);
-					LOG(INFO, "\t%s\n", r.what());
+					LOG(INFO, "%ls ERROR on line %i", file.c_str(), lineNumber);
+					LOG(INFO, "\t%s", r.what());
 				}
 			}
 		}
 	} else {
-		LOG(INFO, "Could not open file: %ls\n", file.c_str());
+		LOG(INFO, "Could not open file: %ls", file.c_str());
 	}
 }
 

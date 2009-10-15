@@ -81,7 +81,7 @@ Server::connectToServer(bool startSenderAndReciever)
 		aiHints.ai_family = AF_INET;
 		aiHints.ai_socktype = SOCK_STREAM;
 		aiHints.ai_protocol = IPPROTO_TCP;
-		LOG(INFO, "Connecting to: %ls:%s\n", serverAddress.c_str(), sport);
+		LOG(INFO, "Connecting to: %ls:%s", serverAddress.c_str(), sport);
 		wcstombs_s(&charsConverted, szServerAddress, 512, serverAddress.c_str(), serverAddress.length() + 1);
 		if ((getaddrinfo(szServerAddress, sport, &aiHints, &aiList)) == 0)
 		{
@@ -96,7 +96,7 @@ Server::connectToServer(bool startSenderAndReciever)
 				{
 					u_long iMode = 1;
 					//ioctlsocket(serverSocket, FIONBIO, &iMode);
-					LOG(INFO, "Connected to server at %s\n", szServerAddress);
+					LOG(INFO, "Connected to server at %s", szServerAddress);
 					setConnected(true);
 					if(startSenderAndReciever)
 					{
@@ -105,9 +105,9 @@ Server::connectToServer(bool startSenderAndReciever)
 					freeaddrinfo(aiList);
 					return true;
 				} else {
-					LOG(INFO, "Could not connect to server\n");
-					LOG(INFO, "\tSocket error: %i\n", WSAGetLastError());
-					LOG(INFO, "Retrying...\n");
+					LOG(INFO, "Could not connect to server");
+					LOG(INFO, "\tSocket error: %i", WSAGetLastError());
+					LOG(INFO, "Retrying...");
 					Sleep(1000);
 					count++;
 				}
@@ -134,16 +134,14 @@ Server::sendMessage(const std::wstring& message)
 			EnterCriticalSection(&sendQueueLock);
 			result = send(serverSocket, szMessage, bytes, 0);	
 			LeaveCriticalSection(&sendQueueLock);
-			LOG(INFO, "Capture-Server-sendMessage: Allocated: %i, Converted: %i, Sent: %i\n", mbsize, bytes, result);
+			LOG(INFO, "Server: send message Allocated: %i, Converted: %i, Sent: %i", mbsize, bytes, result);
 			if(result == SOCKET_ERROR)
 			{
-				LOG(INFO, "Capture-Server-sendMessage: Socket Error %i: %s\n", WSAGetLastError(), szMessage);
+				LOG(ERR, "Server: socket Error %i: %s", WSAGetLastError(), szMessage);
 				setConnected(false);
 			}
 			free(szMessage);
 		}	
-	} else {
-		LOG(INFO, "Server sendMessage not connected\n");
 	}
 }
 
@@ -155,11 +153,9 @@ Server::sendData(const char* data, size_t length)
 		int result = send(serverSocket, data, static_cast<int>(length), 0);
 		if(result == SOCKET_ERROR)
 		{
-			LOG(INFO, "Capture-Server-sendData: Socket Error %i", WSAGetLastError());
+			LOG(INFO, "Server: socket error %i", WSAGetLastError());
 			setConnected(false);
 		}
-	} else {
-		LOG(INFO, "Server sendData not connected\n");
 	}
 }
 

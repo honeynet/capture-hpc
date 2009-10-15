@@ -60,7 +60,6 @@ private:
 	
 	HANDLE hEvent;
 	HANDLE hDriver;
-	HANDLE hMonitorStoppedEvent;
 	Thread* processMonitorThread;
 	signal_processEvent signalProcessEvent;
 	bool driverInstalled;

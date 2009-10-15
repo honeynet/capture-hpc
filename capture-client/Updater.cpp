@@ -45,7 +45,7 @@ Updater::onReceiveUpdateEvent(const Element& element)
 		send_element.setName(L"update-accept");
 		server->sendElement(send_element);
 	} else {
-		LOG(INFO, "Updater: ERROR - Can only download one update at a time\n");
+		LOG(ERR, "Updater: can only download one update at a time");
 		send_element.setName(L"update-reject");
 		server->sendElement(send_element);
 	}
@@ -81,7 +81,7 @@ Updater::onReceiveUpdatePartEvent(const Element& element)
 
 		free(decodedData);
 	} else {
-		LOG(INFO, "Updater: ERROR - File not allocated: %08x\n", GetLastError());
+		LOG(ERR, "Updater: file not allocated: %08x", GetLastError());
 		send_element.setName(L"update-error");
 		server->sendElement(send_element);
 	}
@@ -102,7 +102,7 @@ Updater::onReceiveUpdateFinishedEvent(const Element& element)
                    NULL);                 // no attr. template
 	if(hFile ==  INVALID_HANDLE_VALUE)
 	{
-		LOG(INFO, "Updater: ERROR - Could not open file: %08x\n", GetLastError());
+		LOG(ERR, "Updater: could not open file: %08x", GetLastError());
 		send_element.setName(L"update-error");
 		server->sendElement(send_element);
 	} else {

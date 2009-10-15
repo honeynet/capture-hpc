@@ -77,7 +77,7 @@ Analyzer::~Analyzer(void)
 void
 Analyzer::onOptionChanged(const std::wstring& option)
 {
-	LOG(INFO, "Analyzer: received option changed - %ls", option.c_str());
+	LOG(INFO, "Analyzer: option changed - %ls", option.c_str());
 
 	std::wstring value = OptionsManager::getInstance()->getOption(option); 
 	if(option == L"capture-network-packets-malicious" || 
@@ -85,7 +85,7 @@ Analyzer::onOptionChanged(const std::wstring& option)
 		if(value == L"true")
 		{
 			if(networkPacketDumper == NULL) {
-				LOG(INFO, "Creating network dumper\n");
+				LOG(INFO, "Creating network dumper");
 				networkPacketDumper = new NetworkPacketDumper();
 			}
 			captureNetworkPackets = true;
@@ -147,7 +147,7 @@ Analyzer::start()
 		fileMonitor->setMonitorModifiedFiles(true);
 	}
 
-	LOG(INFO, "Analyzer: starting");
+	LOG(INFO, "Analyzer: started");
 }
 
 void
@@ -312,7 +312,7 @@ Analyzer::compressLogDirectory(const std::wstring& logFileName)
 	}
 	else
 	{
-		LOG(ERR, "Analyzer: cannot open 7za.exe process - 0x%08x\n", GetLastError());
+		LOG(ERR, "Analyzer: cannot open 7za.exe process - 0x%08x", GetLastError());
 		exit(0);
 		return false;
 	}
@@ -385,7 +385,7 @@ Analyzer::sendSystemEvent(const std::wstring& type, const std::wstring& time, co
 	if(OptionsManager::getInstance()->getOption(L"log-system-events-file") == L"")
 	{
 		// Output the event to stdout
-		LOG(INFO, "%ls: %ls %ls %ls -> %ls %ls\n", type.c_str(), action.c_str(), sprocessId.c_str(), process.c_str(), object2.c_str(), object1.c_str());
+		LOG(EVENT, "%ls: %ls %ls %ls -> %ls %ls", type.c_str(), action.c_str(), sprocessId.c_str(), process.c_str(), object2.c_str(), object1.c_str());
 	} else {
 		// Send the event to the logger
 		Logger::getInstance()->writeSystemEventToLog(type, time, sprocessId, process, action, object1, object2);
@@ -400,8 +400,6 @@ Analyzer::onProcessEvent(BOOLEAN created, const std::wstring& time,
 						 DWORD parentProcessId, const std::wstring& parentProcess, 
 						 DWORD processId, const std::wstring& process)
 {
-	LOG(INFO, "Analyzer: received process event");
-
 	malicious = true;
 	std::wstring processEvent = L"process";
 	std::wstring processType = L"";
@@ -423,8 +421,6 @@ void
 Analyzer::onRegistryEvent(const std::wstring& registryEventType, const std::wstring& time, 
 						  const DWORD processId, const std::wstring& processPath, const std::wstring& registryEventPath)
 {
-	LOG(INFO, "Analyzer: received registry event");
-
 	malicious = true;
 	std::wstring dummy = L"-1";
 	std::wstring registryEvent = L"registry";
@@ -436,8 +432,6 @@ void
 Analyzer::onFileEvent(const std::wstring& fileEventType, const std::wstring& time, const DWORD processId, 
 						 const std::wstring& processPath, const std::wstring& fileEventPath)
 {
-	LOG(INFO, "Analyzer: received file event");
-
 	malicious = true;
 	std::wstring fileEvent = L"file";
 	std::wstring dummy = L"-1";
@@ -449,8 +443,6 @@ void
 Analyzer::onConnectionEvent(const std::wstring& networkEventType, const std::wstring& time, const DWORD processId, 
 						 const std::wstring& processPath, const std::wstring& networkEventPath)
 {
-	LOG(INFO, "Analyzer: received connection event");
-
 	malicious = true;
 	std::wstring networkEvent = L"connection";
 	std::wstring dummy = L"-1";

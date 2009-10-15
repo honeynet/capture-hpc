@@ -44,8 +44,6 @@ RegistryMonitor::RegistryMonitor(void)
 	driverInstalled = false;
 	monitorRunning = false;
 
-	hMonitorStoppedEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-
 	GetFullPathName(L"RegistryMonitor.exl", 1024, exListDriverPath, NULL);
 	Monitor::loadExclusionList(exListDriverPath);
 
@@ -64,7 +62,7 @@ RegistryMonitor::RegistryMonitor(void)
 					FILE_FLAG_OVERLAPPED,  // Perform asynchronous I/O
 					0);                    // No template
 		if(INVALID_HANDLE_VALUE == hDriver) {
-			LOG(INFO, "RegistryMonitor: ERROR - CreateFile Failed: %i\n", GetLastError());
+			LOG(ERR, "RegistryMonitor: ERROR - CreateFile Failed: %i", GetLastError());
 		} else {
 			driverInstalled = true;
 		}
@@ -80,7 +78,6 @@ RegistryMonitor::~RegistryMonitor(void)
 		driverInstalled = false;
 		CloseHandle(hDriver);
 	}
-	CloseHandle(hMonitorStoppedEvent);
 }
 
 void
@@ -181,28 +178,8 @@ RegistryMonitor::stop()
 	if(isMonitorRunning() && isDriverInstalled())
 	{	
 		monitorRunning = false;
-		WaitForSingleObject(hMonitorStoppedEvent, 1000);
-		LOG(INFO, "RegistryMonitor::stop() stopping thread.\n");
-		registryMonitorThread->stop();
-		DWORD dwWaitResult;
-		dwWaitResult = registryMonitorThread->wait(5000);
-		switch (dwWaitResult) 
-		{
-        // All thread objects were signaled
-        case WAIT_OBJECT_0: 
-            LOG(INFO, "RegistryMonitor::stop() stopped registryMonitorThread.\n");
-			break;
-		case WAIT_TIMEOUT:
-			LOG(INFO, "RegistryMonitor::stop() stopping registryMonitorThread timed out. Attempting to terminate.\n");
-			registryMonitorThread->terminate();
-			LOG(INFO, "RegistryMonitor::stop() terminated registryMonitorThread.\n");
-			break;
-        // An error occurred
-        default: 
-            LOG(INFO, "RegistryMonitor stopping registryMonitorThread failed (%d)\n", GetLastError());
-		} 
 
-
+		registryMonitorThread->exit();
 
 		delete registryMonitorThread;
 		free(registryEventsBuffer);
@@ -339,5 +316,4 @@ RegistryMonitor::run()
 
 		Sleep(waitTime);
 	}
-	SetEvent(hMonitorStoppedEvent);
 }

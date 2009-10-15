@@ -145,7 +145,6 @@ private:
 
 	HANDLE hEvent;
 	HANDLE hDriver;
-	HANDLE hMonitorStoppedEvent;
 	BYTE* registryEventsBuffer;
 	Thread* registryMonitorThread;
 	signal_registryEvent signal_onRegistryEvent;

@@ -68,7 +68,6 @@ public:
 
 	~Thread() {
 		if(hStopEvent!=NULL) {
-			LOG(INFO, "Resetting hStopEvent");
 			ResetEvent(hStopEvent);
 		}
 		_threadObj = NULL;
@@ -123,12 +122,13 @@ public:
 
 		Stops the running thread that was created. Thread should monitor the shouldStop() function
 	*/
-	void stop() {
-		DWORD dwWaitResult;
+	bool stop() {
+		DWORD status;
 		_threadObj->running = false;
-		dwWaitResult = WaitForSingleObject( 
+		status = WaitForSingleObject( 
 			hThread, 
 			5000);
+		return (status != WAIT_TIMEOUT);
 	}
 
 	/*
@@ -140,6 +140,12 @@ public:
 		if(hThread != NULL)
 			return TerminateThread(hThread, 0);
 		return FALSE;
+	}
+
+	void exit()
+	{
+		if(!stop())
+			terminate();
 	}
   
 protected:

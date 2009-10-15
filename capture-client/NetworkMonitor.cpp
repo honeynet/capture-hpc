@@ -93,7 +93,7 @@ NetworkMonitor::NetworkMonitor(void)
 			driver_handle[1] == INVALID_HANDLE_VALUE)
 		{
 			Monitor::unInstallKernelDriver();
-			LOG(INFO, "NetworkMonitor: ERROR - CreateFile Failed: %08x\n", GetLastError());
+			LOG(ERR, "NetworkMonitor: createFile failed: %08x", GetLastError());
 		} 
 		else 
 		{
@@ -115,6 +115,7 @@ NetworkMonitor::~NetworkMonitor(void)
 
 	CloseHandle(event_count[0]);
 	CloseHandle(event_count[1]);
+	Monitor::unInstallKernelDriver();
 }
 
 void
