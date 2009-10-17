@@ -7,7 +7,7 @@ For convenient compilation, we have provided a makefile to compile the Capture C
 One needs the following software installed:
 	- the Windows 2003 WDK  (available at http://www.microsoft.com/whdc/devtools/WDK/default.mspx)
 	- the Windows Server 2003 Platform SDK (available at http://www.microsoft.com/downloads/details.aspx?FamilyId=A55B6B43-E24F-4EA3-A93E-40C0EC4F68E5&displaylang=en)
-	- the Boost C++ libraries 1.35.0 (available at http://www.boost.org/)
+	- the Boost C++ libraries 1.40.0 (available at http://www.boost.org/)
 	- WinPcap 4.0.2 Developer's Pack 
 	- Visual C++ 2008 (available at http://msdn.microsoft.com/vstudio/express/visualc/default.aspx)
 	- expatpp XML library v1.95.6 (available at http://www.oofile.com.au/downloads.html#DownloadXML)
