@@ -5,7 +5,7 @@ For convenient compilation, we have provided a makefile to compile the Capture C
 2. Prerequisites
 ----------------
 One needs the following software installed:
-	- the Windows 2003 WDK  (available at http://www.microsoft.com/whdc/devtools/WDK/default.mspx)
+	- the Windows Driver Kit Version 7.0.0 (available at http://www.microsoft.com/whdc/DevTools/WDK/WDKpkg.mspx)
 	- the Windows Server 2003 Platform SDK (available at http://www.microsoft.com/downloads/details.aspx?FamilyId=A55B6B43-E24F-4EA3-A93E-40C0EC4F68E5&displaylang=en)
 	- the Boost C++ libraries 1.40.0 (available at http://www.boost.org/)
 	- WinPcap 4.0.2 Developer's Pack 
@@ -15,9 +15,9 @@ One needs the following software installed:
 	- NSIS 2.38 (available from http://nsis.sourceforge.net/)
 
 Ensure that the following environment variables are set:
-	INCLUDE  - should be set to point to relevant include directories of VC++ libraries, Boost C++ libraries, Windows Server 2003 Platform SDK, Windows 2003 WDK, expatpp XML library and the WinPcap Developer's Pack. For example, INCLUDE could be set to: C:\Program Files\Microsoft Visual Studio 9.0\VC\include;C:\Boost\include\boost-1_35;C:\Program Files\Microsoft Platform SDK\Include;C:\WinDDK\6000\inc\api;c:\expatpp\src_pp;C:\WpdPack\Include;C:\expatpp\expat\lib
-	LIB 	- should be set to point to relevant lib directories of Boost C++ libraries, Windows Server 2003 Platform SDK, Windows 2003 WDK, expatpp XML library. For example, LIB could be set to: C:\Boost\lib;C:\Program Files\Microsoft Platform SDK\Lib;C:\WinDDK\6000\lib\wxp\i386;C:\expatpp\expat\lib;C:\expatpp\vc_pp\expatpp\ReleaseMT
-	WNETBASE - should be set to the Windows 2003 WDK install directory, for example: c:\WinDDK\6000
+	INCLUDE  - should be set to point to relevant include directories of VC++ libraries, Boost C++ libraries, Windows Server 2003 Platform SDK, Windows 2003 WDK, expatpp XML library and the WinPcap Developer's Pack. For example, INCLUDE could be set to: C:\Program Files\Microsoft Visual Studio 9.0\VC\include;C:\Boost\include\boost-1_40;C:\Program Files\Microsoft Platform SDK\Include;C:\WinDDK\7600.16385.0\inc\api;c:\expatpp\src_pp;C:\WpdPack\Include;C:\expatpp\expat\lib
+	LIB 	- should be set to point to relevant lib directories of Boost C++ libraries, Windows Server 2003 Platform SDK, Windows 2003 WDK, expatpp XML library. For example, LIB could be set to: C:\Boost\lib;C:\Program Files\Microsoft Platform SDK\Lib;C:\WinDDK\7600.16385.0\lib\wxp\i386;C:\expatpp\expat\lib;C:\expatpp\vc_pp\expatpp\ReleaseMT
+	WNETBASE - should be set to the Windows 2003 WDK install directory, for example: c:\WinDDK\7600.16385.0
 	
 Ensure that the following directories are in the PATH:
 	VCINSTALLDIR\bin

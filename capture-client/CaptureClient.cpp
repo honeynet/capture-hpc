@@ -264,13 +264,14 @@ private:
 int _tmain(int argc, WCHAR* argv[])
 {
 	printf("PROJECT: Capture-HPC\n");
-    printf("VERSION: 2.6\n");
-    printf("DATE: August 6, 2008\n");
+    printf("VERSION: 3.0\n");
+    printf("DATE: October 19, 2009\n");
     printf("COPYRIGHT HOLDER: Victoria University of Wellington, NZ\n");
     printf("AUTHORS:\n");
     printf("\tChristian Seifert (christian.seifert@gmail.com)\n");
     printf("\tRamon Steenson(rsteenson@gmail.com)\n");
-    printf("\n");
+	printf("\tVan Lam Le (vanlamle@gmail.com)\n");
+	printf("\n");
     printf("Capture-HPC is free software; you can redistribute it and/or modify\n");
     printf("it under the terms of the GNU General Public License, V2 as published by\n");
     printf("the Free Software Foundation.\n");
