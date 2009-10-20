@@ -49,6 +49,7 @@ copy-bat :
 	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\i386\*.sys $(INSTALL_DIR)
 	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\i386\*.sys $(INSTALL_DIR)
 	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\i386\*.sys $(INSTALL_DIR)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\i386\*.sys $(INSTALL_DIR)
 	copy $(MAKEDIR)\SetupScript\CaptureBAT-Setup.nsi $(INSTALL_DIR)
 	cd $(INSTALL_DIR)
 	makensis.exe CaptureBAT-Setup.nsi
@@ -70,6 +71,7 @@ copy-hpc :
 	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\i386\*.sys $(INSTALL_DIR_DEBUG)
 	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\i386\*.sys $(INSTALL_DIR_DEBUG)
 	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\i386\*.sys $(INSTALL_DIR_DEBUG)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\i386\*.sys $(INSTALL_DIR_DEBUG)
 	copy $(MAKEDIR)\SetupScript\CaptureClient-Setup.nsi $(INSTALL_DIR_DEBUG)
 	cd $(INSTALL_DIR_DEBUG)
 	makensis.exe CaptureClient-Setup.nsi
@@ -89,6 +91,7 @@ copy-hpc :
 	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\ProcessMonitor\i386\*.sys $(INSTALL_DIR)
 	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\i386\*.sys $(INSTALL_DIR)
 	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\FileMonitor\i386\*.sys $(INSTALL_DIR)
+	copy $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\i386\*.sys $(INSTALL_DIR)
 	copy $(MAKEDIR)\SetupScript\CaptureClient-Setup.nsi $(INSTALL_DIR)
 	cd $(INSTALL_DIR)
 	makensis.exe CaptureClient-Setup.nsi
@@ -160,3 +163,14 @@ clean:
 	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\objchk_wxp_x86 /s /q
 	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\objfre_wxp_x86 /f /s /q
 	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\RegistryMonitor\objfre_wxp_x86 /s /q
+	
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\objchk_wxp_x86\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\objchk_wxp_x86\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\objfre_wxp_x86\i386 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\objfre_wxp_x86\i386 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\objchk_wxp_x86 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\objchk_wxp_x86 /s /q
+	del $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\objfre_wxp_x86 /f /s /q
+	rmdir $(MAKEDIR)\KernelDrivers\CaptureKernelDrivers\NetworkMonitor\objfre_wxp_x86 /s /q
