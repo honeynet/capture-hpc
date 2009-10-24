@@ -5,12 +5,16 @@ public class Server
 	public Server(String[] args)
 	{
         System.out.println("PROJECT: Capture-HPC\n" +
-                "VERSION: 2.5\n" +
-                "DATE: Apr 25, 2008\n" +
+                "VERSION: 3.0\n" +
+                "DATE: Oct 24, 2009\n" +
                 "COPYRIGHT HOLDER: Victoria University of Wellington, NZ\n" +
                 "AUTHORS:\n" +
                 "\tChristian Seifert (christian.seifert@gmail.com)\n" +
                 "\tRamon Steenson(ramon.steenson@gmail.com)\n" +
+                "\tVan Lam Le (vanlamle@gmail.com)\n" +
+				"\n" +
+				"For help, please refer to Capture-HPC mailing list at:\n" +
+				"\thttps://public.honeynet.org/mailman/listinfo/capture-hpc" +
                 "\n" +
                 "Capture-HPC is free software; you can redistribute it and/or modify\n" +
                 "it under the terms of the GNU General Public License, V2 as published by\n" +

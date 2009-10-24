@@ -10,12 +10,8 @@ Capture is written and distributed under the GNU General Public License.
 * VMWare Server 1.0.6 with VMware VIX (do not download VIX separately) (available at http://www.vmware.com/download/server/) 
 * Microsoft Windows XP, Microsoft Windows Vista or Linux (other OS might also be capable of running the server, but are not supported)
 * For database options: 
-  - Database server: MySQL server 5.1 or PostgreSQL server 8.3
-  - Libraries: 
-    + Mysql connector 5.1 or PostgreSQL connector 8.3
-    + Jakarta commons DBCP 1.2.2
-    + Apache Commons Pools 1.4
-    These libraries should be coppied to <Java folder>/jre/lib/ext
+  - Database server: No database (text files, MySQL server 5.1, or PostgreSQL server 8.3
+
 1.1 Installing the VMware VIX
 -----------------------------
 1. Install VMware server.
@@ -23,6 +19,7 @@ Capture is written and distributed under the GNU General Public License.
 2. Capture Server Installation
 ------------------------------
 Unpack the capture-server zip file.
+If capture should use a mysql or postgres database, setup an empty database capturehpc and run sql file capture_mysql.sql or capture_postgresql.sql to create tables and initial content. Please check that you can access the database and that tables exist.
 
 3. Capture Server Configuration
 -------------------------------
@@ -43,6 +40,7 @@ Configuring the server component requires editing the config.xml file that was d
 	- Firefox (applies divide-and-conquer algorithm): full support; however, firefox needs to be configured to open a blank page and not restore from previous sessions. In addition, because firefox does not have a callback that notifies the server when a page has successfully been retrieved, the client-default-visit-time needs to be increased to accommodate loading X firefox instances and retrieving the web pages. Some testing might be required to determine the appropriate value.
 	- Other: only group sizes of 1 are supported at this point
 * Add the local exclusion lists that would be pushed to the clients if that option is enabled 
+* Optionally add a mysql or postgres database configuration section. Specify database type, database server, database name, user name and password.
 * Add vmware servers
 	Specify the ip address, port, username, and password of the vmware server that hosts capture clients.
 * For each vmware server, add virtual machines that run a Capture Client.
@@ -100,12 +98,6 @@ Example: java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP list
 One can specify a specific client application to have Capture client to visit a server with (The default is set via the client-default global property in the config.xml. By default it is set to Internet Explorer Bulk). This occurs by appending a client identifier separated by two colons after the URI. Also one can overwrite the default visitation time, for example, http://www.google.com::firefox::45. The client identifier needs to be specified in the applications.conf on the client side and point to the executable of the client application. When group size is configured to be larger than 1, it is not recommended to overwrite the visitiation time and client. (see the Capture Client readme.txt for more information)
 
 DATABASE OPTION (Make sure you have installed MySQL server or PostgreSQL server if you want to use database functionalities)
- - Create database for capture-hpc: There are four scripts (in utilities folder) to create or remove database. You can change some configuration such as database name, username, password in these script before using them.
-  + create_mysql_database.sh: create database in MySQL server for capture-hpc. 
-  + remove_mysql_database.sh: remove database in MySQL server.
-  + create_postgresql_database.sh: create database in PosgreSQL server for capture-hpc. 
-  + remove_postgresql_database.sh: remove database in PostgreSQL server.
-
  - Operation options:
   + Without input-url file, Capture will get all urls from database (url table) for inspecting.
    java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port>

@@ -1,4 +1,4 @@
-1. Capture Client Compilation Instructions
+1. Capture Server Compilation Instructions
 ------------------------------------------
 For convenient compilation, we provide an Ant script for easy compilation of the Capture Server.
 
@@ -16,15 +16,13 @@ Ensure that the following environment variables are set:
 Ensure that the following directories are in the PATH:
 	JAVA_HOME/bin
 	ANT_HOME/bin
+	MYSQL/bin
 	VCINSTALLDIR/bin for Windows
 	path to gcc for Linux
+	
 For database options:
-  - Database server: MySQL server 5.1 or PostgreSQL server 8.3
-  - Libraries:
-    + Mysql connector 5.1 or PostgreSQL connector 8.3
-    + Jakarta commons DBCP 1.2.2
-    + Apache Commons Pools 1.4
-    These libraries should be coppied to <Java folder>/jre/lib/ext
+  - Database server: No database (text file based), MySQL server 5.1, or PostgreSQL server 8.3
+
 
 3. Compilation
 --------------
