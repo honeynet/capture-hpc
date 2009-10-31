@@ -165,12 +165,12 @@ NetworkMonitor::processUdpEvents(KernelEventList* udp_event_list)
 				if(connection_state == UDP_STATE_SEND ||
 					connection_state == UDP_STATE_SEND_DATAGRAM)
 				{
-					udp_type = L"udp-send";
+					udp_type = L"connection";
 				}
 				else if( connection_state == UDP_STATE_RECEIVE ||
 					connection_state == UDP_STATE_RECEIVE_DATAGRAM)
 				{
-					udp_type = L"udp-receive";
+					udp_type = L"listening";
 				}
 			}
 			else if(data->key == 1)
