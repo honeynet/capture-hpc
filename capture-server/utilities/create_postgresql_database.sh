@@ -36,17 +36,7 @@ create table clientprogram (
 	CONSTRAINT clientprogram_pk PRIMARY KEY(clientprogram_id)
 );
 
-create table os (
-	os_id  serial,
-	name varchar(100), 
-	CONSTRAINT os_pk PRIMARY KEY(os_id)
-);
 
-create table browser (
-	browser_id  serial,
-	name varchar(100), 
-	CONSTRAINT browser_pk PRIMARY KEY(browser_id)
-);
 
 create table status (
 	status_id  char(1),
@@ -63,26 +53,6 @@ create table honeypot (
 	CONSTRAINT honeypot_pk PRIMARY KEY(honeypot_id)
 );
 
-create table vmserver (
-	vmserver_id  serial,
-	ipaddress inet,
-	port  	integer,
-    username  varchar(50),
-    password  varchar(50),
-    honeypot_id  integer references honeypot(honeypot_id),
-	CONSTRAINT vmserver_pk PRIMARY KEY(vmserver_id)
-);
-
-create table vmachine (
-	vmachine_id  serial,
-	path varchar,
-    username  varchar(50),
-    password  varchar(50),
-    vmserver_id integer references vmserver(vmserver_id),
-    os_id  integer references os(os_id),
-    browser_id integer references browser(browser_id),
-	CONSTRAINT vmachine_pk PRIMARY KEY(vmachine_id)
-);
 
 create table operation (
 	operation_id serial,
@@ -149,7 +119,12 @@ insert into status(status_id, name) values('M', 'malicious');
 insert into status(status_id, name) values('E', 'error'); 
 insert into clientprogram(name) values('iexplorebulk');
 insert into clientprogram(name) values('iexplore');
-
+insert into clientprogram(name) values('safari');
+insert into clientprogram(name) values('firefox');
+insert into clientprogram(name) values('opera');
+insert into clientprogram(name) values('oowriter');
+insert into clientprogram(name) values('acrobatreader');
+insert into clientprogram(name) values('word');
 
 
 END-OF-DATA
@@ -169,8 +144,6 @@ $bindir/psql -U $puser -d $db_name $* <<END-OF-DATA
 create user $username with password '$password';
 grant all privileges on database $db_name to $username;
 
-grant all on table browser                            to $username;
-grant all on sequence browser_browser_id_seq             to $username;
 grant all on table clientprogram                      to $username;
 grant all on sequence clientprogram_clientprogram_id_seq to $username;
 grant all on table error                              to $username;
@@ -179,14 +152,8 @@ grant all on sequence event_event_id_seq                 to $username;
 grant all on table file                               to $username;
 grant all on table honeypot                           to $username;
 grant all on sequence honeypot_honeypot_id_seq           to $username;
-grant all on table vmserver                           to $username;
-grant all on sequence vmserver_vmserver_id_seq           to $username;
-grant all on table vmachine                           to $username;
-grant all on sequence vmachine_vmachine_id_seq           to $username;
 grant all on table operation                          to $username;
 grant all on sequence operation_operation_id_seq         to $username;
-grant all on table os                                 to $username;
-grant all on sequence os_os_id_seq                       to $username;
 grant all on table status                             to $username;
 grant all on table url                                to $username;
 grant all on table url_operation                      to $username;

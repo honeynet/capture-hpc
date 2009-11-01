@@ -100,7 +100,7 @@ One can specify a specific client application to have Capture client to visit a 
 DATABASE OPTION (Make sure you have installed MySQL server or PostgreSQL server if you want to use database functionalities)
  - Operation options:
   + Without input-url file, Capture will get all urls from database (url table) for inspecting.
-   java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port>
+   java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> start
 
   + With -f input-url file and -c false option, Capture will get all urls from input-url file, insert these urls into database without checking existence of these urls in database, and then inspect these urls.
    java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> -f input_uris.txt -c false
@@ -113,7 +113,7 @@ DATABASE OPTION (Make sure you have installed MySQL server or PostgreSQL server 
   + With stop option: Force capture exit immediately
     java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> stop
 
-  + With resume option: Capture will get all unvisited urls from last operation for inspecting.
+  + With resume option: Capture will get all unvisited urls from last operation for inspecting (note that start needs to be run before resume).
     java -Djava.net.preferIPv4Stack=true -jar CaptureServer.jar -s <IP listening address>:<IP listening port> resume
 
   + With -i input-url file and -c false option, Capture will get all urls from input-url file, insert these urls into database without checking existence of these urls in database, and then EXIT (NO OPERATION).

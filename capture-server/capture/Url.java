@@ -9,6 +9,8 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.DateFormat;
@@ -51,7 +53,14 @@ public class Url extends Observable {
 
     public Url(String urlid, String u, String cProgram, int vTime, double priority) throws URISyntaxException {
         id=urlid;
-        url = new URI(u);
+        URL tmpurl=null;
+        try {
+            tmpurl = new URL(u);
+        } catch (MalformedURLException malerr)
+        {
+            throw new URISyntaxException(u, malerr.toString());
+        }
+        url = new URI(tmpurl.getProtocol(), tmpurl.getHost(), tmpurl.getPath(), tmpurl.getQuery(), null);
         this.priority = priority;
         malicious = null;
         if (cProgram == null || cProgram == "") {

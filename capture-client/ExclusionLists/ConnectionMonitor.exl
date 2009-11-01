@@ -1,5 +1,10 @@
-#[+,-]	[connection|listening|udp-send|udp-receive]	[Process Name]	[Destination IP Address:Port]
-+	connection	C:\\Program Files\\Internet Explorer\\iexplore\.exe	.*
-+	udp-send	.*Explorer\.exe	*.
-+	udp-receive	.*Explorer\.exe	*.
+#[+,-]	[connection|listening]	[Process Name]	[Destination IP Address:Port]
++	tcp-connection	C:\\Program Files\\Internet Explorer\\iexplore\.exe	.*:80
++	tcp-connection	C:\\Program Files\\Internet Explorer\\iexplore\.exe	.*:8080
++	tcp-connection	C:\\Program Files\\Internet Explorer\\iexplore\.exe	.*:8088
++	tcp-connection	C:\\Program Files\\Internet Explorer\\iexplore\.exe	.*:443
++	udp-connection	.*	.*:53
++	tcp-connection	.*	.*:139
++	udp-connection	.*	.*:67
++	udp-listening	.*	.*:68
 

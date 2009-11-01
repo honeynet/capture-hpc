@@ -3,7 +3,7 @@ Capture Server PcapPostprocessor README
 
 1.Prerequisites
 ---------------
-* Capture-Server 2.6
+* Capture-Server 3.0
 
 2. Installation
 ---------------

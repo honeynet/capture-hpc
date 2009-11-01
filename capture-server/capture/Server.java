@@ -38,6 +38,7 @@ public class Server
                 {
                     Database.initialize();
                     Database.getInstance().setSystemStatus(false);
+                    System.out.println("Stop status is set, the instance of CaptureServer is going to stop soon!");
                     System.exit(0);
                 }
                 else
@@ -48,6 +49,9 @@ public class Server
             }
             else if(args[i].equals("resume")) {
                 ConfigManager.getInstance().addConfigOption("resume", "yes");
+            }
+            else if(args[i].equals("start")) {
+                ConfigManager.getInstance().addConfigOption("start", "yes");
             }
             else if(args[i].equals("-s")) {
 				if(((i+1) < args.length) && !args[i+1].startsWith("-")) {
@@ -99,8 +103,8 @@ public class Server
             {
                 Database.initialize();
                 Database.getInstance().importUrlFromFile();
-                System.out.println("Finish import");
-                System.exit(0);
+                System.out.println("Finish import - please run Capture with start command");
+				System.exit(0);
             }
             else
             {
@@ -166,7 +170,7 @@ public class Server
 			
 			if (ConfigManager.getInstance().getConfigOption("database-url")!=null)
 			{
-				Database.getInstance().loadInputUrlFromFile(file);
+				Database.getInstance().InputUrlFromFile(file);
 			} else
 			{
 				preprocessor.readInputUrls(file);
@@ -177,10 +181,13 @@ public class Server
             {
                 Database.getInstance().resumeLastOperation();
             }
-            else
+            else if (ConfigManager.getInstance().getConfigOption("start")!=null)
             {
                 Database.getInstance().loadInputUrlFromDatabase();
-            }
+            } else {
+				System.out.println("Command not recogized. Pls use start or resume."
+				System.exit(-1);
+			}
 		}
 	}
 

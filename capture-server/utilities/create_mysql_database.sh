@@ -10,7 +10,7 @@ db_name=capturehpc
 # Database account which this script is going to create
 username=capture
 password=capture
-host=192.168.2.10
+host=127.0.0.1
 
 echo "This script is going to create dabase with related tables and user $username with permission to access database."
 echo "If you are asked for password, please enter the password for root user!"
@@ -35,17 +35,7 @@ create table clientprogram (
 	PRIMARY KEY(clientprogram_id)
 );
 
-create table os (
-	os_id  serial,
-	name varchar(100), 
-	PRIMARY KEY(os_id)
-);
 
-create table browser (
-	browser_id  serial,
-	name varchar(100), 
-	PRIMARY KEY(browser_id)
-);
 
 create table status (
 	status_id  char(1),
@@ -62,26 +52,6 @@ create table honeypot (
 	PRIMARY KEY(honeypot_id)
 );
 
-create table vmserver (
-	vmserver_id  serial,
-	ipaddress char(15),
-	port  	integer,
-    username  varchar(50),
-    password  varchar(50),
-    honeypot_id  integer references honeypot(honeypot_id),
-	PRIMARY KEY(vmserver_id)
-);
-
-create table vmachine (
-	vmachine_id  serial,
-	path varchar(500),
-    username  varchar(50),
-    password  varchar(50),
-    vmserver_id integer references vmserver(vmserver_id),
-    os_id  integer references os(os_id),
-    browser_id integer references browser(browser_id),
-	PRIMARY KEY(vmachine_id)
-);
 
 create table operation (
 	operation_id serial,
@@ -94,7 +64,7 @@ create table operation (
 
 
 create table url (url_id serial,
-   	url varchar(500) not null, 
+   	url varchar(2083) not null,
    	currentstatus char(1) references status(status_id), 
         lastvisittime char(23), 
         operation_id integer references operation(operation_id), 
@@ -147,7 +117,12 @@ insert into status(status_id, name) values('M', 'malicious');
 insert into status(status_id, name) values('E', 'error'); 
 insert into clientprogram(name) values('iexplorebulk');
 insert into clientprogram(name) values('iexplore');
-
+insert into clientprogram(name) values('safari');
+insert into clientprogram(name) values('firefox');
+insert into clientprogram(name) values('opera');
+insert into clientprogram(name) values('oowriter');
+insert into clientprogram(name) values('acrobatreader');
+insert into clientprogram(name) values('word');
 END-OF-DATA
 pstat=$?
 if test $pstat = 0; 

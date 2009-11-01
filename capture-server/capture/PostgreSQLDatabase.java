@@ -31,8 +31,6 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import javax.sql.DataSource;
 import org.apache.commons.dbcp.BasicDataSource;
@@ -173,11 +171,12 @@ public class PostgreSQLDatabase extends Database {
 		Element element;
 		Connection con=this.getConnection();
 		Statement	stmt;
+                PreparedStatement ps;
 		ResultSet rs;
 		String line, url_id, honeypotid=null;
 		String operationid=null;
 		boolean check= true;
-
+                long count = 0;
 		if (inputUrlsFile==null)
 		{
 			System.out.println("Error: There is no input-url file!");
@@ -237,18 +236,22 @@ public class PostgreSQLDatabase extends Database {
 			{
 				while ((line=in.readLine())!=null) {
 					if ((line.length() > 0)) {
-						line = line.trim().toLowerCase();
+						//line = line.trim().toLowerCase();
+                                                line = line.trim();
 						if (!line.startsWith("#")) {
-							rs=stmt.executeQuery("INSERT INTO url(url) Values (\'"+line+"\')"+" RETURNING url_id");
+                                                        ps = con.prepareStatement("INSERT INTO url(url) Values (?)"+" RETURNING url_id");
+                                                        ps.setString(1, line);
+                                                        rs = ps.executeQuery(); rs.next();
 							url_id=rs.getString("url_id");
 							stmt.executeUpdate("INSERT INTO url_operation(url_id, operation_id) Values ("+url_id+", "+operationid+")");
-
+                                                        count++;
 							element = new Element();
 							element.name = "url";
 							element.attributes.put("add", "");
                             element.attributes.put("id", url_id);
 							element.attributes.put("url", line);
 							EventsController.getInstance().notifyEventObservers(element);
+                                                        
 						}
 					}
 				}
@@ -257,29 +260,43 @@ public class PostgreSQLDatabase extends Database {
 			{
 				while ((line=in.readLine())!=null) {
 					if ((line.length() > 0)) {
-						line = line.trim().toLowerCase();
+						//line = line.trim().toLowerCase();
+                                                line = line.trim();
 						if (!line.startsWith("#")) {
-							rs=stmt.executeQuery("SELECT url_id FROM url WHERE url.url = \'"+line+"\'");
+                                                        ps = con.prepareStatement("SELECT url_id FROM url WHERE url.url = ?");
+                                                        ps.setString(1, line);
+							rs=ps.executeQuery();
 							if (!rs.next()) 
 							{
-								rs=stmt.executeQuery("INSERT INTO url(url) Values (\'"+line+"\')"+" RETURNING url_id");
-								rs.next(); 
-							} 
+                                                                ps = con.prepareStatement("INSERT INTO url(url) Values (?)"+" RETURNING url_id");
+                                                                ps.setString(1, line);
+                                                                rs = ps.executeQuery();
+								rs.next();
+                                                                count++;
+							}
+                                                        //check URL id and operation id: not exist
 							url_id=rs.getString("url_id");
-							stmt.executeUpdate("INSERT INTO url_operation(url_id, operation_id) Values ("+url_id+", "+operationid+")");
-
-							element = new Element();
-							element.name = "url";
-							element.attributes.put("add", "");
-                            element.attributes.put("id", url_id);
-							element.attributes.put("url", line);
-							EventsController.getInstance().notifyEventObservers(element);
+                                                        ps = con.prepareStatement("SELECT url_id, operation_id FROM url_operation WHERE url_id = ? AND operation_id= ?");
+                                                        ps.setLong(1, Long.parseLong(url_id));
+                                                        ps.setLong(2, Long.parseLong(operationid));
+							rs=ps.executeQuery();
+							if (!rs.next())
+							{
+                                                            stmt.executeUpdate("INSERT INTO url_operation(url_id, operation_id) Values ("+url_id+", "+operationid+")");
+                                                            element = new Element();
+                                                            element.name = "url";
+                                                            element.attributes.put("add", "");
+                                                            element.attributes.put("id", url_id);
+                                                            element.attributes.put("url", line);
+                                                            EventsController.getInstance().notifyEventObservers(element);
+                                                            
+                                                        }
 						}
 					}
 				}
 			}
 			con.close();
-			System.out.println("Finish inserting URLs into database!");
+			System.out.println("******** INSERTING URLs INTO DATABASE: " + count + " URLs have been inserted into database! ********");
 		} catch( Exception e ) {e.printStackTrace();}
 	}
    
@@ -292,6 +309,7 @@ public class PostgreSQLDatabase extends Database {
 		ResultSet rs;
 		String url, url_id, honeypotid=null;
 		String operationid=null;
+                long count = 0;
 		try
 		{
 			stmt1= con.createStatement();
@@ -335,7 +353,6 @@ public class PostgreSQLDatabase extends Database {
 			
 			System.out.println("Loading urls from database....");
 			rs=stmt1.executeQuery("SELECT url_id, url FROM url");
-            int count=0;
 			while (rs.next()) {
 							url_id=rs.getString(1);
 							url=rs.getString(2);
@@ -350,7 +367,7 @@ public class PostgreSQLDatabase extends Database {
                             count++;
 			}
 			con.close();
-			System.out.println("Loading urls from database is finished:"+count+" urls have been loaded!");
+			System.out.println("******** LOADING URLs FROM DATABASE: "+count+" urls have been loaded! ********");
 		} catch( Exception e ) {e.printStackTrace();}
 	}
 
@@ -362,6 +379,7 @@ public class PostgreSQLDatabase extends Database {
 		String operationid=null;
 		String serverip=ConfigManager.getInstance().getConfigOption("server-listen-address");
 		boolean result=false;
+                long count=0;
 		try
 		{
 			Element e;
@@ -397,11 +415,13 @@ public class PostgreSQLDatabase extends Database {
                     e.attributes.put("id", rs.getString(1));
 					e.attributes.put("url", rs.getString(2));
 					EventsController.getInstance().notifyEventObservers(e);
+                                        count++;
 				}
 			}
 			stmt.close(); con.close();
 			result=true;
 		} catch( Exception e ) {e.printStackTrace();}
+                System.out.println("******** RESUME: "+ count +" URLs have been loaded!********");
 		return result;
 	}
 
@@ -409,13 +429,13 @@ public class PostgreSQLDatabase extends Database {
 	public void importUrlFromFile() 
 	{
 		Connection con=this.getConnection();
-		Statement	stmt;
+		PreparedStatement ps;
 		ResultSet rs;
 		String line, url_id, honeypotid=null;
 		String operationid=null;
 		String inputUrlsFile= ConfigManager.getInstance().getConfigOption("input_urls");
 		boolean check= true;
-
+                long count=0;
 		if (inputUrlsFile==null)
 		{
 			System.out.println("Error: There is no input-url file!");
@@ -429,7 +449,6 @@ public class PostgreSQLDatabase extends Database {
 
 		try
 		{
-			stmt= con.createStatement();
 	
 			//open url file
 			BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(inputUrlsFile), "UTF-8"));
@@ -439,9 +458,13 @@ public class PostgreSQLDatabase extends Database {
 			{
 				while ((line=in.readLine())!=null) {
 					if ((line.length() > 0)) {
-						line = line.trim().toLowerCase();
+						//line = line.trim().toLowerCase();
+                                                line = line.trim();
 						if (!line.startsWith("#")) {
-								stmt.executeUpdate("INSERT INTO url(url) Values (\'"+line+"\')");
+                                                    ps = con.prepareStatement("INSERT INTO url(url) Values (?)");
+                                                    ps.setString(1, line);
+                                                    ps.executeUpdate();
+                                                    count++;
 						}
 					}
 				}
@@ -450,19 +473,25 @@ public class PostgreSQLDatabase extends Database {
 			{
 				while ((line=in.readLine())!=null) {
 					if ((line.length() > 0)) {
-						line = line.trim().toLowerCase();
+						//line = line.trim().toLowerCase();
+                                                line = line.trim();
 						if (!line.startsWith("#")) {
-							rs=stmt.executeQuery("SELECT url_id FROM url WHERE url.url = \'"+line+"\'");
+                                                        ps = con.prepareStatement("SELECT url_id FROM url WHERE url.url = ?");
+                                                        ps.setString(1, line);
+							rs=ps.executeQuery();
 							if (!rs.next()) 
 							{
-								stmt.executeUpdate("INSERT INTO url(url) Values (\'"+line+"\')");
+                                                            ps = con.prepareStatement("INSERT INTO url(url) Values (?)");
+                                                            ps.setString(1, line);
+                                                            ps.executeUpdate();
+                                                            count++;
 							} 
 						}
 					}
 				}
 			}
 			con.close();
-			System.out.println("Finish importing  URLs into database!");
+			System.out.println("******** IMPORTING URLs INTO DATABASE: " + count + " URLs have been imported!********");
 		} catch( Exception e ) {e.printStackTrace();}
 	}
 

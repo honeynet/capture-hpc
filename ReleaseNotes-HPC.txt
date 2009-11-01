@@ -1,11 +1,12 @@
 Release Notes
 -------------
 
-
-Version 2.6
------------
+Version 3.0.0
+-------------
 Changes
 -------
++ added connection monitor that can alert on connection/listening events on the network. This could be used to identify attacks that merely reside in memory.
++ added support for a backend mysql or postgress database
 + added post processor plugin architecture. Postprocessors allow to perform actions on classified URLs.
 + added a post processor that analyzes the network data of a classified URL. It extracts DNS information, HTTP requests and determines whether any domain name is part of a fast flux network. Note that this post processor only works with a group size of 1. Otherwise the network of the entire group is analyzed.
 

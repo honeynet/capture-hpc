@@ -165,12 +165,12 @@ NetworkMonitor::processUdpEvents(KernelEventList* udp_event_list)
 				if(connection_state == UDP_STATE_SEND ||
 					connection_state == UDP_STATE_SEND_DATAGRAM)
 				{
-					udp_type = L"connection";
+					udp_type = L"udp-connection";
 				}
 				else if( connection_state == UDP_STATE_RECEIVE ||
 					connection_state == UDP_STATE_RECEIVE_DATAGRAM)
 				{
-					udp_type = L"listening";
+					udp_type = L"udp-listening";
 				}
 			}
 			else if(data->key == 1)
@@ -227,11 +227,11 @@ NetworkMonitor::processTcpEvents(KernelEventList* tcp_event_list)
 				TcpState connection_state = (TcpState)*((int*)data->data);
 				if(connection_state == TCP_STATE_ESTABLISHED)
 				{
-					connection_type = L"connection";
+					connection_type = L"tcp-connection";
 				}
 				else if(connection_state == TCP_STATE_LISTEN)
 				{
-					connection_type = L"listening";
+					connection_type = L"tcp-listening";
 				}
 			}
 			else if(data->key == 1)

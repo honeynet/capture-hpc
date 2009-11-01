@@ -166,7 +166,7 @@ public class PcapPostprocessor extends Postprocessor {
     private Collection<Thread> threads = new ArrayList<Thread>();
 
     public static void main(String args[]) throws Exception {
-        System.out.println("PROJECT: Capture-HPC\n" +
+        System.out.println("PROJECT: Capture-HPC Pcap PostProcessor\n" +
                 "VERSION: 1.0\n" +
                 "DATE: Sept 30, 2008\n" +
                 "COPYRIGHT HOLDER: Victoria University of Wellington, NZ\n" +
